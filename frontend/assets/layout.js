@@ -18,8 +18,8 @@ const NAV_GROUPS = [
   {
     label: 'Kho',
     items: [
-      { key: 'products', label: 'Sản phẩm', href: 'products.html', icon: 'package', module: 'kho', enabled: false },
-      { key: 'stock-receipts', label: 'Nhập kho', href: 'stock-receipts.html', icon: 'arrowDownTray', module: 'kho', enabled: false },
+      { key: 'products', label: 'Sản phẩm', href: 'products.html', icon: 'package', module: 'kho', enabled: true },
+      { key: 'stock-receipts', label: 'Nhập kho', href: 'stock-receipts.html', icon: 'arrowDownTray', module: 'kho', enabled: true },
       { key: 'stock-issues', label: 'Xuất kho', href: 'stock-issues.html', icon: 'arrowUpTray', module: 'kho', enabled: false },
     ],
   },

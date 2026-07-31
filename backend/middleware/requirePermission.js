@@ -30,4 +30,31 @@ function requirePermission(moduleKey) {
   };
 }
 
-module.exports = { requirePermission };
+// Cho qua neu user co IT NHAT 1 trong cac module truyen vao (hoac is_protected). Dung cho
+// hanh dong lien quan nhieu module (vd tao doi tac moi: ca thu kho (lap phieu nhap) lan ke
+// toan (quan ly cong no) deu co the can thao tac nay - xem docs/DECISIONS.md).
+function requireAnyPermission(moduleKeys) {
+  return function (req, res, next) {
+    const user = req.session && req.session.user;
+
+    if (!user) {
+      return res.status(401).json({ error: 'Chua dang nhap' });
+    }
+
+    if (user.is_protected) {
+      return next();
+    }
+
+    const hasAny = moduleKeys.some((moduleKey) =>
+      db.prepare('SELECT 1 FROM role_permissions WHERE role_id = ? AND module_key = ?').get(user.role_id, moduleKey)
+    );
+
+    if (!hasAny) {
+      return res.status(403).json({ error: 'Khong co quyen truy cap chuc nang nay' });
+    }
+
+    next();
+  };
+}
+
+module.exports = { requirePermission, requireAnyPermission };

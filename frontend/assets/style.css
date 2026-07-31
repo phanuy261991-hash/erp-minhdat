@@ -19,6 +19,7 @@
   --color-muted-foreground: #64748b;
   --color-border: #e4ecfc;
   --color-ring: #2563eb;
+  --color-warning: #b45309;
 
   --font-heading: 'Be Vietnam Pro', 'Segoe UI', Roboto, Arial, sans-serif;
   --font-body: 'Open Sans', 'Segoe UI', Roboto, Arial, sans-serif;
@@ -463,6 +464,18 @@ input:focus-visible {
   font-weight: 600;
 }
 
+.page-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-heading {
+  margin: 28px 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
 /* ---- Card so lieu (dung o trang tong quan) ---- */
 
 .stat-grid {
@@ -556,6 +569,76 @@ input:focus-visible {
   color: var(--color-muted-foreground);
 }
 
+/* ---- Thanh cong cu tren dau bang du lieu (o tim kiem canh nut hanh dong) ---- */
+
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-box .input-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--color-muted-foreground);
+  display: flex;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 240px;
+  padding: 9px 12px 9px 38px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-foreground);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.search-input:focus {
+  border-color: var(--color-ring);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* ---- Cot bang bam duoc de sap xep (vd cot Ton kho) ---- */
+
+.sortable-th {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable-th .sort-icon {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 4px;
+  opacity: 0.4;
+}
+
+.sortable-th.sort-active .sort-icon {
+  opacity: 1;
+  color: var(--color-primary);
+}
+
+/* ---- Canh bao ton kho thap - dam mau + icon, khong dung pastel nhat de de chu y,
+   khac han mau xam cua badge-inactive nen khong bi lan khi ca 2 cung xuat hien tren 1 dong. ---- */
+
+.stock-low {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  color: var(--color-warning);
+}
+
 .icon-btn {
   display: inline-flex;
   align-items: center;
@@ -589,6 +672,34 @@ input:focus-visible {
   background: var(--color-surface);
 }
 
+/* ---- Nut hanh dong chinh tren dau trang (vd "Them san pham") - dam mau + do noi,
+   khac voi .icon-btn (dung cho hanh dong nho trong bang nhu Sua/Khoa). ---- */
+
+.btn-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: #fff;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.btn-add:hover {
+  box-shadow: 0 10px 26px rgba(37, 99, 235, 0.32);
+}
+
+.btn-add:active {
+  transform: scale(0.97);
+}
+
 /* ---- Modal tao tai khoan ---- */
 
 /* :not([hidden]) - tranh lap lai loi display:flex ghi de thuoc tinh hidden (xem .alert). */
@@ -610,6 +721,12 @@ input:focus-visible {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
   padding: 28px;
+}
+
+/* Bien the rong hon cho form nhieu cot (vd phieu nhap/xuat kho co bang dong san pham) -
+   dung ket hop voi .modal-card (class="modal-card modal-card-lg"), khong doi .modal-card mac dinh. */
+.modal-card-lg {
+  width: 880px;
 }
 
 .modal-card h3 {
@@ -1026,6 +1143,239 @@ input:focus-visible {
   border: 1.5px solid var(--color-border);
   color: #fff;
   transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+/* ---- Nhom chon 1 trong nhieu phuong an co mo ta dai (vd cach tinh gia von) - khac voi
+   .module-grid (chip ngan gon nhieu o), day la card doc, moi option 1 tieu de + 1 dong mo ta. ---- */
+
+.method-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.method-option {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+
+.method-option:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.16);
+}
+
+.method-option-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  margin: 0;
+}
+
+.method-option-radio {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  position: relative;
+  transition: border-color var(--transition-fast);
+}
+
+.method-option-radio::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  transform: scale(0);
+  transition: transform var(--transition-fast);
+}
+
+.method-option:has(.method-option-input:checked) {
+  border-color: var(--color-primary);
+  background: var(--color-muted);
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.18);
+}
+
+.method-option:has(.method-option-input:checked) .method-option-radio {
+  border-color: var(--color-primary);
+}
+
+.method-option:has(.method-option-input:checked) .method-option-radio::after {
+  transform: scale(1);
+}
+
+.method-option:has(.method-option-input:focus-visible) {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.method-option-title {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-foreground);
+}
+
+.method-option-desc {
+  display: block;
+  font-size: 13px;
+  color: var(--color-muted-foreground);
+  margin-top: 2px;
+}
+
+/* ---- Bang dong san pham trong form phieu nhap/xuat kho ---- */
+
+.item-rows-header {
+  display: grid;
+  grid-template-columns: 1fr 64px 80px 120px 100px 120px 36px;
+  gap: 8px;
+  padding: 0 2px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+}
+
+.item-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item-row {
+  display: grid;
+  grid-template-columns: 1fr 64px 80px 120px 100px 120px 36px;
+  gap: 8px;
+  align-items: start;
+}
+
+.item-unit-display {
+  padding: 8px 0;
+  font-size: 13px;
+  color: var(--color-muted-foreground);
+  text-align: center;
+}
+
+.item-line-total {
+  padding: 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-foreground);
+  text-align: right;
+}
+
+.item-row input[type='text'],
+.item-row input[type='number'] {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-foreground);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.item-row input:focus {
+  border-color: var(--color-ring);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.item-row-remove {
+  margin-top: 1px;
+}
+
+.btn-add-row {
+  margin-top: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.receipt-total-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.receipt-total-row span:first-child {
+  font-size: 13px;
+  color: var(--color-muted-foreground);
+}
+
+.receipt-total-row span:last-child {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.new-partner-inputs {
+  display: flex;
+  gap: 10px;
+}
+
+.new-partner-inputs input {
+  flex: 1;
+}
+
+/* ---- Combobox tim san pham theo ma/ten (thay the <select> thuong khi danh muc co the nhieu) ---- */
+
+.combobox {
+  position: relative;
+}
+
+.combobox-suggestions:empty {
+  display: none;
+}
+
+.combobox-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card);
+  z-index: 20;
+}
+
+.combobox-option {
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.combobox-option:hover {
+  background: var(--color-muted);
+}
+
+.combobox-option-unit {
+  color: var(--color-muted-foreground);
+}
+
+.combobox-empty {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--color-muted-foreground);
 }
 
 .module-option-box svg {

@@ -10,11 +10,19 @@ const settingsErrorBox = document.getElementById('settings-error');
 const settingsErrorText = document.getElementById('settings-error-text');
 const settingsSuccessBox = document.getElementById('settings-success');
 const allowNegativeStockToggle = document.getElementById('allow_negative_stock');
+const costingMethodGroup = document.getElementById('costing-method-group');
+
+function getCostingMethod() {
+  const checked = costingMethodGroup.querySelector('input[name="costing_method"]:checked');
+  return checked ? checked.value : 'binh_quan_gia_quyen';
+}
 
 async function loadSettings() {
   try {
     const { settings } = await apiFetch('/warehouse-settings');
     allowNegativeStockToggle.checked = Boolean(settings.allow_negative_stock);
+    const target = costingMethodGroup.querySelector(`input[value="${settings.costing_method}"]`);
+    if (target) target.checked = true;
   } catch (err) {
     settingsErrorText.textContent = err.message;
     settingsErrorBox.hidden = false;
@@ -31,7 +39,10 @@ warehouseForm.addEventListener('submit', async (event) => {
   try {
     await apiFetch('/warehouse-settings', {
       method: 'PUT',
-      body: JSON.stringify({ allow_negative_stock: allowNegativeStockToggle.checked }),
+      body: JSON.stringify({
+        allow_negative_stock: allowNegativeStockToggle.checked,
+        costing_method: getCostingMethod(),
+      }),
     });
     settingsSuccessBox.hidden = false;
   } catch (err) {

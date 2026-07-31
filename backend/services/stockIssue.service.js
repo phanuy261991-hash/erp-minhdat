@@ -3,6 +3,7 @@
 // ton kho khong du (xem CLAUDE.md muc Key Constraints, docs/DECISIONS.md).
 
 const db = require('../db/database');
+const { getCostingMethod, consumeStockForIssue } = require('./costing.service');
 
 class ServiceError extends Error {}
 
@@ -35,12 +36,16 @@ function createStockIssue({ partnerId, createdBy, note, paymentStatus, items }) 
   }
 
   const allowNegative = isNegativeStockAllowed();
+  const costingMethod = getCostingMethod();
 
   const run = db.transaction(() => {
     items.forEach((item) => {
-      const product = db.prepare('SELECT id FROM products WHERE id = ?').get(item.productId);
+      const product = db.prepare('SELECT id, is_active FROM products WHERE id = ?').get(item.productId);
       if (!product) {
         throw new ServiceError(`San pham khong ton tai: id=${item.productId}`);
+      }
+      if (!product.is_active) {
+        throw new ServiceError(`San pham id=${item.productId} da ngung kinh doanh, khong the dung trong phieu moi`);
       }
 
       if (!allowNegative) {
@@ -65,12 +70,15 @@ function createStockIssue({ partnerId, createdBy, note, paymentStatus, items }) 
       'INSERT INTO stock_issue_items (issue_id, product_id, quantity, unit_price) VALUES (?, ?, ?, ?)'
     );
     const insertMovement = db.prepare(
-      "INSERT INTO stock_movements (product_id, movement_type, quantity, reference_type, reference_id) VALUES (?, 'out', ?, 'issue', ?)"
+      "INSERT INTO stock_movements (product_id, movement_type, quantity, reference_type, reference_id, unit_cost) VALUES (?, 'out', ?, 'issue', ?, ?)"
     );
 
     items.forEach((item) => {
       insertItem.run(issueId, item.productId, item.quantity, item.unitPrice);
-      insertMovement.run(item.productId, item.quantity, issueId);
+      // Tru dan cac lo con lai (FIFO vat ly) va lay gia von ghi lai theo dung costing_method
+      // dang chon - xem backend/services/costing.service.js.
+      const unitCost = consumeStockForIssue(item.productId, item.quantity, costingMethod);
+      insertMovement.run(item.productId, item.quantity, issueId, unitCost);
     });
 
     return issueId;

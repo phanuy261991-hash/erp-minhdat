@@ -42,6 +42,28 @@
           </div>
         </div>
 
+        <div class="settings-section">
+          <h3 class="settings-section-title">Cách tính giá vốn</h3>
+          <div class="method-group" id="costing-method-group">
+            <label class="method-option">
+              <input type="radio" name="costing_method" value="binh_quan_gia_quyen" class="method-option-input" />
+              <span class="method-option-radio"></span>
+              <span class="method-option-text">
+                <span class="method-option-title">Bình quân gia quyền</span>
+                <span class="method-option-desc">Giá vốn là trung bình có trọng số của các lô hàng còn tồn, tự động tính lại mỗi lần nhập hàng mới.</span>
+              </span>
+            </label>
+            <label class="method-option">
+              <input type="radio" name="costing_method" value="fifo" class="method-option-input" />
+              <span class="method-option-radio"></span>
+              <span class="method-option-text">
+                <span class="method-option-title">FIFO (nhập trước, xuất trước)</span>
+                <span class="method-option-desc">Xuất kho được tính theo đúng giá của lô hàng nhập sớm nhất còn tồn kho.</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
         <div class="settings-actions">
           <button type="submit" id="btn-save-warehouse" class="btn-primary">Lưu thay đổi</button>
         </div>
