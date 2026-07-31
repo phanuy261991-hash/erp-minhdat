@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Thông tin công ty - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Cấu hình</p>
+      <div class="page-header">
+        <h2>Thông tin công ty</h2>
+      </div>
+
+      <div id="settings-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="settings-error-text"></span>
+      </div>
+      <div id="settings-success" class="alert alert-success" hidden>
+        <span class="alert-icon-success-slot"></span>
+        <span>Đã lưu thông tin công ty.</span>
+      </div>
+
+      <form id="company-form">
+        <div class="settings-columns">
+          <div class="settings-card">
+            <h3 class="settings-section-title">Thông tin chung</h3>
+            <div class="settings-grid">
+              <div class="form-field span-2">
+                <label for="company_name">Tên công ty</label>
+                <input type="text" id="company_name" autocomplete="off" />
+              </div>
+              <div class="form-field span-2">
+                <label for="address">Địa chỉ</label>
+                <input type="text" id="address" autocomplete="off" />
+              </div>
+              <div class="form-field">
+                <label for="tax_code">Mã số thuế</label>
+                <input type="text" id="tax_code" autocomplete="off" />
+              </div>
+              <div class="form-field">
+                <label for="email">Email</label>
+                <input type="email" id="email" autocomplete="off" />
+              </div>
+              <div class="form-field span-2">
+                <label for="website">Website</label>
+                <input type="url" id="website" autocomplete="off" placeholder="https://" />
+              </div>
+              <div class="form-field span-2">
+                <label>Số điện thoại</label>
+                <div id="phone-list" class="repeatable-list"></div>
+                <button type="button" id="btn-add-phone" class="repeatable-add-btn"></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <h3 class="settings-section-title">Thông tin ngân hàng</h3>
+            <div class="settings-grid">
+              <div class="form-field span-2">
+                <label for="bank_name">Tên ngân hàng</label>
+                <input type="text" id="bank_name" autocomplete="off" />
+              </div>
+              <div class="form-field span-2">
+                <label for="bank_branch">Chi nhánh</label>
+                <input type="text" id="bank_branch" autocomplete="off" />
+              </div>
+              <div class="form-field span-2">
+                <label for="bank_account_number">Số tài khoản</label>
+                <input type="text" id="bank_account_number" autocomplete="off" />
+              </div>
+              <div class="form-field span-2">
+                <label for="bank_account_holder">Tên chủ tài khoản</label>
+                <input type="text" id="bank_account_holder" autocomplete="off" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-actions">
+          <button type="submit" id="btn-save-company" class="btn-primary">Lưu thay đổi</button>
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/company-settings.js"></script>
+</body>
+</html>

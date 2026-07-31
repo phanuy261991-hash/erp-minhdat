@@ -1,0 +1,9 @@
+node_modules/
+
+# Database runtime files - khong version-control, sinh ra qua npm run migrate/seed:admin
+data/*.db
+data/*.db-shm
+data/*.db-wal
+
+# Cau hinh Claude Code rieng cua tung may, khong dung chung
+.claude/settings.local.json

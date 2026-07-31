@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cấu hình bán hàng - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Cấu hình</p>
+      <div class="page-header">
+        <h2>Cấu hình bán hàng</h2>
+      </div>
+
+      <div class="empty-state">
+        <div id="empty-state-icon" class="empty-state-icon"></div>
+        <h3>Chưa có nội dung</h3>
+        <p>
+          Module Bán hàng/POS sẽ được trao đổi yêu cầu nghiệp vụ riêng và lên kế hoạch chi tiết
+          sau khi hoàn thành Kho và Công nợ.
+        </p>
+      </div>
+    </main>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script>
+    (async function init() {
+      document.getElementById('empty-state-icon').innerHTML = icon('cart', 28);
+      await initLayout('sales-settings');
+    })();
+  </script>
+</body>
+</html>

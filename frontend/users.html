@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Người dùng - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Quản trị</p>
+      <div class="page-header">
+        <h2>Người dùng</h2>
+        <button type="button" id="btn-add-user" class="icon-btn"></button>
+      </div>
+
+      <div id="users-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="users-error-text"></span>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tên đăng nhập</th>
+              <th>Họ tên</th>
+              <th>Vai trò</th>
+              <th>Trạng thái</th>
+              <th>Ngày tạo</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <div id="create-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3>Thêm tài khoản mới</h3>
+      <form id="create-form">
+        <div id="create-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="create-error-text"></span>
+        </div>
+
+        <div class="form-field">
+          <label for="new-username">Tên đăng nhập</label>
+          <input type="text" id="new-username" required autocomplete="off" />
+        </div>
+
+        <div class="form-field">
+          <label for="new-password">Mật khẩu</label>
+          <input type="password" id="new-password" required minlength="6" autocomplete="new-password" />
+        </div>
+
+        <div class="form-field">
+          <label for="new-fullname">Họ tên</label>
+          <input type="text" id="new-fullname" required autocomplete="off" />
+        </div>
+
+        <div class="form-field">
+          <label for="new-role">Vai trò</label>
+          <select id="new-role" required></select>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-create" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-create" class="btn-primary">Tạo tài khoản</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/users.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "name": "erp_minhdat",
+  "version": "1.0.0",
+  "private": true,
+  "description": "He thong quan ly kho & cong no noi bo - MinhDat",
+  "main": "backend/server.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "start": "node backend/server.js",
+    "migrate": "node backend/db/migrate.js",
+    "seed:admin": "node backend/db/seedAdmin.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^13.0.2",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0"
+  }
+}

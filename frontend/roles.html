@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vai trò - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Quản trị</p>
+      <div class="page-header">
+        <h2>Vai trò</h2>
+        <button type="button" id="btn-add-role" class="icon-btn"></button>
+      </div>
+
+      <div id="roles-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="roles-error-text"></span>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tên vai trò</th>
+              <th>Quyền truy cập (module)</th>
+              <th>Loại</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="roles-tbody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <div id="role-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3 id="role-modal-title">Thêm vai trò mới</h3>
+      <form id="role-form">
+        <div id="role-form-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="role-form-error-text"></span>
+        </div>
+
+        <div class="form-field">
+          <label for="role-name">Tên vai trò</label>
+          <input type="text" id="role-name" required autocomplete="off" />
+        </div>
+
+        <div class="form-field">
+          <label>Module được truy cập</label>
+          <div id="role-module-grid" class="module-grid"></div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-role" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-role" class="btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/roles.js"></script>
+</body>
+</html>

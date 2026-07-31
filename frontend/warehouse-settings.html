@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cấu hình kho - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Cấu hình</p>
+      <div class="page-header">
+        <h2>Cấu hình kho</h2>
+      </div>
+
+      <div id="settings-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="settings-error-text"></span>
+      </div>
+      <div id="settings-success" class="alert alert-success" hidden>
+        <span class="alert-icon-success-slot"></span>
+        <span>Đã lưu cấu hình kho.</span>
+      </div>
+
+      <form id="warehouse-form" class="settings-card">
+        <div class="settings-section">
+          <h3 class="settings-section-title">Cấu hình chung</h3>
+          <div class="setting-row">
+            <div class="setting-row-info">
+              <p class="setting-row-title">Xuất trước, nhập bù sau</p>
+              <p class="setting-row-desc">
+                Cho phép xuất kho khi tồn không đủ, bù trừ bằng phiếu nhập sau. Áp dụng toàn bộ sản phẩm.
+              </p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="allow_negative_stock" />
+              <span class="switch-track"></span>
+              <span class="switch-thumb"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-actions">
+          <button type="submit" id="btn-save-warehouse" class="btn-primary">Lưu thay đổi</button>
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/warehouse-settings.js"></script>
+</body>
+</html>

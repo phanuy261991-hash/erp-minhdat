@@ -1,0 +1,36 @@
+// Bo icon SVG outline dung chung cho toan bo giao dien - khong dung emoji.
+// Moi icon la markup ben trong the <svg> (khong bao gom the svg), goi qua icon(name).
+// Style nhat quan: viewBox 24x24, stroke-width 1.8, stroke-linecap/linejoin round.
+
+const ICONS = {
+  box: '<path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/>',
+  dashboard: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+  package: '<path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M7.5 5.5 16.5 10.5"/>',
+  arrowDownTray: '<path d="M12 3v11"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/>',
+  arrowUpTray: '<path d="M12 21V10"/><path d="M7 15l5-5 5 5"/><path d="M4 3h16"/>',
+  users: '<circle cx="8.5" cy="9" r="3.2"/><path d="M2.5 20c0-3.4 2.7-6.2 6-6.2s6 2.8 6 6.2"/><circle cx="17" cy="8.3" r="2.4"/><path d="M14.8 8.6c.6-.3 1.3-.5 2-.5 2.6 0 4.8 2.4 4.8 5.9"/>',
+  ledger: '<path d="M7 3h7l4 4v14H7Z"/><path d="M14 3v4h4"/><path d="M9.5 12h6"/><path d="M9.5 16h6"/>',
+  chartBar: '<path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M2 20h20"/>',
+  userCog: '<circle cx="9" cy="8.3" r="3.3"/><path d="M3 20c0-3.5 2.7-6.2 6-6.2s6 2.7 6 6.2"/><circle cx="18" cy="15.5" r="2.1"/><path d="M18 12.7v1M18 17.3v1M15.7 14.2l.8.5M19.5 16.8l.8.5M15.7 16.8l.8-.5M19.5 14.2l.8-.5"/>',
+  sidebarCollapse: '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16"/><path d="M14 9l-2 3 2 3"/>',
+  sidebarExpand: '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16"/><path d="M12 9l2 3-2 3"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
+  plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+  lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  lockOpen: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.6-1.8"/>',
+  alertCircle: '<circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12" y2="16.01"/>',
+  shieldCheck: '<path d="M12 3l8 3.5v5.2c0 5-3.4 8.6-8 9.8-4.6-1.2-8-4.8-8-9.8V6.5L12 3Z"/><path d="M9 12l2 2 4-4"/>',
+  building: '<rect x="4" y="3" width="10" height="18" rx="1"/><path d="M14 8h6v13h-6"/><path d="M7 7h1M10 7h1M7 10h1M10 10h1M7 13h1M10 13h1M7 16h1M10 16h1"/>',
+  sliders: '<path d="M4 6h10"/><path d="M17 6h3"/><circle cx="14" cy="6" r="2"/><path d="M4 12h3"/><path d="M10 12h10"/><circle cx="7" cy="12" r="2"/><path d="M4 18h10"/><path d="M17 18h3"/><circle cx="14" cy="18" r="2"/>',
+  cart: '<circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/><path d="M3 4h2l2.2 11.1a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6L21 8H6"/>',
+  pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  trash: '<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M10 11v6"/><path d="M14 11v6"/>',
+  check: '<path d="M5 12.5 9.5 17 19 7"/>',
+  close: '<path d="M6 6l12 12M18 6 6 18"/>',
+};
+
+function icon(name, size) {
+  const s = size || 18;
+  const body = ICONS[name] || '';
+  return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+}

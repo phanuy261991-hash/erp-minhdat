@@ -1,0 +1,139 @@
+erDiagram
+    ROLES ||--o{ USERS : "gan cho"
+    ROLES ||--o{ ROLE_PERMISSIONS : "co quyen"
+    USERS ||--o{ STOCK_RECEIPTS : "tao"
+    USERS ||--o{ STOCK_ISSUES : "tao"
+    PARTNERS ||--o{ STOCK_RECEIPTS : "la NCC"
+    PARTNERS ||--o{ STOCK_ISSUES : "la khach hang"
+    PARTNERS ||--o{ DEBT_LEDGER : "co cong no"
+    PRODUCTS ||--o{ STOCK_RECEIPT_ITEMS : "thuoc ve"
+    PRODUCTS ||--o{ STOCK_ISSUE_ITEMS : "thuoc ve"
+    PRODUCTS ||--o{ STOCK_MOVEMENTS : "bien dong"
+    STOCK_RECEIPTS ||--o{ STOCK_RECEIPT_ITEMS : "gom"
+    STOCK_ISSUES ||--o{ STOCK_ISSUE_ITEMS : "gom"
+    STOCK_RECEIPTS ||--o{ STOCK_MOVEMENTS : "phat sinh"
+    STOCK_ISSUES ||--o{ STOCK_MOVEMENTS : "phat sinh"
+
+    ROLES {
+        int id PK
+        string name
+        boolean is_protected "1 = Admin, khong sua/xoa duoc"
+        datetime created_at
+    }
+
+    ROLE_PERMISSIONS {
+        int role_id PK_FK
+        string module_key PK "kho, cong_no, bao_cao, nguoi_dung, cau_hinh..."
+    }
+
+    USERS {
+        int id PK
+        string username
+        string password_hash
+        string full_name
+        int role_id FK
+        boolean is_active
+        datetime created_at
+    }
+
+    COMPANY_SETTINGS {
+        int id PK "luon = 1, chi 1 dong duy nhat"
+        string company_name
+        string address
+        string tax_code
+        string email
+        string website
+        string phones "mang JSON dang text, tu 2 so tro len"
+        string bank_name
+        string bank_branch
+        string bank_account_number
+        string bank_account_holder
+        datetime updated_at
+    }
+
+    WAREHOUSE_SETTINGS {
+        string key PK "vd allow_negative_stock"
+        string value
+        datetime updated_at
+    }
+
+    PRODUCTS {
+        int id PK
+        string code
+        string name
+        string unit
+        real cost_price
+        real sale_price
+        int low_stock_threshold
+        datetime created_at
+    }
+
+    PARTNERS {
+        int id PK
+        string type "nha_cung_cap hoac khach_hang"
+        string name
+        string phone
+        string address
+        datetime created_at
+    }
+
+    STOCK_RECEIPTS {
+        int id PK
+        string code
+        int partner_id FK "nullable"
+        int created_by FK
+        string note
+        datetime created_at
+    }
+
+    STOCK_RECEIPT_ITEMS {
+        int id PK
+        int receipt_id FK
+        int product_id FK
+        real quantity
+        real unit_price
+    }
+
+    STOCK_ISSUES {
+        int id PK
+        string code
+        int partner_id FK "nullable"
+        int created_by FK
+        string note
+        string payment_status "da_thu_tien hoac cong_no"
+        datetime created_at
+    }
+
+    STOCK_ISSUE_ITEMS {
+        int id PK
+        int issue_id FK
+        int product_id FK
+        real quantity
+        real unit_price
+    }
+
+    STOCK_MOVEMENTS {
+        int id PK
+        int product_id FK
+        string movement_type
+        real quantity
+        string reference_type
+        int reference_id
+        datetime created_at
+    }
+
+    DEBT_LEDGER {
+        int id PK
+        int partner_id FK
+        string type
+        real amount
+        string reference_type
+        int reference_id
+        string note
+        datetime created_at
+    }
+
+    SCHEMA_MIGRATIONS {
+        int version PK
+        datetime applied_at
+    }

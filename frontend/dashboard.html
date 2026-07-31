@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tổng quan - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Trang chủ</p>
+      <div class="page-header">
+        <h2>Tổng quan</h2>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <p class="stat-card-label">Sản phẩm</p>
+          <p class="stat-card-value">--</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-card-label">Công nợ phải thu</p>
+          <p class="stat-card-value">--</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-card-label">Phiếu hôm nay</p>
+          <p class="stat-card-value">--</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script>
+    initLayout('dashboard');
+  </script>
+</body>
+</html>
