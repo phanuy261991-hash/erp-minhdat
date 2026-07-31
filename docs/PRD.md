@@ -54,14 +54,24 @@ Web app nội bộ, kiến trúc đơn giản (không microservices, không clou
 - Không xóa cứng tài khoản — chỉ khóa (`is_active = false`), vì tài khoản đã gắn với lịch sử phiếu nhập/xuất do người đó tạo (`created_by`), xóa cứng sẽ làm mất khả năng truy vết ai đã lập phiếu.
 - Không có cơ chế tự đăng ký (self sign-up) — mọi tài khoản đều do Admin tạo thủ công.
 
-### 4.2 Quản lý hàng tồn kho
-- Danh mục sản phẩm: mã, tên, đơn vị tính, giá vốn/giá bán tham chiếu.
+### 4.2 Quản lý hàng tồn kho (bổ sung 2026-07-31 — giá vốn, vô hiệu hóa, lịch sử)
+- Danh mục sản phẩm: mã, tên, đơn vị tính bắt buộc; giá bán bắt buộc; giá vốn tham chiếu và ngưỡng cảnh báo tồn kho thấp tùy chọn (mặc định 0).
 - Tồn kho hiện tại **không lưu là số cố định**, mà tính từ tổng cộng dồn các phiếu nhập/xuất — tránh lệch dữ liệu khi có lỗi giữa chừng.
-- Tìm kiếm, lọc theo tên/mã, cảnh báo tồn kho thấp (ngưỡng cấu hình theo sản phẩm).
+- Tìm kiếm theo tên/mã, sắp xếp theo tồn kho, cảnh báo rõ ràng (icon + màu riêng, không chỉ dựa màu) khi tồn kho ≤ ngưỡng cấu hình của sản phẩm.
+- **Giá vốn sản phẩm**: hệ thống chọn giữa 2 phương pháp tính, cấu hình chung toàn hệ thống tại "Cấu hình kho":
+  - **Bình quân gia quyền** (mặc định): giá vốn = trung bình có trọng số của các lô hàng còn tồn, tự động tính lại mỗi lần nhập hàng mới, không đổi khi xuất kho.
+  - **FIFO** (nhập trước, xuất trước): xuất kho được tính đúng theo giá của lô hàng nhập sớm nhất còn tồn.
+  - Mỗi lần xuất/nhập đều lưu lại giá vốn tại đúng thời điểm đó (không tính lại theo cấu hình hiện tại nếu sau này đổi phương pháp).
+- **Vô hiệu hóa sản phẩm**: người dùng có quyền module Kho có thể ngừng kinh doanh 1 sản phẩm (vẫn hiển thị trong danh mục kèm nhãn rõ ràng, chỉ không chọn được khi lập phiếu mới). **Xóa cứng** chỉ dành cho Admin, và chỉ khi sản phẩm chưa từng có trong phiếu nhập/xuất nào — nếu đã có lịch sử, chỉ được vô hiệu hóa.
+- **Trang chi tiết sản phẩm**: xem lịch sử nhập/xuất kho (kèm mã phiếu, giá vốn từng lần) và lịch sử chỉnh sửa thông tin sản phẩm (ai sửa, lúc nào, giá trị cũ/mới).
 
-### 4.3 Quản lý xuất/nhập kho
-- Lập phiếu nhập kho (theo nhà cung cấp) và phiếu xuất kho (theo khách hàng).
+### 4.3 Quản lý xuất/nhập kho (bổ sung 2026-07-31 — chiết khấu, thời gian nhập, mã đơn hàng)
+- Lập phiếu nhập kho (theo nhà cung cấp) và phiếu xuất kho (theo khách hàng). Có thể chọn đối tác có sẵn hoặc thêm nhanh đối tác mới ngay tại form (chưa cần vào trang quản lý đối tác riêng).
 - Mỗi phiếu = 1 transaction SQLite duy nhất (ghi phiếu + cập nhật tồn kho cùng lúc), đảm bảo không lệch dữ liệu nếu có lỗi giữa chừng.
+- **Thời gian nhập kho** có thể chỉnh khác thời điểm lập phiếu thực tế (vd nhập bổ sung dữ liệu trễ, hoặc nhập tồn đầu kỳ theo đúng ngày quá khứ) — dùng làm mốc thời gian thật cho tồn kho/giá vốn, ảnh hưởng đúng thứ tự tính FIFO/bình quân gia quyền.
+- **Chiết khấu**: mỗi dòng sản phẩm trong phiếu nhập có thể nhập % chiết khấu riêng — giá vốn ghi nhận là giá sau chiết khấu, số tiền gốc trên hóa đơn vẫn giữ nguyên để đối chiếu. Tổng thành tiền (sau chiết khấu) hiển thị trực tiếp trên form khi lập phiếu.
+- **Mã đơn hàng**: trường tự do (không bắt buộc) ghi số hóa đơn/đơn hàng của nhà cung cấp, khác với mã phiếu nội bộ hệ thống tự sinh — dùng để đối chiếu sau này.
+- **Tồn đầu kỳ**: dùng cơ chế phiếu nhập kho thông thường, không chọn nhà cung cấp, ghi chú rõ là "Nhập tồn đầu kỳ".
 - Lịch sử biến động kho, tra cứu theo sản phẩm/khoảng thời gian.
 
 ### 4.4 Quản lý công nợ nhà cung cấp & khách hàng

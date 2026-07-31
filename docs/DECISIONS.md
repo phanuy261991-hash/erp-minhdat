@@ -79,6 +79,47 @@ Có cấu hình quản trị cho phép chuyển sang chế độ "xuất trướ
 **Phạm vi gộp**: chỉ migration (bảng `partners` + FK từ `stock_receipts`/`stock_issues`). **Không** gộp API (`/api/partners`) hay frontend (`partners.html`) — 2 phần đó vẫn ở Phase 3 như kế hoạch gốc, cùng với `debt_ledger` và `debt.service.js`.
 **Xác nhận lại 2026-08-01 (phiên sau)**: người dùng xác nhận quyết định này đã chốt đúng như trên, đồng bộ vào `Plan.md`/`TASK.md` trước khi bắt đầu code Phase 2.
 
+## 2026-07-31 — Phase 2: trang Danh mục sản phẩm (vô hiệu hóa/xóa, tồn kho thấp)
+
+**Bối cảnh**: khi làm trang `products.html`, người dùng yêu cầu thêm 3 việc ngoài CRUD cơ bản đã lên kế hoạch: (1) vô hiệu hóa dành cho người dùng thường, xóa cứng chỉ Admin, (2) tìm kiếm + cảnh báo tồn kho thấp + sắp xếp theo tồn kho, (3) trường bắt buộc khi tạo sản phẩm.
+
+- **Trường bắt buộc**: `code`/`name`/`unit`/`sale_price` bắt buộc; `cost_price`/`low_stock_threshold` tùy chọn (mặc định 0).
+- **Vô hiệu hóa** (`products.is_active`, migration `006_products_is_active.sql`): quyền module `kho` (không riêng Admin). Sản phẩm vô hiệu hóa **vẫn hiển thị** trong danh sách (kèm badge "Ngừng kinh doanh"), chỉ không chọn được khi lập phiếu nhập/xuất mới (chặn ở cả `stockReceipt.service.js` và `stockIssue.service.js`, không chỉ ẩn ở dropdown frontend).
+- **Xóa cứng**: chỉ Admin (`req.session.user.is_protected`), và chỉ khi sản phẩm **chưa từng có dòng nào trong `stock_movements`** — nếu đã có lịch sử, chặn xóa và báo chỉ vô hiệu hóa được (giữ đúng nguyên tắc lịch sử ledger của `CLAUDE.md`).
+- **UI**: cảnh báo tồn kho thấp dùng màu amber riêng (`--color-warning: #b45309`) + icon, khác hẳn màu xám của badge "Ngừng kinh doanh" để không lẫn khi cả 2 cùng xuất hiện 1 dòng. Nút "Thêm X" đầu trang đổi từ `.icon-btn` (viền mờ) sang `.btn-add` (nền gradient xanh đậm) — áp dụng đồng bộ cho cả `users.html`/`roles.html` theo yêu cầu người dùng, tránh 3 trang lệch phong cách.
+
+## 2026-07-31 — Phase 2: giá vốn sản phẩm (bình quân gia quyền / FIFO)
+
+**Bối cảnh**: người dùng đặt vấn đề giá vốn thay đổi mỗi lần nhập hàng (giá mua khác nhau giữa các lần) cần giải quyết thế nào cho đúng.
+
+**Quyết định**: hỗ trợ **2 phương pháp**, chọn được qua **Cấu hình kho** (`warehouse_settings.costing_method`, giá trị `'binh_quan_gia_quyen'` mặc định hoặc `'fifo'`):
+- **Bình quân gia quyền**: tính **on-the-fly** (không lưu số cố định) từ các lô hàng (`stock_lots`) còn tồn — `SUM(quantity_remaining * unit_cost) / SUM(quantity_remaining)`. Xuất hàng không làm đổi giá bình quân của phần còn lại (perpetual moving average).
+- **FIFO**: `stock_lots` theo dõi từng lô nhập riêng (giá + số lượng còn lại), khi xuất kho trừ dần theo lô cũ nhất trước.
+- **`stock_lots` luôn được duy trì và trừ dần theo đúng thứ tự cũ nhất trước** (FIFO vật lý) **bất kể đang chọn phương pháp nào** — lô hàng là sự thật vật lý (nhập lúc nào, giá bao nhiêu, còn lại bao nhiêu), còn `costing_method` chỉ quyết định **cách tính** giá vốn ghi vào phiếu xuất để báo cáo (bình quân toàn bộ tồn, hay đúng giá các lô bị trừ).
+- **Snapshot giá vốn**: mỗi dòng `stock_movements` lưu `unit_cost` tại đúng thời điểm phát sinh (migration `007_costing_and_product_history.sql`) — không tính lại theo cấu hình hiện tại, tránh báo cáo quá khứ bị đổi ngược khi người dùng đổi `costing_method` sau này.
+- **Chiết khấu phiếu nhập ảnh hưởng giá vốn**: chiết khấu theo % từng dòng (migration `008_receipt_discount.sql`, cột `stock_receipt_items.discount_percent`) — giá vốn ghi vào `stock_lots`/`stock_movements` là **giá sau chiết khấu (net)** = `unit_price * (1 - discount_percent/100)`; `unit_price` trong `stock_receipt_items` vẫn giữ giá gốc để đối chiếu hóa đơn NCC. Chiết khấu tổng đơn (áp dụng toàn phiếu, ngoài chiết khấu từng dòng) **để sau, chưa làm**.
+- **Thời gian nhập kho tùy chỉnh**: cho phép chọn ngày/giờ khác lúc bấm lưu (ô "Thời gian nhập" trên form) — giá trị này dùng làm `created_at` **thật** cho phiếu + toàn bộ `stock_receipt_items`/`stock_movements`/`stock_lots` liên quan, **ảnh hưởng trực tiếp thứ tự tiêu thụ FIFO và tính bình quân gia quyền** (lô nhập ghi ngày sớm hơn được coi là lô cũ hơn, tiêu thụ trước) — đây là chủ đích, không phải tác dụng phụ, vì phản ánh đúng thời điểm hàng thực tế về kho hơn là thời điểm nhập liệu vào hệ thống.
+- **Mã đơn hàng** (`stock_receipts.order_code`, migration `009_receipt_order_code.sql`): trường tự do, không bắt buộc, dùng ghi số hóa đơn/đơn hàng của NCC để đối chiếu — khác với `code` nội bộ hệ thống tự sinh (`PN000001`...).
+- Đã test kỹ bằng số liệu thật qua curl + trình duyệt (2 lô giá khác nhau → bình quân đúng công thức; chuyển FIFO → xuất đúng giá lô cũ nhất; chiết khấu 10% → giá vốn giảm đúng tỷ lệ).
+
+## 2026-07-31 — Phase 2: trang chi tiết sản phẩm (lịch sử nhập/xuất + lịch sử chỉnh sửa)
+
+**Quyết định**: thêm trang `product-detail.html` (link từ icon "mắt" trên `products.html`) hiển thị 2 loại lịch sử:
+- **Lịch sử nhập/xuất kho**: lấy trực tiếp từ `stock_movements` (đã có sẵn), kèm mã phiếu gốc + giá vốn snapshot từng lần.
+- **Lịch sử chỉnh sửa thông tin sản phẩm**: bảng mới `product_change_log` (migration `007`, cùng đợt với giá vốn) — ghi lại field nào đổi, giá trị cũ/mới, ai sửa, lúc nào — chỉ ghi khi `PUT /api/products/:id` thực sự làm thay đổi giá trị (so sánh trước khi update).
+
+## 2026-07-31 — Phase 2: API đối tác rút gọn (quick-add) + quyền tạo đối tác
+
+**Bối cảnh**: form lập phiếu nhập kho cần chọn/thêm nhanh nhà cung cấp, nhưng trang quản lý đối tác đầy đủ vẫn ở Phase 3 (theo quyết định gộp `partners` trước đó — xem mục 2026-08-01 "Gộp bảng `partners`").
+
+**Quyết định**:
+- Tạo `backend/routes/partners.routes.js` **phiên bản rút gọn**: chỉ `GET /api/partners?type=` (danh sách) + `POST /api/partners` (tạo nhanh) — CRUD đầy đủ (sửa/xóa, trang `partners.html` quản lý riêng) vẫn để Phase 3.
+- **Quyền tạo đối tác**: ban đầu `docs/Plan.md` gán module `cong_no` cho `POST /api/partners`, nhưng người thực hiện thao tác "thêm nhanh NCC" thực tế là thủ kho (quyền `kho`), không phải kế toán. **Chốt lại**: cho phép **1 trong 2 quyền `kho` hoặc `cong_no`** — thêm middleware mới `requireAnyPermission(moduleKeys)` (file `backend/middleware/requirePermission.js`, chỉ thêm hàm mới, không đổi `requirePermission` cũ) để hỗ trợ trường hợp này. Cần cập nhật lại `docs/Plan.md` mục 3 (API Endpoints) cho khớp.
+
+## 2026-07-31 — Quy tắc bố cục form (form-row): ghép trường ngắn theo chiều ngang
+
+**Quyết định**: khi thiết kế form nhập liệu mới, các trường ngắn (ngày giờ, mã, dropdown, text ngắn) nên ghép 2 trường/dòng theo chiều ngang (class `.form-row` mới trong `style.css`) thay vì luôn xếp dọc từng trường — tránh form bị kéo dài quá mức. Chỉ giữ 1 trường/dòng khi nội dung thực sự cần toàn bộ chiều rộng (ghi chú dài, bảng dòng sản phẩm động). Đã áp dụng lại cho `stock-receipts.html` (Nhà cung cấp+Thời gian nhập, Mã đơn hàng+Ghi chú). Áp dụng cho mọi form từ giờ trở đi — chi tiết xem `docs/DESIGN-SYSTEM.md`.
+
 ## Open questions — chưa chốt
 
 Xem chi tiết tại `docs/PRD.md` mục 10 và `.claude/docs/inventory-debt-ledger.md` mục "Edge case":

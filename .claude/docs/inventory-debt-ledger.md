@@ -18,6 +18,8 @@ GROUP BY product_id;
 
 `movement_type` chỉ nhận 2 giá trị: `in` (nhập) hoặc `out` (xuất). Mỗi dòng trong `stock_movements` phải có `reference_type` (`receipt` hoặc `issue`) và `reference_id` trỏ về `stock_receipts.id` hoặc `stock_issues.id` tương ứng, để truy ngược được phiếu gốc khi cần đối chiếu.
 
+**Giá vốn** (bổ sung Phase 2, xem `docs/DECISIONS.md` mục "giá vốn"): mỗi dòng `stock_movements` có thêm cột `unit_cost` — snapshot giá vốn tại đúng thời điểm phát sinh, tính theo `costing_method` đang chọn (`backend/services/costing.service.js`), **không tính lại** khi cấu hình đổi sau này. Bảng `stock_lots` theo dõi từng lô hàng nhập (giá + số lượng còn lại), luôn được tạo khi nhập và trừ dần theo thứ tự cũ nhất trước (FIFO vật lý) khi xuất — bất kể `costing_method` đang chọn là bình quân gia quyền hay FIFO (costing_method chỉ quyết định cách TÍNH giá ghi sổ, không quyết định lô nào bị trừ).
+
 ## Công thức số dư công nợ
 
 ```sql
@@ -36,17 +38,13 @@ Khi tạo phiếu nhập hoặc phiếu xuất, các bước sau **bắt buộc 
 
 1. Insert vào `stock_receipts`/`stock_issues`.
 2. Insert từng dòng vào `stock_receipt_items`/`stock_issue_items`.
-3. Insert dòng tương ứng vào `stock_movements` cho mỗi sản phẩm trong phiếu.
-4. Nếu phiếu phát sinh công nợ (ví dụ xuất hàng nhưng khách chưa trả tiền), insert dòng vào `debt_ledger`.
+3. Insert dòng tương ứng vào `stock_movements` cho mỗi sản phẩm trong phiếu (kèm `unit_cost` snapshot). Với phiếu nhập, tạo thêm 1 dòng `stock_lots` cho mỗi sản phẩm; với phiếu xuất, trừ dần `quantity_remaining` của các lô liên quan theo FIFO (xem `costing.service.js`).
+4. Nếu phiếu phát sinh công nợ (ví dụ xuất hàng nhưng khách chưa trả tiền), insert dòng vào `debt_ledger` (**Phase 3, chưa code** — cột `stock_issues.payment_status` đã có sẵn từ Phase 2 để chuẩn bị cho việc này).
 
-Nếu bất kỳ bước nào lỗi, toàn bộ transaction phải rollback — không được để phiếu tồn tại mà thiếu movement, hoặc ngược lại.
+Nếu bất kỳ bước nào lỗi, toàn bộ transaction phải rollback — không được để phiếu tồn tại mà thiếu movement, hoặc ngược lại. Đã test qua curl: sản phẩm không tồn tại giữa transaction → rollback đúng, không tạo phiếu.
 
-## Edge case — chưa chốt, cần xác nhận trước khi code Phase 2/3
+## Các quy tắc nghiệp vụ đã chốt (trước đây ghi "edge case chưa chốt" — đã cập nhật 2026-07-31 cho khớp thực tế)
 
-Các điểm sau **chưa được thảo luận** trong quá trình thiết kế, không tự giả định khi implement:
-
-- Có cho phép lập phiếu xuất khi tồn kho không đủ không, hay phải chặn cứng? (ảnh hưởng validation trong `stockIssue.service.js`)
-- Phiếu xuất có luôn phát sinh công nợ, hay chỉ khi người dùng chọn "chưa thu tiền ngay"? (ảnh hưởng có cần thêm cột `payment_status` vào `stock_issues` hay để người dùng tạo dòng `debt_ledger` thủ công)
-- Có cho phép sửa/hủy phiếu đã tạo không, hay chỉ tạo phiếu điều chỉnh bù trừ (phiếu mới ghi ngược dấu)? Cách phổ biến trong kế toán là dùng phiếu điều chỉnh thay vì sửa/xóa để giữ lịch sử — nhưng cần người dùng xác nhận trước khi code.
-
-Khi gặp các case này lúc code Phase 2/3 (theo `Plan.md`), hỏi lại người dùng thay vì tự quyết định — vì đây là quy tắc nghiệp vụ ảnh hưởng trực tiếp đến độ chính xác số liệu công nợ/tồn kho.
+- **Tồn kho không đủ khi xuất**: mặc định chặn cứng; có cấu hình `warehouse_settings.allow_negative_stock` cho phép xuất trước nhập bù sau (đã code + test trong `stockIssue.service.js`).
+- **Công nợ từ phiếu xuất**: chỉ phát sinh khi `stock_issues.payment_status = 'cong_no'` (cột đã có từ migration Phase 2) — việc thực sự ghi `debt_ledger` là **Phase 3, chưa code**.
+- **Sửa/hủy phiếu đã tạo**: không cho sửa/xóa trực tiếp — chỉ tạo phiếu điều chỉnh bù trừ (phiếu mới ghi ngược dấu) để giữ lịch sử. **Quyết định đã chốt nhưng cơ chế phiếu điều chỉnh vẫn chưa code** (xem `docs/TASK.md` Phase 2, mục còn treo).

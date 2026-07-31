@@ -53,6 +53,32 @@
 - Ô dữ liệu dùng `white-space: nowrap` — **không để chữ tự xuống dòng trong bảng** (từng gây lỗi hiển thị xấu khi test thực tế), nếu nội dung quá dài thì cắt bằng `text-overflow: ellipsis` kèm `title` thay vì để wrap.
 - Trạng thái dùng `.badge`/`.badge-active`/`.badge-inactive` (có màu + chữ, không dùng màu đơn thuần).
 - Nút hành động trong bảng dùng `.icon-btn` (kèm `.icon-btn-danger` cho hành động phá hủy/khóa, `:disabled` khi không được phép thao tác — ví dụ tự khóa chính mình).
+- **Nút hành động chính đầu trang** (vd "Thêm sản phẩm"/"Thêm tài khoản"/"Thêm vai trò"/"Lập phiếu nhập"): dùng `.btn-add` (nền gradient xanh đậm + shadow, giống độ nổi bật của `.btn-primary`) — **không dùng `.icon-btn`** cho nút này (`.icon-btn` chỉ dành cho hành động nhỏ trong bảng như Sửa/Khóa, quá mờ nhạt cho hành động chính của cả trang). Đã chốt 2026-07-31 sau khi người dùng phản hồi nút "Thêm sản phẩm" không nổi bật — áp dụng đồng bộ lại cho cả `users.html`/`roles.html`.
+- **Tìm kiếm + sắp xếp trong bảng** (bổ sung 2026-07-31, `products.html`): ô tìm kiếm dùng `.search-box`/`.search-input` (icon kính lúp trong input, tái dùng cấu trúc `.input-wrap`/`.input-icon` của `login.html`) đặt trong `.page-header-actions` cùng hàng với nút `.btn-add`. Cột có thể sắp xếp dùng `.sortable-th` (con trỏ pointer, icon mũi tên `chevronUp`/`chevronDown` đổi theo chiều, mờ khi chưa active).
+- **Cảnh báo tồn kho thấp** (`products.html`): dùng class `.stock-low` (chữ đậm + icon tam giác cảnh báo, màu `--color-warning: #b45309` — tông amber riêng, **khác hẳn** màu xám của `.badge-inactive` và xanh của `.badge-active` để không lẫn khi cả 2 loại cảnh báo cùng xuất hiện trên 1 dòng). Không dùng nền pastel nhạt cho cảnh báo này — cần nổi bật hơn badge trạng thái thông thường vì mang tính hành động (cần nhập thêm hàng).
+
+## Form nhiều dòng động + tìm kiếm gợi ý (dùng cho phiếu nhập/xuất kho)
+
+> Bổ sung 2026-07-31 khi làm `stock-receipts.html`. Áp dụng cho mọi phiếu có danh sách dòng sản phẩm động (Nhập kho, Xuất kho, sau này có thể cả module Bán hàng).
+
+- **Modal rộng cho form nhiều cột**: dùng `class="modal-card modal-card-lg"` (880px, thay vì mặc định 420px của `.modal-card`) khi form có bảng dòng động hoặc nhiều trường — không tự chỉnh width riêng lẻ cho từng trang.
+- **Combobox tìm sản phẩm** (`.combobox`/`.combobox-suggestions`/`.combobox-option`): thay cho `<select>` thường vì danh mục sản phẩm có thể nhiều — gõ để lọc theo mã/tên, click chọn từ danh sách gợi ý (tối đa ~8 kết quả), tự đóng khi bấm ra ngoài. Chỉ hiện sản phẩm `is_active=1`.
+- **Bảng dòng động** (`.item-rows-header`/`.item-rows`/`.item-row`, grid nhiều cột cố định theo px + 1 cột `1fr` cho tên sản phẩm): mỗi dòng có nút xóa riêng (`.item-row-remove`, giữ tối thiểu 1 dòng), nút `.btn-add-row` để thêm dòng mới. Trường chỉ-đọc tự động điền (vd đơn vị tính lấy từ hồ sơ sản phẩm khi chọn) hiển thị bằng `<div>` tĩnh (`.item-unit-display`), không phải `<input readonly>`, để không tạo cảm giác có thể sửa.
+- **Tính tổng trực tiếp**: thành tiền từng dòng (`.item-line-total`) và tổng thành tiền toàn phiếu (`.receipt-total-row`, chữ lớn + màu primary để nổi bật) cập nhật ngay khi người dùng gõ số lượng/đơn giá/chiết khấu — không chờ submit mới tính.
+
+## Chọn 1 trong nhiều phương án có mô tả dài (khác với lưới chọn nhiều mục ngắn)
+
+> Bổ sung 2026-07-31 khi làm phần chọn phương pháp tính giá vốn (`warehouse-settings.html`). **Khác với** mục "Bài học khi làm lưới chọn nhiều mục" bên dưới (dùng cho chip ngắn gọn kiểu tên module) — pattern này dành cho khi mỗi lựa chọn cần kèm 1-2 dòng mô tả giải thích, và chỉ chọn được 1 trong nhiều.
+
+- Dùng `.method-group` (card xếp dọc, không phải lưới ngang) chứa các `.method-option` (radio ẩn + `.method-option-radio` vẽ tay dạng chấm tròn + tiêu đề đậm + mô tả màu muted bên dưới). Trạng thái chọn: viền + nền `--color-muted` + chấm radio fill màu primary (qua `:has()`), không fill toàn bộ card bằng gradient như `.module-option` — vì card ở đây chứa nhiều chữ, fill đặc cả nền sẽ giảm độ tương phản đọc mô tả.
+
+## Bố cục ngang cho form (form-row) — ghép trường ngắn thay vì xếp dọc
+
+> Bổ sung 2026-07-31 theo phản hồi người dùng sau khi xem `stock-receipts.html` — form xếp toàn bộ trường theo chiều dọc (mỗi trường 1 dòng) làm modal bị kéo dài không cần thiết.
+
+- Dùng `.form-row` (flex row, gap 16px) bọc 2 `.form-field` ngắn (ngày giờ, mã, dropdown, text ngắn) để chúng nằm cùng 1 hàng, giãn theo chiều ngang thay vì xếp chồng theo chiều dọc.
+- **Chỉ áp dụng cho trường ngắn.** Giữ nguyên 1 trường/dòng (không bọc `.form-row`) cho nội dung cần toàn bộ chiều rộng: ghi chú nhiều chữ, bảng dòng sản phẩm động, danh sách chọn nhiều mục.
+- Áp dụng cho **mọi form nhập liệu mới từ giờ trở đi** (Xuất kho, Đối tác, Công nợ...), không chỉ riêng phiếu nhập kho.
 
 ## Trang cấu hình (settings) — vd Thông tin công ty, Cấu hình kho
 
@@ -93,5 +119,5 @@
 
 ## Áp dụng
 
-- Đã áp dụng: `frontend/login.html`, `frontend/dashboard.html`, `frontend/users.html` (2026-07-31); `frontend/roles.html`, `frontend/company-settings.html`, `frontend/warehouse-settings.html`, `frontend/sales-settings.html` (2026-08-01, Phase 1.6).
-- Các trang sau (Phase 2 trở đi) phải dùng lại đúng biến màu, font, spacing, khung điều hướng, class bảng dữ liệu, và các class trang cấu hình (mục "Trang cấu hình") ở trên để đồng bộ toàn hệ thống — không tự tạo style riêng cho từng trang.
+- Đã áp dụng: `frontend/login.html`, `frontend/dashboard.html`, `frontend/users.html` (2026-07-31); `frontend/roles.html`, `frontend/company-settings.html`, `frontend/warehouse-settings.html`, `frontend/sales-settings.html` (2026-08-01, Phase 1.6); `frontend/products.html`, `frontend/product-detail.html`, `frontend/stock-receipts.html` (2026-07-31, Phase 2 — dùng thêm pattern mới: `.btn-add`, `.search-box`/`.sortable-th`, `.stock-low`, `.method-group`, `.item-rows`/`.combobox`, `.form-row`).
+- Các trang sau (Phase 2 trở đi, vd `stock-issues.html`) phải dùng lại đúng biến màu, font, spacing, khung điều hướng, class bảng dữ liệu, các class trang cấu hình, và các pattern form/bảng động mới ở trên để đồng bộ toàn hệ thống — không tự tạo style riêng cho từng trang.

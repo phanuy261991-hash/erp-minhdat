@@ -9,10 +9,14 @@ erDiagram
     PRODUCTS ||--o{ STOCK_RECEIPT_ITEMS : "thuoc ve"
     PRODUCTS ||--o{ STOCK_ISSUE_ITEMS : "thuoc ve"
     PRODUCTS ||--o{ STOCK_MOVEMENTS : "bien dong"
+    PRODUCTS ||--o{ STOCK_LOTS : "co lo hang"
+    PRODUCTS ||--o{ PRODUCT_CHANGE_LOG : "co lich su sua"
+    USERS ||--o{ PRODUCT_CHANGE_LOG : "nguoi sua"
     STOCK_RECEIPTS ||--o{ STOCK_RECEIPT_ITEMS : "gom"
     STOCK_ISSUES ||--o{ STOCK_ISSUE_ITEMS : "gom"
     STOCK_RECEIPTS ||--o{ STOCK_MOVEMENTS : "phat sinh"
     STOCK_ISSUES ||--o{ STOCK_MOVEMENTS : "phat sinh"
+    STOCK_RECEIPTS ||--o{ STOCK_LOTS : "tao lo"
 
     ROLES {
         int id PK
@@ -52,7 +56,7 @@ erDiagram
     }
 
     WAREHOUSE_SETTINGS {
-        string key PK "vd allow_negative_stock"
+        string key PK "allow_negative_stock, costing_method (binh_quan_gia_quyen|fifo)..."
         string value
         datetime updated_at
     }
@@ -62,9 +66,30 @@ erDiagram
         string code
         string name
         string unit
-        real cost_price
+        real cost_price "gia von nhap tay/tham chieu - gia von THUC TE tinh tu STOCK_LOTS"
         real sale_price
         int low_stock_threshold
+        boolean is_active "0 = ngung kinh doanh, van hien trong danh sach"
+        datetime created_at
+    }
+
+    STOCK_LOTS {
+        int id PK
+        int product_id FK
+        int receipt_id FK
+        real unit_cost "gia von cua lo - da tru chiet khau (net)"
+        real quantity_received
+        real quantity_remaining "tru dan theo FIFO khi xuat, bat ke costing_method"
+        datetime created_at
+    }
+
+    PRODUCT_CHANGE_LOG {
+        int id PK
+        int product_id FK
+        int changed_by FK
+        string field_name
+        string old_value
+        string new_value
         datetime created_at
     }
 
@@ -79,11 +104,12 @@ erDiagram
 
     STOCK_RECEIPTS {
         int id PK
-        string code
+        string code "ma noi bo tu sinh PN000001..."
+        string order_code "ma hoa don/don hang cua NCC, tu do, khong bat buoc"
         int partner_id FK "nullable"
         int created_by FK
         string note
-        datetime created_at
+        datetime created_at "co the chinh khi lap phieu - anh huong thu tu FIFO/binh quan gia quyen"
     }
 
     STOCK_RECEIPT_ITEMS {
@@ -91,7 +117,8 @@ erDiagram
         int receipt_id FK
         int product_id FK
         real quantity
-        real unit_price
+        real unit_price "gia goc, chua tru chiet khau - doi chieu hoa don NCC"
+        real discount_percent "0-100, gia von thuc te = unit_price * (1 - discount_percent/100)"
     }
 
     STOCK_ISSUES {
@@ -117,6 +144,7 @@ erDiagram
         int product_id FK
         string movement_type
         real quantity
+        real unit_cost "snapshot gia von tai thoi diem phat sinh - khong tinh lai ve sau"
         string reference_type
         int reference_id
         datetime created_at

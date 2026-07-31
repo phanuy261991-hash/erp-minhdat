@@ -23,25 +23,31 @@ project-root/
 │  │     ├─ 001_init.sql               (đã có) users, schema_migrations
 │  │     ├─ 002_roles_permissions.sql  (đã có) roles, role_permissions, users.role→role_id
 │  │     ├─ 003_company_warehouse_settings.sql (đã có) company_settings, warehouse_settings
-│  │     └─ 004_company_settings_extra_fields.sql (đã có) email/website/bank_branch, phone→phones (JSON)
+│  │     ├─ 004_company_settings_extra_fields.sql (đã có) email/website/bank_branch, phone→phones (JSON)
+│  │     ├─ 005_phase2_kho.sql          (đã có) partners, products, stock_receipts(_items), stock_issues(_items), stock_movements
+│  │     ├─ 006_products_is_active.sql (đã có) products.is_active (vô hiệu hóa)
+│  │     ├─ 007_costing_and_product_history.sql (đã có) stock_lots, stock_movements.unit_cost, product_change_log, seed costing_method
+│  │     ├─ 008_receipt_discount.sql   (đã có) stock_receipt_items.discount_percent
+│  │     └─ 009_receipt_order_code.sql (đã có) stock_receipts.order_code
 │  ├─ middleware/
 │  │  ├─ auth.js                       (đã có) requireAuth (kiểm tra session)
-│  │  └─ requirePermission.js          (đã có) kiểm tra quyền module qua role_permissions
+│  │  └─ requirePermission.js          (đã có) requirePermission(module) + requireAnyPermission([module,...])
 │  ├─ routes/
 │  │  ├─ auth.routes.js                (đã có) login/logout/me
 │  │  ├─ users.routes.js               (đã có) CRUD tài khoản
 │  │  ├─ roles.routes.js               (đã có) CRUD vai trò
 │  │  ├─ companySettings.routes.js     (đã có) GET/PUT thông tin công ty
-│  │  ├─ warehouseSettings.routes.js   (đã có) GET/PUT cấu hình kho
-│  │  ├─ products.routes.js            Phase 2
-│  │  ├─ partners.routes.js            Phase 3
-│  │  ├─ stockReceipts.routes.js       Phase 2
-│  │  ├─ stockIssues.routes.js         Phase 2
+│  │  ├─ warehouseSettings.routes.js   (đã có) GET/PUT cấu hình kho (gồm costing_method)
+│  │  ├─ products.routes.js            (đã có) CRUD + vô hiệu hóa/xóa + chi tiết/lịch sử (Phase 2)
+│  │  ├─ partners.routes.js            (đã có, bản rút gọn) GET danh sách + POST tạo nhanh — CRUD đầy đủ vẫn Phase 3
+│  │  ├─ stockReceipts.routes.js       (đã có) Phase 2
+│  │  ├─ stockIssues.routes.js         (đã có) Phase 2
 │  │  ├─ debts.routes.js               Phase 3
 │  │  └─ reports.routes.js             Phase 4
 │  └─ services/
-│     ├─ stockReceipt.service.js       Phase 2 — transaction: tạo phiếu nhập + movements
-│     ├─ stockIssue.service.js         Phase 2 — transaction: tạo phiếu xuất + movements
+│     ├─ stockReceipt.service.js       (đã có) transaction: tạo phiếu nhập + movements + lô hàng
+│     ├─ stockIssue.service.js         (đã có) transaction: tạo phiếu xuất + movements, tiêu thụ lô
+│     ├─ costing.service.js            (đã có) tính giá vốn bình quân gia quyền/FIFO (Phase 2)
 │     └─ debt.service.js               Phase 3 — ghi nợ/thanh toán
 ├─ frontend/
 │  ├─ login.html                       (đã có)
@@ -49,11 +55,12 @@ project-root/
 │  ├─ users.html                       (đã có) quản lý người dùng
 │  ├─ roles.html                       (đã có) quản lý vai trò (CRUD + chọn module)
 │  ├─ company-settings.html            (đã có) thông tin công ty (2 card song song)
-│  ├─ warehouse-settings.html          (đã có) cấu hình kho (toggle allow_negative_stock)
+│  ├─ warehouse-settings.html          (đã có) cấu hình kho (allow_negative_stock + costing_method)
 │  ├─ sales-settings.html              (đã có) khung trống "Cấu hình bán hàng" — chưa có nội dung
-│  ├─ products.html                    Phase 2
-│  ├─ stock-receipts.html              Phase 2
-│  ├─ stock-issues.html                Phase 2
+│  ├─ products.html                    (đã có) danh mục sản phẩm (tìm kiếm, sắp xếp, cảnh báo tồn thấp)
+│  ├─ product-detail.html              (đã có, ngoài kế hoạch ban đầu) chi tiết sản phẩm + 2 lịch sử
+│  ├─ stock-receipts.html              (đã có) lập phiếu nhập (combobox sản phẩm, chiết khấu, thời gian nhập tùy chỉnh)
+│  ├─ stock-issues.html                Phase 2 — chưa làm
 │  ├─ print-issue.html                 Phase 4 — trang in phiếu riêng, dùng @media print
 │  ├─ partners.html                    Phase 3
 │  ├─ debts.html                       Phase 3
@@ -68,6 +75,9 @@ project-root/
 │     ├─ roles.js                      (đã có) logic trang roles.html
 │     ├─ company-settings.js           (đã có) logic trang company-settings.html
 │     ├─ warehouse-settings.js         (đã có) logic trang warehouse-settings.html
+│     ├─ products.js                   (đã có) logic trang products.html
+│     ├─ product-detail.js             (đã có) logic trang product-detail.html
+│     ├─ stock-receipts.js             (đã có) logic trang stock-receipts.html
 │     └─ fonts/                        (đã có) file .woff2 host offline + fonts.css
 ├─ data/
 │  └─ data.db                          (đã có) file SQLite, backup định kỳ (Phase 5, chưa có script)
@@ -83,14 +93,16 @@ project-root/
 | `roles` | id PK, name, is_protected, created_at | is_protected=1 cho vai trò Admin — không cho sửa tên/xóa |
 | `role_permissions` | role_id FK(roles), module_key, PRIMARY KEY(role_id, module_key) | 1 dòng = 1 module vai trò đó được truy cập; module_key là hằng số cố định trong code (không phải bảng riêng) |
 | `company_settings` | id PK (CHECK id=1), company_name, address, tax_code, email, website, phones, bank_name, bank_branch, bank_account_number, bank_account_holder, updated_at | chỉ 1 dòng duy nhất; `phones` lưu mảng JSON dạng text (cho nhập từ 2 số trở lên) — không tách bảng riêng vì luôn gắn 1-1 với dòng duy nhất này |
-| `warehouse_settings` | key PK, value, updated_at | dạng key-value, mở rộng dần; key đầu tiên: `allow_negative_stock` |
-| `products` | id PK, code, name, unit, cost_price, sale_price, low_stock_threshold, created_at | tồn kho không lưu ở đây |
+| `warehouse_settings` | key PK, value, updated_at | dạng key-value, mở rộng dần; key: `allow_negative_stock`, `costing_method` (`binh_quan_gia_quyen` mặc định hoặc `fifo`) |
+| `products` | id PK, code, name, unit, cost_price, sale_price, low_stock_threshold, is_active, created_at | tồn kho không lưu ở đây; `cost_price` là giá tham chiếu nhập tay, giá vốn thực tế tính từ `stock_lots` (xem `costing.service.js`); `is_active=0` = vô hiệu hóa (vẫn hiện, không chọn được khi lập phiếu mới) |
 | `partners` | id PK, type, name, phone, address, created_at | type ∈ {nha_cung_cap, khach_hang} |
-| `stock_receipts` | id PK, code, partner_id FK, created_by FK(users), note, created_at | phiếu nhập |
-| `stock_receipt_items` | id PK, receipt_id FK, product_id FK, quantity, unit_price | dòng chi tiết phiếu nhập |
-| `stock_issues` | id PK, code, partner_id FK, created_by FK(users), note, created_at | phiếu xuất |
+| `stock_receipts` | id PK, code, order_code, partner_id FK, created_by FK(users), note, created_at | phiếu nhập; `code` tự sinh nội bộ (PN000001...), `order_code` là số hóa đơn/đơn hàng của NCC (tự do, không bắt buộc); `created_at` có thể chỉnh khi lập phiếu — ảnh hưởng thứ tự FIFO/bình quân gia quyền |
+| `stock_receipt_items` | id PK, receipt_id FK, product_id FK, quantity, unit_price, discount_percent | dòng chi tiết phiếu nhập; `unit_price` là giá gốc, `discount_percent` (0-100%) — giá vốn thực tế = `unit_price * (1 - discount_percent/100)` |
+| `stock_issues` | id PK, code, partner_id FK, created_by FK(users), note, payment_status, created_at | phiếu xuất |
 | `stock_issue_items` | id PK, issue_id FK, product_id FK, quantity, unit_price | dòng chi tiết phiếu xuất |
-| `stock_movements` | id PK, product_id FK, movement_type, quantity, reference_type, reference_id, created_at | ledger biến động kho — tồn kho = SUM(movement) theo product |
+| `stock_movements` | id PK, product_id FK, movement_type, quantity, unit_cost, reference_type, reference_id, created_at | ledger biến động kho — tồn kho = SUM(movement) theo product; `unit_cost` là snapshot giá vốn tại thời điểm phát sinh (không tính lại về sau) |
+| `stock_lots` | id PK, product_id FK, receipt_id FK, unit_cost, quantity_received, quantity_remaining, created_at | 1 dòng = 1 lô hàng nhập; `quantity_remaining` trừ dần theo thứ tự cũ nhất trước (FIFO vật lý) bất kể `costing_method` đang chọn; dùng để tính giá vốn bình quân gia quyền/FIFO (xem `costing.service.js`) |
+| `product_change_log` | id PK, product_id FK, changed_by FK(users), field_name, old_value, new_value, created_at | lịch sử chỉnh sửa thông tin sản phẩm — chỉ ghi khi `PUT /api/products/:id` thực sự đổi giá trị |
 | `debt_ledger` | id PK, partner_id FK, type, amount, reference_type, reference_id, note, created_at | type ∈ {no, tra}; số dư = SUM cộng dồn |
 | `schema_migrations` | version PK, applied_at | migration runner đọc bảng này |
 
@@ -130,11 +142,17 @@ Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân qu
 | PUT | `/api/warehouse-settings` | `cau_hinh` | Cập nhật cấu hình kho |
 | GET | `/api/products` | Đã đăng nhập | Danh mục + tồn kho hiện tại |
 | POST | `/api/products` | `kho` | Thêm sản phẩm |
-| PUT | `/api/products/:id` | `kho` | Sửa sản phẩm |
-| GET | `/api/partners?type=` | Đã đăng nhập | Danh sách NCC/khách hàng |
-| POST | `/api/partners` | `cong_no` | Thêm đối tác |
+| PUT | `/api/products/:id` | `kho` | Sửa sản phẩm (ghi `product_change_log` nếu có thay đổi) |
+| PATCH | `/api/products/:id/deactivate` \| `/activate` | `kho` | Vô hiệu hóa/mở lại sản phẩm |
+| DELETE | `/api/products/:id` | Chỉ Admin (`is_protected`) | Xóa cứng — chặn nếu đã có `stock_movements` |
+| GET | `/api/products/:id` | Đã đăng nhập | Chi tiết + giá vốn tính theo `costing_method` đang chọn |
+| GET | `/api/products/:id/movements` | Đã đăng nhập | Lịch sử nhập/xuất kho của sản phẩm |
+| GET | `/api/products/:id/history` | Đã đăng nhập | Lịch sử chỉnh sửa thông tin sản phẩm |
+| GET | `/api/partners?type=` | Đã đăng nhập | Danh sách NCC/khách hàng (bản rút gọn Phase 2, đủ dùng cho dropdown chọn/thêm nhanh) |
+| POST | `/api/partners` | `kho` **hoặc** `cong_no` | Thêm đối tác nhanh — đổi từ chỉ `cong_no` ban đầu, vì thủ kho cũng cần thêm NCC khi lập phiếu nhập (xem `docs/DECISIONS.md`, dùng `requireAnyPermission`) |
 | GET | `/api/stock-receipts` | `kho` | Danh sách phiếu nhập |
-| POST | `/api/stock-receipts` | `kho` | Tạo phiếu nhập (transaction) |
+| GET | `/api/stock-receipts/:id` | `kho` | Chi tiết phiếu nhập (kèm `total_amount` tính từ items) |
+| POST | `/api/stock-receipts` | `kho` | Tạo phiếu nhập (transaction) — nhận thêm `receipt_date` (tùy chọn, ảnh hưởng thứ tự FIFO), `order_code`, mỗi item có thêm `discount_percent` |
 | GET | `/api/stock-issues` | `kho` | Danh sách phiếu xuất |
 | POST | `/api/stock-issues` | `kho` | Tạo phiếu xuất (transaction) |
 | GET | `/api/stock-issues/:id/print` | `kho` | Dữ liệu để render trang in |
@@ -186,10 +204,18 @@ Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân qu
 ### Phase 2 — Kho
 
 > Cập nhật 2026-08-01: gộp thêm migration bảng `partners` vào phase này (quyết định `docs/DECISIONS.md` mục "Gộp bảng `partners` sớm vào migration Phase 2") — vì `stock_receipts`/`stock_issues` cần FK `partner_id` ngay từ đầu. Chỉ gộp migration, **không** gộp API/frontend quản lý đối tác (vẫn ở Phase 3).
+> Cập nhật 2026-07-31: mở rộng thêm phạm vi ngoài kế hoạch gốc theo yêu cầu người dùng — giá vốn bình quân gia quyền/FIFO (`stock_lots`, `costing.service.js`), chiết khấu phiếu nhập, thời gian nhập tùy chỉnh, mã đơn hàng, vô hiệu hóa/xóa sản phẩm, trang chi tiết sản phẩm + lịch sử chỉnh sửa, API đối tác rút gọn (quick-add). Chi tiết đầy đủ xem `docs/DECISIONS.md` các mục ngày 2026-07-31.
 
-- [ ] Migration thêm `partners`, `products`, `stock_receipts`, `stock_receipt_items`, `stock_issues` (kèm `payment_status`), `stock_issue_items`, `stock_movements`
-- [ ] `stockReceipt.service.js` / `stockIssue.service.js` (transaction)
-- [ ] API + frontend: danh mục sản phẩm, lập phiếu nhập, lập phiếu xuất, xem tồn kho
+- [x] Migration thêm `partners`, `products`, `stock_receipts`, `stock_receipt_items`, `stock_issues` (kèm `payment_status`), `stock_issue_items`, `stock_movements` (`005_phase2_kho.sql`)
+- [x] Migration bổ sung: `products.is_active` (`006`), giá vốn + lịch sử sản phẩm (`stock_lots`/`stock_movements.unit_cost`/`product_change_log`/costing_method — `007`), chiết khấu phiếu nhập (`008`), mã đơn hàng (`009`)
+- [x] `stockReceipt.service.js` / `stockIssue.service.js` (transaction) — đã bổ sung tạo/tiêu thụ `stock_lots`, snapshot `unit_cost`, kiểm tra `is_active`
+- [x] `costing.service.js` — tính giá vốn bình quân gia quyền (on-the-fly) và FIFO
+- [x] API + frontend: danh mục sản phẩm (`products.html`) — tìm kiếm, sắp xếp tồn kho, cảnh báo tồn thấp, vô hiệu hóa/xóa
+- [x] Trang chi tiết sản phẩm (`product-detail.html`) — lịch sử nhập/xuất + lịch sử chỉnh sửa (ngoài kế hoạch ban đầu)
+- [x] API `partners.routes.js` bản rút gọn (GET danh sách + POST tạo nhanh) — dùng cho dropdown chọn/thêm nhanh NCC
+- [x] Frontend lập phiếu nhập (`stock-receipts.html`) — chọn/thêm nhanh NCC, combobox tìm sản phẩm, chiết khấu %, thời gian nhập tùy chỉnh, mã đơn hàng, tổng thành tiền
+- [ ] Frontend lập phiếu xuất (`stock-issues.html`) — **chưa làm**, cần chốt: cách xử lý khách hàng (dropdown+thêm nhanh giống NCC), cách hiển thị `payment_status`
+- [ ] Xem tồn kho tổng hợp riêng (hiện đã xem được qua `products.html`/`product-detail.html`, chưa có báo cáo tổng hợp riêng — có thể đủ dùng, để Phase 4 nếu cần thêm)
 
 ### Phase 3 — Công nợ
 

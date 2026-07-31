@@ -51,7 +51,9 @@ Thấy dòng `Server dang chay tai http://localhost:3000` là server đã chạy
 
 Mở trình duyệt vào: **http://localhost:3000**
 
-Sẽ tự chuyển đến trang đăng nhập. Đăng nhập bằng tài khoản demo ở mục 4, sẽ được chuyển sang trang **Tổng quan** (dashboard) với sidebar điều hướng bên trái. Đăng nhập bằng `admin` sẽ thấy đủ menu, gồm nhóm "Quản trị" (Người dùng, Vai trò) và nhóm "Cấu hình" (Thông tin công ty, Cấu hình kho, Cấu hình bán hàng — khung trống chưa có nội dung); đăng nhập bằng `thukho1` sẽ chỉ thấy "Tổng quan" — đúng theo phân quyền (chặn cả ở giao diện lẫn API, thử vào thẳng URL các trang trên cũng bị chuyển hướng về Tổng quan).
+Sẽ tự chuyển đến trang đăng nhập. Đăng nhập bằng tài khoản demo ở mục 4, sẽ được chuyển sang trang **Tổng quan** (dashboard) với sidebar điều hướng bên trái. Đăng nhập bằng `admin` sẽ thấy đủ menu, gồm nhóm "Kho" (Sản phẩm, Nhập kho — Phase 2, đã xong; Xuất kho chưa có giao diện), nhóm "Quản trị" (Người dùng, Vai trò) và nhóm "Cấu hình" (Thông tin công ty, Cấu hình kho — gồm cả chọn phương pháp tính giá vốn, Cấu hình bán hàng — khung trống chưa có nội dung); đăng nhập bằng `thukho1` (quyền module `kho`) sẽ thấy "Tổng quan" + nhóm "Kho" (Sản phẩm, Nhập kho), nhưng không thấy "Người dùng"/"Vai trò"/nhóm "Cấu hình" — đúng theo phân quyền (chặn cả ở giao diện lẫn API, thử vào thẳng URL các trang trên cũng bị chuyển hướng về Tổng quan).
+
+> Dữ liệu demo hiện có sẵn: vài sản phẩm test (`SP001`, `SP020`...), vài phiếu nhập kho (`PN000001` đến `PN000008`), 2 đối tác nhà cung cấp test — tạo lúc phát triển Phase 2, để lại làm dữ liệu demo. Có thể tạo thêm qua giao diện **Sản phẩm** → **Nhập kho** bất cứ lúc nào.
 
 ## 7. Dừng server
 
