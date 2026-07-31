@@ -796,6 +796,11 @@ input:focus-visible {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
+.form-field input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* ---- Card form settings (vd trang Thong tin cong ty) - form hien truc tiep trong trang,
    khong qua modal, chia section co tieu de + duong ke phan cach. ---- */
 

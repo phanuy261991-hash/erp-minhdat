@@ -76,6 +76,43 @@
     </div>
   </div>
 
+  <div id="edit-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3>Sửa tài khoản</h3>
+      <form id="edit-form">
+        <div id="edit-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="edit-error-text"></span>
+        </div>
+
+        <div class="form-field">
+          <label for="edit-username">Tên đăng nhập</label>
+          <input type="text" id="edit-username" disabled />
+        </div>
+
+        <div class="form-field">
+          <label for="edit-fullname">Họ tên</label>
+          <input type="text" id="edit-fullname" required autocomplete="off" />
+        </div>
+
+        <div class="form-field">
+          <label for="edit-role">Vai trò</label>
+          <select id="edit-role" required></select>
+        </div>
+
+        <div class="form-field">
+          <label for="edit-password">Mật khẩu mới (để trống nếu không đổi)</label>
+          <input type="password" id="edit-password" minlength="6" autocomplete="new-password" />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-edit" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-edit" class="btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="assets/api.js"></script>
   <script src="assets/icons.js"></script>
   <script src="assets/layout.js"></script>
