@@ -71,6 +71,9 @@ function renderReceiptRow(receipt) {
     <td>${receipt.created_by_name}</td>
     <td>${receipt.note || '-'}</td>
     <td>${formatDate(receipt.created_at)}</td>
+    <td>
+      <button type="button" class="icon-btn" data-action="view" data-id="${receipt.id}" title="Xem chi tiết">${icon('eye', 14)}</button>
+    </td>
   `;
   return tr;
 }
@@ -84,6 +87,12 @@ async function loadReceipts() {
     renderReceiptsError(err.message);
   }
 }
+
+receiptsTbody.addEventListener('click', (event) => {
+  const button = event.target.closest('button[data-action="view"]');
+  if (!button) return;
+  openReceiptDetailModal(button.dataset.id);
+});
 
 async function loadProducts() {
   const { products } = await apiFetch('/products');
@@ -360,6 +369,7 @@ receiptForm.addEventListener('submit', async (event) => {
   document.querySelectorAll('.alert-icon-slot').forEach((slot) => {
     slot.innerHTML = icon('alertCircle', 16);
   });
+  initReceiptDetailModal();
 
   await Promise.all([loadProducts(), loadPartners(), loadReceipts()]);
   renderPartnerOptions();

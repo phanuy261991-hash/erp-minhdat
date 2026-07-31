@@ -68,24 +68,36 @@ function renderInfo(product, costingMethod, currentCost) {
   ].join('');
 }
 
+// Ma phieu chi bam mo xem chi tiet duoc voi phieu NHAP (reference_type === 'receipt') - phieu
+// xuat chua co giao dien xem chi tiet (stock-issues.html chua lam, xem docs/CURRENT.md), nen
+// giu nguyen dang text thuong de khong dan link hong.
 function renderMovements(movements) {
   movementsTbody.innerHTML = movements
     .map((m) => {
       const typeBadge = m.movement_type === 'in'
         ? '<span class="badge badge-active">Nhập</span>'
         : '<span class="badge badge-inactive">Xuất</span>';
+      const documentCodeHtml = m.reference_type === 'receipt' && m.document_code
+        ? `<button type="button" class="table-link-btn" data-receipt-id="${m.reference_id}">${m.document_code}</button>`
+        : (m.document_code || '-');
       return `
         <tr>
           <td>${formatDate(m.created_at)}</td>
           <td>${typeBadge}</td>
           <td>${formatMoney(m.quantity)}</td>
           <td>${m.unit_cost === null ? '-' : formatMoney(m.unit_cost)}</td>
-          <td>${m.document_code || '-'}</td>
+          <td>${documentCodeHtml}</td>
         </tr>
       `;
     })
     .join('');
 }
+
+movementsTbody.addEventListener('click', (event) => {
+  const button = event.target.closest('button[data-receipt-id]');
+  if (!button) return;
+  openReceiptDetailModal(button.dataset.receiptId);
+});
 
 function renderHistory(history) {
   historyTbody.innerHTML = history
@@ -111,6 +123,7 @@ function renderHistory(history) {
     slot.innerHTML = icon('alertCircle', 16);
   });
   document.getElementById('btn-back').innerHTML = icon('arrowLeft', 16);
+  initReceiptDetailModal();
 
   if (!productId) {
     renderDetailError('Thiếu id sản phẩm trên đường dẫn');

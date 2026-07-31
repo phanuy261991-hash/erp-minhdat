@@ -1347,6 +1347,54 @@ input:focus-visible {
   flex: 1;
 }
 
+/* ---- Khoi thong tin chi doc (vd modal xem chi tiet phieu nhap/xuat) - co chu ly ".form-field"
+   (spacing/label giong nhau) nhung KHONG dung khung input, de phan biet ro voi truong nhap lieu
+   (xem quy tac read-only-distinction). ---- */
+
+.detail-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px 24px;
+  margin-bottom: 20px;
+}
+
+.detail-info-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.detail-info-item .detail-label {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.detail-info-item .detail-value {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-foreground);
+  word-break: break-word;
+}
+
+/* ---- Nut dang link trong o bang (vd bam ma phieu de xem chi tiet) - khong dung .icon-btn vi
+   khong co khung nen, chi la text co mau nhan biet duoc bam. ---- */
+
+.table-link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.table-link-btn:hover {
+  text-decoration: underline;
+}
+
 /* ---- Combobox tim san pham theo ma/ten (thay the <select> thuong khi danh muc co the nhieu) ---- */
 
 .combobox {

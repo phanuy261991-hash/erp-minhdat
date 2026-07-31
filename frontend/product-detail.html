@@ -59,9 +59,44 @@
     </main>
   </div>
 
+  <div id="receipt-detail-modal" class="modal-overlay" hidden>
+    <div class="modal-card modal-card-lg">
+      <h3>Chi tiết phiếu nhập kho</h3>
+      <div id="receipt-detail-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="receipt-detail-error-text"></span>
+      </div>
+      <div class="detail-info-grid" id="receipt-detail-info"></div>
+      <h4 class="section-heading">Danh sách sản phẩm</h4>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Sản phẩm</th>
+              <th>ĐVT</th>
+              <th>Số lượng</th>
+              <th>Đơn giá</th>
+              <th>Chiết khấu (%)</th>
+              <th>Thành tiền</th>
+            </tr>
+          </thead>
+          <tbody id="receipt-detail-items"></tbody>
+        </table>
+      </div>
+      <div class="receipt-total-row">
+        <span>Tổng thành tiền</span>
+        <span id="receipt-detail-total">0</span>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="btn-close-receipt-detail" class="btn-secondary">Đóng</button>
+      </div>
+    </div>
+  </div>
+
   <script src="assets/api.js"></script>
   <script src="assets/icons.js"></script>
   <script src="assets/layout.js"></script>
+  <script src="assets/receipt-detail.js"></script>
   <script src="assets/product-detail.js"></script>
 </body>
 </html>
