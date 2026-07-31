@@ -751,6 +751,19 @@ input:focus-visible {
   margin-bottom: 14px;
 }
 
+/* Ghep 2 truong ngan tren cung 1 dong (thay vi xep doc tung truong mot, de form khong bi
+   dan qua dai) - danh cho truong ngan (ngay gio, ma, dropdown...), khong dung cho truong dai
+   (ghi chu nhieu dong, bang dong san pham) - xem docs/DESIGN-SYSTEM.md. */
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.form-row > .form-field {
+  flex: 1;
+  min-width: 0;
+}
+
 /* Chi ap dung cho label truc tiep cua form-field (ten truong) - dung ">" de KHONG dinh
    xuong cac label long hon trong noi dung con (vd .module-option cung la <label>, tung bi
    quy tac nay de len display:block do do dac hieu cao hon .module-option). */

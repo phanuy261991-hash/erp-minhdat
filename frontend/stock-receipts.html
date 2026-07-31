@@ -47,9 +47,15 @@
           <span id="receipt-form-error-text"></span>
         </div>
 
-        <div class="form-field">
-          <label for="receipt-partner">Nhà cung cấp</label>
-          <select id="receipt-partner"></select>
+        <div class="form-row">
+          <div class="form-field">
+            <label for="receipt-partner">Nhà cung cấp</label>
+            <select id="receipt-partner"></select>
+          </div>
+          <div class="form-field">
+            <label for="receipt-date">Thời gian nhập</label>
+            <input type="datetime-local" id="receipt-date" />
+          </div>
         </div>
 
         <div id="new-partner-fields" class="form-field" hidden>
@@ -60,19 +66,15 @@
           </div>
         </div>
 
-        <div class="form-field">
-          <label for="receipt-date">Thời gian nhập</label>
-          <input type="datetime-local" id="receipt-date" />
-        </div>
-
-        <div class="form-field">
-          <label for="receipt-order-code">Mã đơn hàng</label>
-          <input type="text" id="receipt-order-code" placeholder="Số hóa đơn/đơn hàng của nhà cung cấp (không bắt buộc)" autocomplete="off" />
-        </div>
-
-        <div class="form-field">
-          <label for="receipt-note">Ghi chú</label>
-          <input type="text" id="receipt-note" placeholder="vd: Nhập tồn đầu kỳ" autocomplete="off" />
+        <div class="form-row">
+          <div class="form-field">
+            <label for="receipt-order-code">Mã đơn hàng</label>
+            <input type="text" id="receipt-order-code" placeholder="Số hóa đơn/đơn hàng của NCC (không bắt buộc)" autocomplete="off" />
+          </div>
+          <div class="form-field">
+            <label for="receipt-note">Ghi chú</label>
+            <input type="text" id="receipt-note" placeholder="vd: Nhập tồn đầu kỳ" autocomplete="off" />
+          </div>
         </div>
 
         <div class="form-field">
