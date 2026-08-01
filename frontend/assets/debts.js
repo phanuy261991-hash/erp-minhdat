@@ -150,12 +150,15 @@ async function openHistoryModal(partnerId) {
 
     historyTbody.innerHTML = entries
       .map((e) => {
-        // Dieu chinh cong no (migration 016) co badge rieng ("Dieu chinh"), khac voi dong tu
-        // dong khi tao phieu ("Phat sinh no") va thanh toan that ("Thanh toan") - tranh nham
-        // la giao dich that (xem yeu cau nguoi dung 2026-08-01).
+        // Dieu chinh cong no (migration 016) co badge rieng, khac voi dong tu dong khi tao
+        // phieu ("Phat sinh no") va thanh toan that ("Thanh toan") - tranh nham la giao dich
+        // that. Mau phan biet ro chieu tang (xanh)/giam (do), khong chi ghi chung chung
+        // "Dieu chinh" (xem phan hoi nguoi dung 2026-08-01).
         let typeBadge;
         if (e.is_adjustment) {
-          typeBadge = '<span class="badge badge-protected">Điều chỉnh</span>';
+          typeBadge = e.type === 'no'
+            ? '<span class="badge badge-active">Điều chỉnh: Tăng</span>'
+            : '<span class="badge badge-down">Điều chỉnh: Giảm</span>';
         } else if (e.type === 'no') {
           typeBadge = '<span class="badge badge-inactive">Phát sinh nợ</span>';
         } else {

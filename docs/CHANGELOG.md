@@ -2,6 +2,14 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-01 (Sửa lệch nút + badge màu tăng/giảm cho "Điều chỉnh công nợ")
+
+> Người dùng phản ánh ngay sau khi làm xong "Điều chỉnh công nợ": 3 nút đầu trang (tìm kiếm/Điều chỉnh công nợ/Ghi nhận thanh toán) bị lệch hàng, và badge lịch sử chỉ ghi "Điều chỉnh" chung chung, không phân biệt được tăng hay giảm.
+
+- CSS: `.btn-secondary` mặc định có `margin-top: 16px` (thiết kế cho dùng đơn lẻ trong form/modal) — thêm override `.page-header-actions .btn-secondary` (bỏ margin-top, thêm `inline-flex` + `gap`) để thẳng hàng với `.btn-add` khi đặt chung trong `.page-header-actions`.
+- Badge lịch sử công nợ (`debts.js`/`customer-debts.js`): dòng "Điều chỉnh" tách thành "Điều chỉnh: Tăng" (badge xanh, tái dùng `.badge-active`) và "Điều chỉnh: Giảm" (badge đỏ, class mới `.badge-down`) dựa theo `type` (`no`/`tra`) — không chỉ dựa vào chữ, có màu phân biệt rõ theo đúng yêu cầu.
+- Test qua trình duyệt thật: 3 nút đầu trang `debts.html`/`customer-debts.html` thẳng hàng đúng; lịch sử hiển thị "Điều chỉnh: Giảm" màu đỏ đúng cho dòng vừa tạo.
+
 ## 2026-08-01 ("Điều chỉnh công nợ" — sửa số dư sai không cần sửa/xóa phiếu gốc)
 
 > Người dùng hỏi: nếu nhập sai giá vốn trên phiếu nhập thì công nợ NCC bị sai theo, xử lý thế nào? Trả lời: đây là lỗ hổng đã biết trước (ghi trong `docs/CURRENT.md`/`docs/TASK.md`) — cơ chế "phiếu điều chỉnh bù trừ" có sẵn chỉ sửa được tồn kho, không sửa được `debt_ledger` (vì `recordDebtFromDocument()` luôn ghi `type='no'`, một phiếu bù trừ sẽ CỘNG THÊM nợ chứ không trừ). Đề xuất 2 hướng, người dùng chọn xây cơ chế đúng (hướng 2).

@@ -575,12 +575,30 @@ input:focus-visible {
   color: var(--color-muted-foreground);
 }
 
+/* Danh cho dong "Dieu chinh cong no" (migration 016) - mau phan biet ro chieu tang/giam,
+   khong chi dua vao chu (xem yeu cau nguoi dung 2026-08-01). */
+.badge-down {
+  background: #fef2f2;
+  color: var(--color-destructive);
+}
+
 /* ---- Thanh cong cu tren dau bang du lieu (o tim kiem canh nut hanh dong) ---- */
 
 .page-header-actions {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+/* .btn-secondary mac dinh co margin-top:16px (danh cho dung dung mot minh trong form/modal,
+   xem .modal-actions .btn-secondary da reset o duoi) - trong hang nut dau trang can bo margin
+   nay va can inline-flex de icon+chu thang hang voi .btn-add (nut "Ghi nhan thanh toan"), khac
+   truoc day bi lech xuong duoi (xem phan hoi nguoi dung 2026-08-01). */
+.page-header-actions .btn-secondary {
+  margin-top: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .search-box {
