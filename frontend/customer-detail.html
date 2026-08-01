@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chi tiết khách hàng - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Khách hàng</p>
+      <div class="page-header">
+        <div class="page-title-group">
+          <a href="customers.html" id="btn-back" class="icon-btn" title="Quay lại danh sách khách hàng"></a>
+          <h2 id="customer-name">Chi tiết khách hàng</h2>
+        </div>
+      </div>
+
+      <div id="detail-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="detail-error-text"></span>
+      </div>
+
+      <div class="detail-info-grid" id="customer-info-grid"></div>
+
+      <div class="page-header">
+        <h3 class="section-heading">Bảo hành</h3>
+        <a href="#" id="btn-add-warranty" class="btn-add"></a>
+      </div>
+      <div id="warranty-empty" class="empty-state" hidden>
+        <p>Khách hàng này chưa có thông tin bảo hành nào.</p>
+      </div>
+      <div class="warranty-cards" id="warranty-cards"></div>
+    </main>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/warranty-calc.js"></script>
+  <script src="assets/customer-detail.js"></script>
+</body>
+</html>

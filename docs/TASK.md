@@ -134,6 +134,18 @@
 - [x] Frontend `debts.html`/`.js` và `customer-debts.html`/`.js`: modal "Điều chỉnh công nợ", combobox tìm phiếu gốc theo đối tác, badge "Điều chỉnh" riêng trong lịch sử
 - [x] Test qua trình duyệt thật + API: điều chỉnh giảm số dư đúng, badge hiển thị đúng, chặn đúng khi thiếu lý do hoặc chọn nhầm phiếu của đối tác khác
 
+### Bảo hành (ngoài phase, theo yêu cầu người dùng 2026-08-01)
+
+- [x] Migration `017_warranties.sql`: bảng `warranties` (chỉ gắn khách hàng, không gắn NCC)
+- [x] `backend/routes/warranties.routes.js`: CRUD đầy đủ, validate `partner_id` phải là `khach_hang`, `expiry_date > acceptance_date`; xóa cứng chỉ Admin (`is_protected`)
+- [x] `frontend/warranties.html`/`.js`: danh sách, tìm kiếm theo tên khách hàng, vô hiệu hóa/mở lại, xóa (ẩn nút nếu không phải Admin)
+- [x] `frontend/warranty-detail.html`/`.js`: 1 trang dùng chung cho thêm mới + xem/sửa (lưu thay đổi ngay trên trang, không dùng modal) — tương tác 2 chiều Thời gian bảo hành ↔ Ngày hết hạn (`frontend/assets/warranty-calc.js`, hàm dùng chung)
+- [x] `frontend/customer-detail.html`/`.js` (trang mới, trước đây `customers.html` chưa có trang chi tiết riêng): thông tin cơ bản khách hàng + card Bảo hành (số ngày còn lại + ngày hết hạn, màu theo mức khẩn cấp)
+- [x] `customers.js`: thêm icon "Xem chi tiết" liên kết sang `customer-detail.html`
+- [x] `layout.js`/`icons.js`: thêm mục "Bảo hành" vào nhóm Khách hàng, icon `shield` mới
+- [x] Sửa 3 lỗi CSS `[hidden]` bị ghi đè phát hiện trong lúc test tính năng này (`.empty-state`, `.page-header-actions`, `.page-header-actions .btn-secondary` — cùng dạng lỗi đã gặp ở `.form-row`/`.modal-card` trước đó, thêm `:not([hidden])`)
+- [x] Test qua trình duyệt thật: tạo bảo hành mới (tự điền SĐT/địa chỉ theo khách hàng, tính đúng ngày hết hạn theo lịch), sửa "Ngày hết hạn" trực tiếp → tự suy đúng thời gian bảo hành theo quy tắc ngày/tháng/năm; card trên trang Chi tiết khách hàng hiển thị đúng số ngày còn lại; test phân quyền bằng tài khoản Kế toán (không phải Admin) → nút Xóa ẩn đúng ở cả danh sách lẫn trang chi tiết, gọi thẳng API DELETE bị chặn 403
+
 ## Phase 5 — Vận hành & Go-live
 
 - [ ] Cấu hình PM2 (`pm2 start`, `pm2 startup`, `pm2 save`)

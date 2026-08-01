@@ -35,7 +35,8 @@ project-root/
 │  │     ├─ 013_issue_discount.sql (đã có) stock_issue_items.discount_percent (đối xứng migration 008 của phiếu nhập)
 │  │     ├─ 014_company_print_note.sql (đã có) company_settings.print_note (ghi chú hiển thị khi in phiếu xuất kho)
 │  │     ├─ 015_customer_categories.sql (đã có) bảng customer_categories (loại khách hàng, kem han muc cong no) + partners.category_id
-│  │     └─ 016_debt_adjustment.sql (đã có, 2026-08-01) debt_ledger.is_adjustment ("Điều chỉnh công nợ")
+│  │     ├─ 016_debt_adjustment.sql (đã có, 2026-08-01) debt_ledger.is_adjustment ("Điều chỉnh công nợ")
+│  │     └─ 017_warranties.sql (đã có, 2026-08-01) bảng warranties (Bảo hành, gắn khách hàng)
 │  ├─ middleware/
 │  │  ├─ auth.js                       (đã có) requireAuth (kiểm tra session)
 │  │  └─ requirePermission.js          (đã có) requirePermission(module) + requireAnyPermission([module,...])
@@ -51,7 +52,8 @@ project-root/
 │  │  ├─ stockIssues.routes.js         (đã có) Phase 2, kèm liên kết phiếu điều chỉnh bù trừ + payment_status
 │  │  ├─ customerCategories.routes.js  (đã có, 2026-08-01) CRUD "Loại khách hàng" (tên + hạn mức công nợ)
 │  │  ├─ debts.routes.js               (đã có) Phase 3 — summary (kèm category_debt_limit), lịch sử theo đối tác, ghi nhận thanh toán
-│  │  └─ reports.routes.js             (đã có) Phase 4 — inventory/stock-movements/debts, tinh truc tiep tu bang goc
+│  │  ├─ reports.routes.js             (đã có) Phase 4 — inventory/stock-movements/debts, tinh truc tiep tu bang goc
+│  │  └─ warranties.routes.js          (đã có, 2026-08-01) CRUD Bao hanh, xoa chi Admin
 │  └─ services/
 │     ├─ stockReceipt.service.js       (đã có) transaction: tạo phiếu nhập + movements + lô hàng + ghi nợ NCC neu cong_no
 │     ├─ stockIssue.service.js         (đã có) transaction: tạo phiếu xuất + movements, tiêu thụ lô + ghi nợ khach hang neu cong_no
@@ -75,6 +77,9 @@ project-root/
 │  ├─ customers.html                   (đã có, 2026-08-01) quản lý Khách hàng (tách khỏi partners.html), có chọn Loại khách hàng
 │  ├─ customer-debts.html              (đã có, 2026-08-01) Công nợ khách hàng, cảnh báo khi vượt hạn mức Loại khách hàng
 │  ├─ customer-categories.html         (đã có, 2026-08-01) CRUD "Loại khách hàng", thuộc menu Cấu hình
+│  ├─ customer-detail.html             (đã có, 2026-08-01, mới) chi tiết khách hàng + the Bảo hành
+│  ├─ warranties.html                  (đã có, 2026-08-01) danh sách Bảo hành
+│  ├─ warranty-detail.html             (đã có, 2026-08-01) thêm mới/xem/sửa Bảo hành (dùng chung 1 trang)
 │  ├─ reports.html                     (đã có) Phase 4 — ton kho + mua/ban theo thang (bieu do SVG tu ve) + cong no tong hop
 │  └─ assets/
 │     ├─ style.css                     (đã có) design system (xem docs/DESIGN-SYSTEM.md)
@@ -98,6 +103,10 @@ project-root/
 │     ├─ customers.js                  (đã có, 2026-08-01) logic trang customers.html
 │     ├─ customer-debts.js             (đã có, 2026-08-01) logic trang customer-debts.html
 │     ├─ customer-categories.js        (đã có, 2026-08-01) logic trang customer-categories.html
+│     ├─ customer-detail.js            (đã có, 2026-08-01) logic trang customer-detail.html
+│     ├─ warranties.js                 (đã có, 2026-08-01) logic trang warranties.html
+│     ├─ warranty-detail.js            (đã có, 2026-08-01) logic trang warranty-detail.html
+│     ├─ warranty-calc.js              (đã có, 2026-08-01) hàm dùng chung: tính 2 chiều thời gian bảo hành ↔ ngày hết hạn, số ngày còn lại
 │     ├─ print-issue.js                (đã có) logic trang print-issue.html
 │     ├─ reports.js                    (đã có) logic trang reports.html (bieu do cot SVG tu ve)
 │     └─ fonts/                        (đã có) file .woff2 host offline + fonts.css
@@ -119,6 +128,7 @@ project-root/
 | `products` | id PK, code, name, unit, cost_price, sale_price, low_stock_threshold, is_active, created_at | tồn kho không lưu ở đây; `cost_price` là giá tham chiếu nhập tay, giá vốn thực tế tính từ `stock_lots` (xem `costing.service.js`); `is_active=0` = vô hiệu hóa (vẫn hiện, không chọn được khi lập phiếu mới) |
 | `partners` | id PK, type, name, phone, address, category_id, created_at | type ∈ {nha_cung_cap, khach_hang}; `category_id` FK(customer_categories) nullable — chỉ có ý nghĩa khi type='khach_hang' (validate ở API, không CHECK ở DB), 2026-08-01 |
 | `customer_categories` | id PK, name, debt_limit, created_at | migration `015`, 2026-08-01 — danh mục "Loại khách hàng" (name UNIQUE), `debt_limit` nullable = không giới hạn, chỉ dùng để CẢNH BÁO trên trang Công nợ khách hàng (không chặn cứng) |
+| `warranties` | id PK, partner_id FK, phone, address, acceptance_date, expiry_date, duration_value, duration_unit, note, is_active, created_by FK, created_at, updated_at | migration `017`, 2026-08-01 — Bảo hành, `partner_id` chỉ áp dụng `type='khach_hang'` (validate ở API); `phone`/`address` là snapshot fill từ đối tác lúc tạo, sửa được, không tự đổi theo nếu sau này sửa hồ sơ khách hàng; `expiry_date` là nguồn tính "còn lại bao nhiêu ngày" (tính lại mỗi lần xem, không lưu số ngày cố định) |
 | `stock_receipts` | id PK, code, order_code, partner_id FK, created_by FK(users), note, payment_status, adjusts_type, adjusts_id, created_at | phiếu nhập; `code` tự sinh nội bộ (PN000001...), `order_code` là số hóa đơn/đơn hàng của NCC (tự do, không bắt buộc); `created_at` có thể chỉnh khi lập phiếu — ảnh hưởng thứ tự FIFO/bình quân gia quyền; `payment_status` ∈ {da_thanh_toan, cong_no} (Phase 3, đối xứng `stock_issues`); `adjusts_type`/`adjusts_id` (Phase 2) đánh dấu phiếu điều chỉnh bù trừ cho phiếu nào |
 | `stock_receipt_items` | id PK, receipt_id FK, product_id FK, quantity, unit_price, discount_percent | dòng chi tiết phiếu nhập; `unit_price` là giá gốc, `discount_percent` (0-100%) — giá vốn thực tế = `unit_price * (1 - discount_percent/100)` |
 | `stock_issues` | id PK, code, partner_id FK, created_by FK(users), note, payment_status, adjusts_type, adjusts_id, created_at | phiếu xuất; `payment_status` ∈ {da_thu_tien, cong_no} |
@@ -193,6 +203,11 @@ Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân qu
 | GET | `/api/reports/inventory` | `bao_cao` | Tồn kho hiện tại từng sản phẩm + giá vốn (luôn bình quân gia quyền) + giá trị tồn, tổng giá trị toàn kho |
 | GET | `/api/reports/stock-movements?months=` | `bao_cao` | Tổng hợp mua hàng/bán hàng theo từng tháng (mặc định 6 tháng gần nhất, điền 0 cho tháng trống) |
 | GET | `/api/reports/debts` | `bao_cao` | Tổng phải trả (NCC)/phải thu (khách hàng) toàn hệ thống |
+| GET | `/api/warranties?partner_id=` | `cong_no` | Danh sách Bảo hành, lọc theo khách hàng (dùng cho trang Chi tiết khách hàng) — không lọc thì trả toàn bộ (2026-08-01) |
+| GET | `/api/warranties/:id` | `cong_no` | Chi tiết 1 bản ghi Bảo hành |
+| POST/PUT | `/api/warranties(/:id)` | `cong_no` | Tạo/sửa Bảo hành — validate `partner_id` phải là `type='khach_hang'`, `expiry_date` > `acceptance_date` |
+| PATCH | `/api/warranties/:id/deactivate` \| `/activate` | `cong_no` | Vô hiệu hóa/mở lại |
+| DELETE | `/api/warranties/:id` | Chỉ Admin (`is_protected`) | Xóa cứng — không kiểm tra "đã có lịch sử" vì không có bảng nào khác tham chiếu `warranties.id` |
 
 > Admin (`is_protected`) luôn qua được mọi route ở trên, không cần liệt kê riêng.
 

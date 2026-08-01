@@ -16,6 +16,7 @@ const stockIssuesRoutes = require('./routes/stockIssues.routes');
 const partnersRoutes = require('./routes/partners.routes');
 const customerCategoriesRoutes = require('./routes/customerCategories.routes');
 const debtsRoutes = require('./routes/debts.routes');
+const warrantiesRoutes = require('./routes/warranties.routes');
 const reportsRoutes = require('./routes/reports.routes');
 const { requireAuth } = require('./middleware/auth');
 const { requirePermission } = require('./middleware/requirePermission');
@@ -64,6 +65,8 @@ app.use('/api/partners', requireAuth, partnersRoutes);
 // kiem tra quyen 'cau_hinh' ben trong file route (xem customerCategories.routes.js).
 app.use('/api/customer-categories', requireAuth, customerCategoriesRoutes);
 app.use('/api/debts', requireAuth, requirePermission('cong_no'), debtsRoutes);
+// Thuoc menu Khach hang, dung chung quyen 'cong_no' (xem warranties.routes.js).
+app.use('/api/warranties', requireAuth, requirePermission('cong_no'), warrantiesRoutes);
 app.use('/api/reports', requireAuth, requirePermission('bao_cao'), reportsRoutes);
 
 // Route kiem tra server song - dung de test nhanh khi chay demo.

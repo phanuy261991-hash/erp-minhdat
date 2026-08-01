@@ -223,6 +223,18 @@ h1, h2, h3 {
   border-color: var(--color-primary);
 }
 
+/* Bien the .btn-secondary cho hanh dong pha huy dang nut chu day du (khac .icon-btn-danger chi
+   danh cho nut icon nho trong bang) - vd nut "Xoa" tren trang chi tiet bao hanh. */
+.btn-secondary-danger {
+  color: var(--color-destructive);
+  border-color: #fecaca;
+}
+
+.btn-secondary-danger:hover {
+  background: #fef2f2;
+  border-color: var(--color-destructive);
+}
+
 button:focus-visible,
 input:focus-visible {
   outline: 2px solid var(--color-ring);
@@ -584,7 +596,10 @@ input:focus-visible {
 
 /* ---- Thanh cong cu tren dau bang du lieu (o tim kiem canh nut hanh dong) ---- */
 
-.page-header-actions {
+/* :not([hidden]) - tranh lap lai loi display de len thuoc tinh hidden (xem .alert) - phat hien
+   khi an/hien khu vuc trang thai bao hanh (#warranty-status-actions) o warranty-detail.html
+   (2026-08-01). */
+.page-header-actions:not([hidden]) {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -593,8 +608,10 @@ input:focus-visible {
 /* .btn-secondary mac dinh co margin-top:16px (danh cho dung dung mot minh trong form/modal,
    xem .modal-actions .btn-secondary da reset o duoi) - trong hang nut dau trang can bo margin
    nay va can inline-flex de icon+chu thang hang voi .btn-add (nut "Ghi nhan thanh toan"), khac
-   truoc day bi lech xuong duoi (xem phan hoi nguoi dung 2026-08-01). */
-.page-header-actions .btn-secondary {
+   truoc day bi lech xuong duoi (xem phan hoi nguoi dung 2026-08-01). :not([hidden]) - tranh lap
+   lai loi display de len thuoc tinh hidden (xem .alert) - phat hien khi an nut "Xoa" tren
+   warranty-detail.html voi tai khoan khong phai Admin (2026-08-01). */
+.page-header-actions .btn-secondary:not([hidden]) {
   margin-top: 0;
   display: inline-flex;
   align-items: center;
@@ -1084,7 +1101,9 @@ input:focus-visible {
 
 /* ---- Trang thai trong (vd khung "Cau hinh ban hang" chua co noi dung) ---- */
 
-.empty-state {
+/* :not([hidden]) - tranh lap lai loi display:flex ghi de thuoc tinh hidden (xem .alert),
+   phat hien khi an/hien khung rong "Bao hanh" tren customer-detail.html (2026-08-01). */
+.empty-state:not([hidden]) {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1779,6 +1798,54 @@ input:focus-visible {
   width: 100%;
   height: auto;
   overflow: visible;
+}
+
+/* ---- The "Bao hanh" tren trang Chi tiet khach hang (customer-detail.html) - so ngay con lai
+   la con so quan trong nhat nen dung chu rat lon (giong huong .stat-card-value nhung to hon vi
+   day la NOI DUNG CHINH cua the, khong phai 1 trong nhieu so lieu phu) + mau theo do khan cap
+   (con nhieu/sap het/da het han) - xem yeu cau nguoi dung 2026-08-01. ---- */
+
+.warranty-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.warranty-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+}
+
+.warranty-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.warranty-card-days {
+  font-family: var(--font-heading);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-accent);
+}
+
+.warranty-card-days--warning {
+  color: var(--color-warning);
+}
+
+.warranty-card-days--expired {
+  color: var(--color-destructive);
+}
+
+.warranty-card-days-label {
+  margin: 4px 0 16px;
+  font-size: 13px;
+  color: var(--color-muted-foreground);
 }
 
 .chart-baseline {

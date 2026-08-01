@@ -7,6 +7,9 @@ erDiagram
     PARTNERS ||--o{ STOCK_ISSUES : "la khach hang"
     PARTNERS ||--o{ DEBT_LEDGER : "co cong no"
     USERS ||--o{ DEBT_LEDGER : "ghi nhan"
+    CUSTOMER_CATEGORIES ||--o{ PARTNERS : "phan loai (chi khach hang)"
+    PARTNERS ||--o{ WARRANTIES : "co bao hanh (chi khach hang)"
+    USERS ||--o{ WARRANTIES : "tao"
     PRODUCTS ||--o{ STOCK_RECEIPT_ITEMS : "thuoc ve"
     PRODUCTS ||--o{ STOCK_ISSUE_ITEMS : "thuoc ve"
     PRODUCTS ||--o{ STOCK_MOVEMENTS : "bien dong"
@@ -101,7 +104,31 @@ erDiagram
         string name
         string phone
         string address
+        int category_id FK "nullable, chi ap dung type=khach_hang (migration 015)"
         datetime created_at
+    }
+
+    CUSTOMER_CATEGORIES {
+        int id PK
+        string name "UNIQUE, vd VIP/Dai ly/Khach le"
+        real debt_limit "nullable = khong gioi han, CHI de canh bao (khong chan cung)"
+        datetime created_at
+    }
+
+    WARRANTIES {
+        int id PK
+        int partner_id FK "chi khach_hang"
+        string phone "snapshot, fill tu doi tac nhung sua duoc"
+        string address "snapshot, fill tu doi tac nhung sua duoc"
+        string acceptance_date "YYYY-MM-DD, ngay nghiem thu"
+        string expiry_date "YYYY-MM-DD, ngay het han - nguon tinh 'con lai bao nhieu ngay'"
+        real duration_value "gia tri thoi gian bao hanh nguoi dung chon"
+        string duration_unit "ngay, thang, hoac nam"
+        string note
+        boolean is_active "0 = vo hieu hoa"
+        int created_by FK
+        datetime created_at
+        datetime updated_at
     }
 
     STOCK_RECEIPTS {
@@ -168,6 +195,7 @@ erDiagram
         string note
         int created_by FK
         datetime created_at
+        boolean is_adjustment "1 = dong 'Dieu chinh cong no' thu cong (migration 016), khac dong tu dong/thanh toan that"
     }
 
     SCHEMA_MIGRATIONS {

@@ -36,6 +36,7 @@ const ICONS = {
   printer: '<path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="1.5"/><path d="M6 17v4h12v-4"/><path d="M8 13h8"/>',
   truck: '<rect x="1" y="7" width="13" height="10" rx="1"/><path d="M14 10h4l3 3v4h-3"/><circle cx="6.5" cy="19" r="2"/><circle cx="17.5" cy="19" r="2"/>',
   tag: '<path d="M3 11.5V5a2 2 0 0 1 2-2h6.5L20 11.5 12.5 19 3 11.5Z"/><circle cx="7.5" cy="7.5" r="1.3"/>',
+  shield: '<path d="M12 3l8 3.5v5.2c0 5-3.4 8.6-8 9.8-4.6-1.2-8-4.8-8-9.8V6.5L12 3Z"/><path d="M12 8v5"/><path d="M12 16.2h.01"/>',
 };
 
 function icon(name, size) {

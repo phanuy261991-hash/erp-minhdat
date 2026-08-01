@@ -37,6 +37,7 @@ const NAV_GROUPS = [
     items: [
       { key: 'customers', label: 'Khách hàng', href: 'customers.html', icon: 'users', module: 'cong_no', enabled: true },
       { key: 'customer-debts', label: 'Công nợ khách hàng', href: 'customer-debts.html', icon: 'ledger', module: 'cong_no', enabled: true },
+      { key: 'warranties', label: 'Bảo hành', href: 'warranties.html', icon: 'shield', module: 'cong_no', enabled: true },
     ],
   },
   {

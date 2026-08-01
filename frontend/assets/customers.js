@@ -47,6 +47,7 @@ function renderRow(customer) {
     <td>${customer.phone || '-'}</td>
     <td>${customer.address || '-'}</td>
     <td>
+      <a href="customer-detail.html?id=${customer.id}" class="icon-btn" title="Xem chi tiết">${icon('eye', 14)}</a>
       <button type="button" class="icon-btn" data-action="edit" data-id="${customer.id}" title="Sửa khách hàng">${icon('pencil', 14)}</button>
       <button type="button" class="icon-btn icon-btn-danger" data-action="delete" data-id="${customer.id}" title="Xóa khách hàng">${icon('trash', 14)}</button>
     </td>

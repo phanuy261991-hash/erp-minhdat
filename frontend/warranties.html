@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bảo hành - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Khách hàng</p>
+      <div class="page-header">
+        <h2>Bảo hành</h2>
+        <div class="page-header-actions">
+          <div class="search-box">
+            <span class="input-icon"></span>
+            <input type="text" id="warranty-search" class="search-input" placeholder="Tìm theo tên khách hàng..." autocomplete="off" />
+          </div>
+          <a href="warranty-detail.html" id="btn-add-warranty" class="btn-add"></a>
+        </div>
+      </div>
+
+      <div id="warranties-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="warranties-error-text"></span>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Khách hàng</th>
+              <th>Số điện thoại</th>
+              <th>Ngày nghiệm thu</th>
+              <th>Ngày hết hạn</th>
+              <th>Thời gian bảo hành</th>
+              <th>Trạng thái</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="warranties-tbody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/warranty-calc.js"></script>
+  <script src="assets/warranties.js"></script>
+</body>
+</html>

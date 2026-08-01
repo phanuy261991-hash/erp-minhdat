@@ -111,6 +111,14 @@ Web app nội bộ, kiến trúc đơn giản (không microservices, không clou
 - **Chỉ tạo khung menu trống ở giai đoạn này** — chưa có nội dung bên trong.
 - Lý do: người dùng xác nhận đây sẽ là một **module Bán hàng/POS hoàn toàn mới**, chưa từng được mô tả trong PRD trước đây (PRD gốc chỉ có "xuất kho theo khách hàng" ở mục 4.3, không phải màn hình bán hàng/POS riêng). Cần một buổi trao đổi yêu cầu nghiệp vụ riêng (quy trình bán hàng có khác "xuất kho" không, ai dùng, có giỏ hàng/thanh toán tại quầy không...) trước khi mô tả chi tiết và lên kế hoạch kỹ thuật — xem mục 10 (Open Questions).
 
+### 4.10 Bảo hành (bổ sung 2026-08-01, theo yêu cầu người dùng)
+- Quản lý thông tin bảo hành gắn với **1 khách hàng cụ thể** (không áp dụng cho NCC) — chọn khách hàng từ danh mục Khách hàng, số điện thoại/địa chỉ tự điền theo khách hàng đã chọn (vẫn sửa được, lưu dạng snapshot riêng trên từng bản ghi bảo hành — không tự đổi theo nếu sau này sửa hồ sơ khách hàng).
+- Mỗi bản ghi bảo hành gồm: khách hàng, số điện thoại, địa chỉ, ngày nghiệm thu, ngày hết hạn, thời gian bảo hành, ghi chú.
+- **Ngày hết hạn** và **Thời gian bảo hành** tương tác 2 chiều: nhập thời gian bảo hành (số + đơn vị Ngày/Tháng/Năm) → tự tính ngày hết hạn theo lịch (cộng đúng số năm/tháng/ngày từ ngày nghiệm thu); ngược lại sửa trực tiếp ngày hết hạn → tự suy ra thời gian bảo hành hiển thị theo số ngày chênh lệch: **trên 365 ngày** hiện theo năm, **từ 30 đến 365 ngày** hiện theo tháng, **dưới 30 ngày** hiện đúng theo ngày.
+- Sửa thông tin bảo hành thực hiện ngay trên giao diện xem chi tiết bảo hành (không qua modal riêng) — có nút Lưu.
+- Vô hiệu hóa/mở lại: mọi người có quyền module `cong_no`. **Xóa cứng chỉ Admin** — khác các đối tượng khác trong hệ thống vốn thường cho phép xóa nếu chưa có lịch sử, ở đây xóa luôn bị giới hạn Admin theo đúng yêu cầu.
+- **Giao diện chi tiết khách hàng** (trang mới `customer-detail.html`, chưa có trước đây): hiển thị thông tin cơ bản khách hàng + toàn bộ bản ghi bảo hành của khách hàng đó dưới dạng **Card**, mỗi card hiện "Số ngày còn lại" (số lớn, đổi màu theo mức độ khẩn cấp: còn nhiều — xanh, ≤30 ngày — cam, đã hết hạn — đỏ) và "Ngày hết hạn" cụ thể, lấy trực tiếp từ dữ liệu bảo hành (không lưu số ngày còn lại cố định — luôn tính lại từ ngày hết hạn tại thời điểm xem, đúng nguyên tắc không lưu giá trị suy ra được của dự án).
+
 ## 5. Success Metrics
 
 | Mục tiêu | Chỉ số | Ngưỡng |
@@ -176,4 +184,4 @@ backend/
   data.db       → file SQLite (backup định kỳ)
 ```
 
-**Bảng dữ liệu chính (draft):** `users`, `roles`, `role_permissions`, `products`, `stock_movements`, `stock_receipts` (phiếu nhập), `stock_issues` (phiếu xuất), `partners` (NCC + khách hàng), `debt_ledger`, `company_settings`, `warehouse_settings`, `schema_migrations`.
+**Bảng dữ liệu chính (draft):** `users`, `roles`, `role_permissions`, `products`, `stock_movements`, `stock_receipts` (phiếu nhập), `stock_issues` (phiếu xuất), `partners` (NCC + khách hàng), `customer_categories` (loại khách hàng, 2026-08-01), `debt_ledger`, `warranties` (bảo hành, 2026-08-01), `company_settings`, `warehouse_settings`, `schema_migrations`.

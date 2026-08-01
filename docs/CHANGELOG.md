@@ -2,6 +2,21 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-01 (Thêm module "Bảo hành" — gắn khách hàng, card ngày còn lại trên trang chi tiết)
+
+> Người dùng yêu cầu module mới hoàn toàn: quản lý bảo hành gắn với khách hàng cụ thể, hiển thị "còn bao nhiêu ngày" trên 1 trang chi tiết khách hàng (trang này chưa từng tồn tại trước đây).
+
+- Migration `017_warranties.sql`: bảng `warranties` (`partner_id`, `phone`/`address` snapshot, `acceptance_date`, `expiry_date`, `duration_value`/`duration_unit`, `note`, `is_active`, `created_by`).
+- `backend/routes/warranties.routes.js` (mới, quyền `cong_no`): GET danh sách (lọc `?partner_id=`), GET chi tiết, POST/PUT (validate `partner_id` phải `type='khach_hang'`, `expiry_date > acceptance_date`), PATCH deactivate/activate, DELETE (chỉ Admin — `req.session.user.is_protected`, không kiểm tra "đã có lịch sử" vì không bảng nào khác tham chiếu `warranties.id`).
+- `frontend/assets/warranty-calc.js` (mới, dùng chung nhiều trang): tính 2 chiều — từ Thời gian bảo hành (số + đơn vị Ngày/Tháng/Năm) ra Ngày hết hạn (cộng theo **lịch thật**, `setFullYear`/`setMonth`/`setDate`, không nhân xấp xỉ 365/30 để "2 năm" ra đúng ngày 2 năm sau kể cả năm nhuận); chiều ngược lại từ Ngày hết hạn suy ra Thời gian bảo hành hiển thị theo **số ngày chênh lệch** (>365 ngày → năm, 30–365 ngày → tháng, <30 ngày → đúng số ngày) — theo đúng quy tắc người dùng yêu cầu, khác cách tính chiều thuận vì đây chỉ là hiển thị, không phải giá trị lưu chính.
+- `frontend/warranties.html`/`.js` (mới, menu "Khách hàng" → "Bảo hành"): danh sách, tìm theo tên khách hàng, badge trạng thái (Còn hạn/Sắp hết hạn ≤30 ngày/Hết hạn/Đã vô hiệu hóa), vô hiệu hóa/mở lại, nút Xóa **chỉ hiện khi `currentUser.is_protected`**.
+- `frontend/warranty-detail.html`/`.js` (mới): **1 trang dùng chung cho cả thêm mới lẫn xem/sửa** — không có `?id` là chế độ tạo (mặc định ngày nghiệm thu = hôm nay, 1 năm bảo hành, tự tính ngày hết hạn; nhận thêm `?customer_id=` để chọn sẵn khách hàng khi mở từ trang chi tiết khách hàng), có `?id` là chế độ sửa (lưu trực tiếp trên trang qua nút "Lưu thay đổi", kèm khu vực trạng thái: badge + nút Vô hiệu hóa/Kích hoạt + nút Xóa ẩn/hiện theo quyền Admin).
+- `frontend/customer-detail.html`/`.js` (**trang hoàn toàn mới** — `customers.html` trước đây chỉ có danh sách, chưa có trang chi tiết riêng): thông tin cơ bản khách hàng (loại/SĐT/địa chỉ) + khu vực "Bảo hành" hiển thị mỗi bản ghi dưới dạng **card** (`.warranty-cards`/`.warranty-card`, CSS mới) — số lớn "X ngày còn lại" đổi màu theo mức khẩn cấp (xanh còn nhiều, cam ≤30 ngày, đỏ đã hết hạn — tính lại mỗi lần xem từ `expiry_date`, không lưu số cố định), kèm ngày hết hạn/ngày nghiệm thu/thời gian bảo hành. Nút "+ Thêm bảo hành" mở `warranty-detail.html?customer_id=`.
+- `frontend/assets/customers.js`: thêm icon "Xem chi tiết" (eye) mỗi dòng, liên kết sang `customer-detail.html?id=`.
+- `frontend/assets/layout.js`/`icons.js`: thêm mục "Bảo hành" vào nhóm "Khách hàng", icon `shield` mới.
+- **Phát hiện thêm 3 lỗi CSS `[hidden]` bị ghi đè khi test tính năng này** (cùng dạng lỗi `.form-row`/`.modal-card` đã sửa trước đó — 1 rule chính là do sửa trong phiên trước: `.page-header-actions .btn-secondary` thiếu `:not([hidden])` khiến nút "Xóa" trên `warranty-detail.html` **vẫn hiện với tài khoản không phải Admin** dù JS đã đặt đúng `hidden=true`): đã thêm `:not([hidden])` cho `.empty-state`, `.page-header-actions`, `.page-header-actions .btn-secondary`.
+- Test qua trình duyệt thật: tạo bảo hành 2 năm từ 01/08/2026 → tự tính đúng 01/08/2028; sửa ngày hết hạn thủ công 30/60/400 ngày → tự suy đúng "1 tháng"/"10 ngày"/"1 năm"; card trên trang chi tiết khách hàng hiển thị đúng "731 ngày còn lại"; đăng nhập bằng tài khoản Kế toán (không phải Admin, quyền `cong_no`+`bao_cao`) → nút Xóa ẩn đúng ở cả danh sách lẫn trang chi tiết, gọi thẳng `DELETE /api/warranties/:id` bị chặn 403 đúng thông báo.
+
 ## 2026-08-01 (Mở rộng modal "Lập phiếu xuất kho" — ô tên sản phẩm quá hẹp)
 
 > Người dùng phản ánh ngay sau khi thêm cột "Đơn giá sau CK": ô tìm sản phẩm quá nhỏ (cột `1fr` trong grid 8 cột chỉ còn ~138px ở modal rộng 880px mặc định), yêu cầu kéo rộng modal.
