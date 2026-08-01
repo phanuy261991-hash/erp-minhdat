@@ -101,11 +101,15 @@
 - [x] Migration `013_issue_discount.sql`: `stock_issue_items.discount_percent`, đối xứng phiếu nhập — cột "Chiết khấu (%)" + "Thành tiền" theo giá net trên dòng sản phẩm phiếu xuất, cập nhật `stockIssue.service.js`/`stockIssues.routes.js`/`issue-detail.js`/`debts.routes.js` (tổng tiền đã bán tính theo giá sau chiết khấu)
 - [x] Test đầy đủ qua trình duyệt thật: thời gian xuất tùy chỉnh hiển thị đúng trên danh sách; chọn khách hàng tự điền đúng SĐT/địa chỉ; khoảng cách `.setting-row` đo được đúng 14px; modal lịch sử công nợ hiển thị đúng số liệu nổi bật; chiết khấu từng dòng tính đúng thành tiền + tổng tiền phiếu
 
-## Phase 4 — In phiếu & Báo cáo
+## Phase 4 — In phiếu & Báo cáo (đã xong)
 
-- [ ] `print-issue.html` với CSS `@media print`
-- [ ] API `/api/reports/*`
-- [ ] Frontend báo cáo (bảng + Chart.js nếu cần biểu đồ)
+- [x] `print-issue.html`/`.js` (mới, trang độc lập không dùng sidebar) với CSS `@media print` — dùng lại `GET /api/stock-issues/:id` có sẵn, không cần API `/print` riêng
+- [x] Migration `014_company_print_note.sql`: `company_settings.print_note` (ghi chú hiển thị dưới bảng kê khi in — điều kiện bảo hành, chính sách đổi trả... — sửa được qua trang Thông tin công ty, không hardcode) + textarea mới trong `company-settings.html`/`.js`
+- [x] Nút "In phiếu" (icon mới `printer`) trên từng dòng ở `stock-issues.html`
+- [x] API `backend/routes/reports.routes.js` (mới, quyền `bao_cao`): `GET /inventory` (tồn kho + giá trị), `GET /stock-movements?months=` (mua/bán hàng theo tháng, điền 0 cho tháng trống), `GET /debts` (tổng phải thu/phải trả toàn hệ thống)
+- [x] Frontend báo cáo (`reports.html`/`.js`, mới): bảng tồn kho + thẻ tổng giá trị, **biểu đồ cột SVG tự vẽ tay** (không dùng Chart.js/thư viện ngoài — đúng nguyên tắc dự án không phụ thuộc CDN/build step) cho mua hàng/bán hàng theo tháng kèm % tăng trưởng so với tháng trước (`.stat-delta`, CSS mới), thẻ tổng công nợ phải thu/phải trả
+- [x] Bật menu "Báo cáo" trong `layout.js`
+- [x] Test đầy đủ qua trình duyệt thật: trang in phiếu hiển thị đúng toàn bộ thông tin công ty + khách hàng + chiết khấu + ghi chú, chặn đúng khi chưa đăng nhập; báo cáo hiển thị đúng số liệu khớp dữ liệu thật (tồn kho, mua/bán theo tháng, công nợ), tooltip hover từng cột đúng giá trị; phân quyền `bao_cao` chặn đúng cả UI (ẩn menu, redirect) lẫn API (403)
 
 ## Phase 5 — Vận hành & Go-live
 

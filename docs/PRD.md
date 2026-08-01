@@ -78,22 +78,23 @@ Web app nội bộ, kiến trúc đơn giản (không microservices, không clou
 - Ghi nhận thanh toán từng phần (không cần khớp đúng 1 khoản nợ/1 phiếu cụ thể), lịch sử giao dịch (cả phát sinh nợ lẫn thanh toán) xem theo từng đối tượng.
 - Quản lý danh sách đối tác (NCC/khách hàng) đầy đủ: thêm/sửa/xóa — không đổi được loại đối tác sau khi tạo, không xóa được nếu đối tác đã có lịch sử phiếu hoặc công nợ.
 
-### 4.5 In phiếu xuất
-- MVP: HTML + CSS `@media print` + `window.print()`, dùng máy in văn phòng thường (A4/A5) đã cài trên máy client — không cần thư viện PDF hay driver máy in nhiệt.
-- Nội dung phiếu: thông tin khách hàng, danh sách sản phẩm/số lượng/đơn giá, tổng tiền, người lập.
+### 4.5 In phiếu xuất (bổ sung 2026-08-01 — hoàn thành)
+- MVP: HTML + CSS `@media print` + `window.print()`, dùng máy in văn phòng thường (A4/A5) đã cài trên máy client — không cần thư viện PDF hay driver máy in nhiệt. Trang in (`print-issue.html`) độc lập, không dùng khung điều hướng chung.
+- Nội dung phiếu: **toàn bộ thông tin công ty** đã cấu hình (tên, địa chỉ, điện thoại, mã số thuế, email, website, thông tin ngân hàng), thông tin khách hàng (tên, địa chỉ, điện thoại), danh sách sản phẩm/số lượng/đơn giá/chiết khấu, tổng tiền, người lập phiếu, chỗ ký người giao/người nhận hàng.
+- **Ghi chú in phiếu** (bổ sung 2026-08-01, theo yêu cầu người dùng kèm mẫu phiếu thật): 1 đoạn văn bản tự do hiển thị dưới bảng kê sản phẩm (vd điều kiện bảo hành, chính sách đổi/trả hàng) — cấu hình được qua trang Thông tin công ty (mục 4.7), không hardcode.
 
-### 4.6 Báo cáo
-- Báo cáo tồn kho hiện tại theo sản phẩm.
-- Báo cáo xuất/nhập theo khoảng thời gian.
-- Báo cáo công nợ theo đối tượng (NCC/khách hàng), tổng nợ/đã thu-trả.
-- Hiển thị dạng bảng; biểu đồ (Chart.js) nếu cần trực quan hóa.
+### 4.6 Báo cáo (bổ sung 2026-08-01 — hoàn thành)
+- Báo cáo tồn kho hiện tại theo sản phẩm, kèm giá vốn (bình quân gia quyền) và giá trị tồn, tổng giá trị toàn kho.
+- Báo cáo mua hàng (nhập kho)/bán hàng (xuất kho) theo tháng — 6 tháng gần nhất, kèm % tăng trưởng so với tháng trước.
+- Báo cáo công nợ tổng hợp toàn hệ thống: tổng phải thu (khách hàng), tổng phải trả (NCC) — chi tiết theo từng đối tác xem trang Công nợ (mục 4.4).
+- Hiển thị dạng thẻ số liệu (card) cho các số tổng + bảng; **biểu đồ cột** cho xu hướng mua/bán hàng theo tháng — tự vẽ bằng SVG, không dùng thư viện ngoài (Chart.js) để giữ đúng nguyên tắc không phụ thuộc CDN/build step của dự án.
 
-### 4.7 Thông tin công ty (bổ sung 2026-08-01, mở rộng trường 2026-08-01)
-- Trang cấu hình cho phép nhập: Tên công ty, Địa chỉ, Mã số thuế, Email, Website, **Số điện thoại (nhập được từ 2 số trở lên)**, Tên ngân hàng, Chi nhánh, Số tài khoản, Tên chủ tài khoản.
+### 4.7 Thông tin công ty (bổ sung 2026-08-01, mở rộng trường 2026-08-01, thêm ghi chú in phiếu 2026-08-01)
+- Trang cấu hình cho phép nhập: Tên công ty, Địa chỉ, Mã số thuế, Email, Website, **Số điện thoại (nhập được từ 2 số trở lên)**, Tên ngân hàng, Chi nhánh, Số tài khoản, Tên chủ tài khoản, **Ghi chú in phiếu** (đoạn văn bản tự do, nhiều dòng).
 - Chỉ có **1 bộ thông tin duy nhất** cho toàn hệ thống (đúng với thiết kế "1 văn phòng/kho duy nhất" ở mục 1) — không phải danh sách nhiều công ty.
 - Dùng để hiển thị trên mẫu in phiếu xuất kho (mục 4.5) và các mẫu in khác phát sinh sau này.
 - Thuộc module "Cấu hình" — quyền chỉnh sửa theo phân quyền vai trò (mục 4.1), Admin luôn có quyền.
-- Giao diện chia 2 nhóm hiển thị song song: "Thông tin chung" và "Thông tin ngân hàng" — xem chi tiết layout tại `docs/DESIGN-SYSTEM.md` mục "Trang cấu hình (settings)".
+- Giao diện chia 2 nhóm hiển thị song song: "Thông tin chung" và "Thông tin ngân hàng", cộng thêm khối riêng "Ghi chú in phiếu" — xem chi tiết layout tại `docs/DESIGN-SYSTEM.md` mục "Trang cấu hình (settings)".
 
 ### 4.8 Cấu hình kho (bổ sung 2026-08-01)
 - Menu tổng hợp các cấu hình liên quan đến quy trình nghiệp vụ kho, mở để bổ sung dần khi phát sinh nhu cầu — không phải danh sách đóng.

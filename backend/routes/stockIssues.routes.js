@@ -11,9 +11,11 @@ const router = express.Router();
 const PAYMENT_STATUSES = ['da_thu_tien', 'cong_no'];
 const ADJUSTS_TYPES = ['receipt', 'issue'];
 
-// adjusts_code: xem chu thich tuong ung trong stockReceipts.routes.js.
+// adjusts_code: xem chu thich tuong ung trong stockReceipts.routes.js. partner_phone/
+// partner_address: dung cho trang in phieu xuat (Phase 4, xem docs/PRD.md muc 4.5).
 const SELECT_ISSUE = `
-  SELECT i.id, i.code, i.partner_id, pa.name AS partner_name, i.created_by,
+  SELECT i.id, i.code, i.partner_id, pa.name AS partner_name, pa.phone AS partner_phone,
+         pa.address AS partner_address, i.created_by,
          u.full_name AS created_by_name, i.note, i.payment_status, i.created_at,
          i.adjusts_type, i.adjusts_id,
          CASE i.adjusts_type WHEN 'receipt' THEN ar.code WHEN 'issue' THEN ai.code ELSE NULL END AS adjusts_code

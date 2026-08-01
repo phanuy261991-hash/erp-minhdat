@@ -33,7 +33,7 @@ const NAV_GROUPS = [
   {
     label: 'Quản trị',
     items: [
-      { key: 'reports', label: 'Báo cáo', href: 'reports.html', icon: 'chartBar', module: 'bao_cao', enabled: false },
+      { key: 'reports', label: 'Báo cáo', href: 'reports.html', icon: 'chartBar', module: 'bao_cao', enabled: true },
       { key: 'users', label: 'Người dùng', href: 'users.html', icon: 'userCog', module: 'nguoi_dung', enabled: true },
       { key: 'roles', label: 'Vai trò', href: 'roles.html', icon: 'shieldCheck', module: 'nguoi_dung', enabled: true },
     ],

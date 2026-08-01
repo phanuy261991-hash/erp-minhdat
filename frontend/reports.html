@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Báo cáo - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Quản trị</p>
+      <div class="page-header">
+        <h2>Báo cáo</h2>
+      </div>
+
+      <div id="reports-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="reports-error-text"></span>
+      </div>
+
+      <h3 class="section-heading">Tồn kho hiện tại</h3>
+      <div class="stat-grid" id="inventory-stats"></div>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Mã</th>
+              <th>Tên sản phẩm</th>
+              <th>ĐVT</th>
+              <th>Tồn kho</th>
+              <th>Giá vốn</th>
+              <th>Giá trị tồn</th>
+            </tr>
+          </thead>
+          <tbody id="inventory-tbody"></tbody>
+        </table>
+      </div>
+
+      <h3 class="section-heading">Mua hàng theo tháng (Nhập kho)</h3>
+      <div class="report-chart-row">
+        <div class="stat-grid" id="purchase-stats"></div>
+        <div class="chart-card" id="purchase-chart"></div>
+      </div>
+
+      <h3 class="section-heading">Bán hàng theo tháng (Xuất kho)</h3>
+      <div class="report-chart-row">
+        <div class="stat-grid" id="sales-stats"></div>
+        <div class="chart-card" id="sales-chart"></div>
+      </div>
+
+      <h3 class="section-heading">Công nợ</h3>
+      <div class="stat-grid" id="debt-stats"></div>
+    </main>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/reports.js"></script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>In phiếu xuất kho</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="print-body">
+  <div class="print-toolbar no-print">
+    <a href="stock-issues.html" id="btn-back" class="btn-secondary"></a>
+    <button type="button" id="btn-print" class="btn-primary"></button>
+  </div>
+
+  <div id="print-error" class="alert alert-error no-print" hidden>
+    <span class="alert-icon-slot"></span>
+    <span id="print-error-text"></span>
+  </div>
+
+  <div class="print-sheet" id="print-sheet" hidden>
+    <div class="print-header">
+      <div class="print-company">
+        <p class="print-company-name" id="print-company-name"></p>
+        <p id="print-company-address"></p>
+        <p id="print-company-phones"></p>
+        <p id="print-company-tax-code"></p>
+        <p id="print-company-contact"></p>
+        <p id="print-company-bank"></p>
+      </div>
+      <div class="print-doc-title">
+        <h1>PHIẾU XUẤT KHO</h1>
+        <p>Mã phiếu: <strong id="print-code"></strong></p>
+        <p>Ngày: <span id="print-date"></span></p>
+      </div>
+    </div>
+
+    <div class="print-customer">
+      <p>Khách hàng: <strong id="print-customer-name"></strong></p>
+      <p>Địa chỉ: <span id="print-customer-address"></span></p>
+      <p>Điện thoại: <span id="print-customer-phone"></span></p>
+      <p id="print-note-row">Ghi chú: <span id="print-note"></span></p>
+    </div>
+
+    <table class="print-table">
+      <thead>
+        <tr>
+          <th>STT</th>
+          <th>Tên hàng hóa</th>
+          <th>ĐVT</th>
+          <th class="print-num">Số lượng</th>
+          <th class="print-num">Đơn giá</th>
+          <th class="print-num">Chiết khấu</th>
+          <th class="print-num">Thành tiền</th>
+        </tr>
+      </thead>
+      <tbody id="print-items"></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="6" class="print-total-label">Tổng cộng</td>
+          <td id="print-total" class="print-total-value"></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="print-company-note" id="print-company-note-row" hidden>
+      <p class="print-company-note-title">Ghi chú:</p>
+      <p id="print-company-note-text"></p>
+    </div>
+
+    <div class="print-signatures">
+      <div>
+        <p>Người lập phiếu</p>
+        <p class="print-sign-hint">(Ký, ghi rõ họ tên)</p>
+        <p class="print-sign-name" id="print-created-by"></p>
+      </div>
+      <div>
+        <p>Người nhận hàng</p>
+        <p class="print-sign-hint">(Ký, ghi rõ họ tên)</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/print-issue.js"></script>
+</body>
+</html>

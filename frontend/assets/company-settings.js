@@ -12,6 +12,7 @@ const TEXT_FIELDS = [
   'bank_branch',
   'bank_account_number',
   'bank_account_holder',
+  'print_note',
 ];
 
 let currentUser = null;

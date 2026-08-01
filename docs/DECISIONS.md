@@ -2,6 +2,15 @@
 
 > Ghi lại các quyết định đã chốt để không thảo luận lại trừ khi có lý do mới. Mỗi mục ghi ngày chốt.
 
+## 2026-08-01 — Phase 4 hoàn thành: phạm vi Báo cáo, biểu đồ tự vẽ, ghi chú in phiếu cấu hình được
+
+**Phạm vi trang Báo cáo**: PRD 4.6 chỉ ghi chung chung ("bảng; biểu đồ nếu cần") — đã hỏi lại và người dùng xác nhận: làm **dạng thẻ số liệu (card)** cho các số tổng, và **có biểu đồ** so sánh tăng trưởng mua hàng/bán hàng theo tháng so với tháng trước (khác với đề xuất ban đầu "chỉ làm bảng trước, biểu đồ để sau").
+
+- **Không dùng Chart.js hay bất kỳ thư viện biểu đồ ngoài nào** — tự vẽ biểu đồ cột bằng SVG tay (`frontend/assets/reports.js`), nhất quán với nguyên tắc xuyên suốt dự án: không phụ thuộc CDN (đã áp dụng cho font từ Phase 1), không build step, tự vẽ SVG thay vì dùng thư viện (đã áp dụng cho icon từ `icons.js`). Đã tham khảo skill `dataviz` trước khi code (mark spec: cột bo góc chỉ ở đỉnh, 1 màu/biểu đồ không cần legend vì chỉ 1 chuỗi số liệu, nhãn %  tăng/giảm luôn kèm icon mũi tên không chỉ dựa màu).
+- **Giá vốn dùng cho báo cáo tồn kho luôn là bình quân gia quyền** (`getWeightedAverageCost()`), **bất kể** `warehouse_settings.costing_method` hệ thống đang chọn là gì (kể cả khi đang chọn FIFO cho việc tính giá xuất kho). Lý do: đây là 2 khái niệm khác nhau — "giá trị TỒN KHO hiện tại" (báo cáo) luôn hợp lý khi tính theo giá bình quân của các lô còn lại, trong khi `costing_method` chỉ quyết định cách tính giá vốn ghi vào **từng phiếu xuất** khi hàng rời kho. Đã áp dụng cách tính này nhất quán với `product-detail.html` (đã dùng từ Phase 2).
+- **`GET /api/stock-issues/:id/print` không cần code riêng** như dự tính ban đầu trong `docs/Plan.md` — trang in phiếu tái dùng thẳng `GET /api/stock-issues/:id` đã có sẵn đủ dữ liệu (`items`, `total_amount`, thông tin đối tác), chỉ cần bổ sung `partner_phone`/`partner_address` vào `SELECT_ISSUE`. Tránh trùng lặp code không cần thiết.
+- **Ghi chú in phiếu (`company_settings.print_note`, migration `014`) là trường cấu hình được, không hardcode** — dù người dùng cung cấp ảnh mẫu thật và cho phép "lấy toàn bộ nội dung ghi chú trên hình cũng được", vẫn chọn lưu thành cột DB sửa được qua UI (trang Thông tin công ty) thay vì hardcode thẳng vào code, vì nội dung này (điều kiện bảo hành, chính sách đổi trả) là thông tin nghiệp vụ có thể thay đổi theo thời gian — nhất quán với triết lý "không hardcode" đã áp dụng cho mọi thông tin công ty khác từ Phase 1.6. Nội dung mẫu seed sẵn theo đúng ảnh, có 1 dòng bị cắt ở lề ảnh gốc đã suy đoán lại — cần người dùng xác nhận qua `docs/CURRENT.md`.
+
 ## 2026-07-31 — Kiến trúc nền tảng
 
 - Backend: Node.js + Express, 1 process duy nhất, quản lý bằng PM2.

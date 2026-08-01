@@ -83,6 +83,7 @@ function renderIssueRow(issue) {
     <td>${formatDate(issue.created_at)}</td>
     <td>
       <button type="button" class="icon-btn" data-action="view" data-id="${issue.id}" title="Xem chi tiết">${icon('eye', 14)}</button>
+      <a class="icon-btn" href="print-issue.html?id=${issue.id}" target="_blank" title="In phiếu">${icon('printer', 14)}</a>
     </td>
   `;
   return tr;

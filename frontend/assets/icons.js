@@ -33,6 +33,7 @@ const ICONS = {
   chevronDown: '<path d="M6 9l6 6 6-6"/>',
   eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
   arrowLeft: '<path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/>',
+  printer: '<path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="1.5"/><path d="M6 17v4h12v-4"/><path d="M8 13h8"/>',
 };
 
 function icon(name, size) {

@@ -1,18 +1,15 @@
 # Trạng thái hiện tại
 
-**Cập nhật lần cuối**: 2026-07-31
+**Cập nhật lần cuối**: 2026-08-01
 
 ## Giai đoạn
 
-Phase 1, 1.5, 1.6, 2 (Kho), **3 (Công nợ) đã hoàn thành**. Sẵn sàng chuyển sang Phase 4 (In phiếu & Báo cáo) khi người dùng yêu cầu.
+Phase 1, 1.5, 1.6, 2 (Kho), 3 (Công nợ), **4 (In phiếu & Báo cáo) đã hoàn thành**. Sẵn sàng chuyển sang Phase 5 (Vận hành & Go-live) khi người dùng yêu cầu.
 
-- ✅ Phase 1/1.5/1.6/2: xem chi tiết ở các mục cũ bên dưới, không đổi gì thêm phiên này.
-- ✅ **Phase 3 — Công nợ phải trả NCC** (bổ sung `payment_status` vào `stock_receipts`, migration `011`): phiếu nhập giờ có toggle "Chưa thanh toán ngay" giống hệt phiếu xuất, giá trị `da_thanh_toan`/`cong_no`.
-- ✅ **Phase 3 — Sổ cái công nợ** (`debt_ledger`, migration `012`): số dư luôn tính từ `SUM` cộng dồn theo `partner_id` (không lưu số cố định, đúng nguyên tắc ledger). `debt.service.js` tự động ghi 1 dòng `type='no'` **trong cùng transaction** tạo phiếu khi phiếu nhập/xuất đánh dấu `cong_no` (bắt buộc phải chọn đối tác, chặn nếu không có). Ghi nhận thanh toán thủ công (`type='tra'`) qua trang Công nợ, cho phép trả từng phần.
-- ✅ **Phase 3 — Quản lý đối tác đầy đủ** (`partners.routes.js` mở rộng CRUD, `partners.html`): sửa (tên/SĐT/địa chỉ, không đổi được loại NCC/khách hàng sau khi tạo), xóa cứng (chặn nếu đã có lịch sử phiếu nhập/xuất hoặc công nợ) — quyền `cong_no` riêng cho sửa/xóa (khác với "thêm nhanh" lúc lập phiếu vẫn dùng chung `kho`/`cong_no`).
-- ✅ **Phase 3 — Trang Công nợ** (`debts.html`): danh sách đối tác kèm số dư hiện tại (tô màu cảnh báo nếu còn nợ), xem lịch sử giao dịch từng đối tác (kèm mã phiếu gốc nếu có), ghi nhận thanh toán (modal dùng chung cho cả nút ở đầu trang lẫn từng dòng đối tác).
-- ✅ **Hoàn thiện Xuất kho** (bổ sung sau khi Phase 3 xong, theo yêu cầu người dùng): thêm "Thời gian xuất" tùy chỉnh (giống `receipt_date`), tự động hiển thị SĐT/địa chỉ khi chọn khách hàng có sẵn (2 ô chỉ đọc), **chiết khấu % từng dòng sản phẩm** (migration `013`, đối xứng phiếu nhập — `unit_price` giữ giá gốc, `total_amount`/ghi công nợ tính theo giá sau chiết khấu).
-- ✅ **Cải thiện hiển thị trang Công nợ**: modal lịch sử công nợ đổi từ text thường sang 2 thẻ số liệu lớn — "Cần thanh toán"/"Cần thu" (tô màu cảnh báo khi còn nợ) đặt cạnh "Tổng tiền hàng đã mua"/"đã bán" (tính trực tiếp từ `stock_receipts`/`stock_issues`, không phải từ `debt_ledger`, để phản ánh đúng TỔNG giá trị giao dịch kể cả phần đã thanh toán ngay) — giúp so sánh trực quan.
+- ✅ Phase 1 → 3: xem chi tiết ở các mục cũ bên dưới, không đổi gì thêm phiên này.
+- ✅ **Phase 4 — In phiếu xuất kho** (`print-issue.html`, trang độc lập không dùng sidebar): dùng `GET /api/stock-issues/:id` có sẵn (không cần API `/print` riêng như dự tính ban đầu), hiển thị đầy đủ thông tin công ty (tên, địa chỉ, điện thoại, MST, email, website, ngân hàng) + thông tin khách hàng + bảng sản phẩm (kèm chiết khấu) + tổng tiền + chữ ký. Nút "In phiếu" (`window.print()`) trên từng dòng ở `stock-issues.html`.
+- ✅ **Ghi chú in phiếu cấu hình được** (`company_settings.print_note`, migration `014`): nội dung hiển thị dưới bảng kê trên phiếu in (điều kiện bảo hành, chính sách đổi trả...) — sửa được qua trang Thông tin công ty (textarea mới), không hardcode cứng trong code. Seed sẵn nội dung mẫu theo yêu cầu người dùng.
+- ✅ **Phase 4 — Báo cáo** (`reports.html`, quyền `bao_cao`): 3 phần — (1) Tồn kho hiện tại (bảng + tổng giá trị tồn, giá vốn luôn tính bình quân gia quyền bất kể `costing_method` đang chọn), (2) Mua hàng/Bán hàng theo tháng (biểu đồ cột SVG tự vẽ tay, không dùng thư viện ngoài, kèm % tăng trưởng so với tháng trước), (3) Công nợ tổng hợp toàn hệ thống (tổng phải thu/phải trả). `backend/routes/reports.routes.js` tính trực tiếp từ bảng gốc, không lưu số tổng hợp riêng.
 
 ## Đã hoàn thành
 
@@ -25,14 +22,17 @@ Phase 1, 1.5, 1.6, 2 (Kho), **3 (Công nợ) đã hoàn thành**. Sẵn sàng ch
 - **Phase 2 — Kho (hoàn thành)**: migration `005`-`010`, `costing.service.js`, `products.routes.js` mở rộng, `stockReceipts.routes.js`/`stockIssues.routes.js` (kèm cơ chế điều chỉnh bù trừ), frontend `products.html`/`product-detail.html`/`stock-receipts.html`/`stock-issues.html`, modal xem chi tiết phiếu nhập + phiếu xuất dùng chung (`receipt-detail.js`/`issue-detail.js`), combobox "Điều chỉnh cho phiếu" dùng chung (`adjustment.js`).
 - **Phase 3 — Công nợ (hoàn thành)**: migration `011`-`012`, `debt.service.js`, `debts.routes.js`, `partners.routes.js` CRUD đầy đủ, frontend `partners.html`/`debts.html`, bật menu "Đối tác"/"Công nợ" trong `layout.js`.
 - **Hoàn thiện Xuất kho + Công nợ (sau Phase 3)**: migration `013` (chiết khấu phiếu xuất), `stockIssue.service.js`/`stockIssues.routes.js` cập nhật (thời gian xuất, chiết khấu), `debts.routes.js` bổ sung `total_transacted`, frontend `stock-issues.html`/`.js` (thời gian xuất, hiển thị liên hệ khách hàng, chiết khấu), `debts.html`/`.js` (thẻ số liệu nổi bật), CSS `.stat-card-value--warning` + spacing `.setting-row`.
-- Tài khoản demo hiện có trong `data/data.db`: `admin` / `Demo@123456` (Admin), `thukho1` / `ThuKho@123` (Thủ kho), `khophu1` / `KhoPhu@123` (vai trò tự tạo, quyền `kho`+`cong_no`), `ketoan1` / `KeToan@123` (Kế toán). Có nhiều dữ liệu test tích lũy qua các phiên (phiếu nhập/xuất PN/PX..., vài đối tác test, vài dòng `debt_ledger` test) — không xóa được theo đúng nguyên tắc ledger, chấp nhận để lại.
+- **Phase 4 — In phiếu & Báo cáo (hoàn thành)**: migration `014` (`company_settings.print_note`), `backend/routes/reports.routes.js` (mới), frontend `print-issue.html`/`.js` (mới), `reports.html`/`.js` (mới, biểu đồ cột SVG tự vẽ + `.stat-delta`), `company-settings.html`/`.js` cập nhật (textarea ghi chú in phiếu), icon `printer` mới, bật menu "Báo cáo" trong `layout.js`.
+- Tài khoản demo hiện có trong `data/data.db`: `admin` / `Demo@123456` (Admin), `thukho1` / `ThuKho@123` (Thủ kho), `khophu1` / `KhoPhu@123` (vai trò tự tạo, quyền `kho`+`cong_no`), `ketoan1` / `KeToan@123` (Kế toán). Có nhiều dữ liệu test tích lũy qua các phiên (phiếu nhập/xuất PN/PX..., vài đối tác test, vài dòng `debt_ledger` test) — không xóa được theo đúng nguyên tắc ledger, chấp nhận để lại. `company_settings` hiện có dữ liệu test đầy đủ (email/website/ngân hàng) để demo trang in phiếu.
 
 ## Chưa bắt đầu / chưa xong
 
-- Phase 4 (In phiếu & Báo cáo), Phase 5 (Vận hành & Go-live) theo `docs/Plan.md` mục 4.
-- Cơ chế phiếu điều chỉnh bù trừ hiện chỉ áp dụng cho tồn kho (`stock_receipts`/`stock_issues`) — chưa có cơ chế tương tự để điều chỉnh 1 dòng `debt_ledger` ghi sai (vd ghi nhận thanh toán nhầm số tiền). Chưa có yêu cầu cụ thể, để khi phát sinh nhu cầu thực tế.
+- Phase 5 (Vận hành & Go-live) theo `docs/Plan.md` mục 4: cấu hình PM2, IP tĩnh, script backup `data.db`, `SESSION_SECRET` cố định.
+- Cơ chế phiếu điều chỉnh bù trừ hiện chỉ áp dụng cho tồn kho (`stock_receipts`/`stock_issues`) — chưa có cơ chế tương tự để điều chỉnh 1 dòng `debt_ledger` ghi sai. Chưa có yêu cầu cụ thể, để khi phát sinh nhu cầu thực tế.
 - Module Bán hàng/POS đầy đủ — cần buổi trao đổi yêu cầu nghiệp vụ riêng. Hiện chỉ có khung menu trống (`sales-settings.html`).
+- **Cần người dùng xác nhận lại**: nội dung "Ghi chú in phiếu" mặc định (seed từ migration `014`) có 1 dòng bị suy đoán lại vì ảnh mẫu gốc bị cắt ở lề ("Các sản phẩm thương hiệu khác bảo hành theo tiêu chuẩn của nhà sản xuất") — cần vào trang Thông tin công ty kiểm tra/sửa lại cho đúng nguyên văn nếu cần.
+- In phiếu hiện chỉ có cho **phiếu xuất kho** (đúng phạm vi PRD 4.5 "In phiếu xuất") — chưa có mẫu in cho phiếu nhập kho, chưa có yêu cầu cụ thể.
 
 ## Việc cần làm tiếp theo
 
-Chưa có việc cụ thể đang treo — chờ người dùng chọn hướng tiếp theo: Phase 4 (in phiếu xuất + báo cáo tồn kho/công nợ), Phase 5 (vận hành/go-live), hoặc yêu cầu bổ sung khác ngoài kế hoạch.
+Chưa có việc cụ thể đang treo — chờ người dùng chọn hướng tiếp theo: Phase 5 (vận hành/go-live), hoặc yêu cầu bổ sung khác ngoài kế hoạch (vd in phiếu nhập, mở rộng báo cáo, module Bán hàng/POS).

@@ -96,6 +96,26 @@
 >
 > **Sửa lỗi spacing (2026-07-31, phát hiện khi dùng lại `.setting-row` trong form)**: `.setting-row` ban đầu không có `margin-bottom`, chỉ dựa vào `.setting-row + .setting-row { margin-top: 10px }` để tách các dòng liên tiếp trong trang cấu hình — nên khi đặt 1 `.setting-row` đơn lẻ ngay trước 1 `.form-field` khác (như trong form phiếu), 2 phần tử dính sát nhau (0px). Đã thêm `margin-bottom: 14px` trực tiếp vào `.setting-row` để tự đủ khoảng cách trong mọi ngữ cảnh, không phụ thuộc phần tử liền sau là gì.
 
+## Trang in (print-issue.html) — độc lập, không dùng khung điều hướng chung
+
+> Bổ sung 2026-08-01 khi làm trang in phiếu xuất kho (Phase 4). Khác với mọi trang khác trong dự án — không có `<aside id="sidebar">`, không gọi `initLayout()`, vì mục đích là tạo bản in sạch để đưa ra máy in, không phải điều hướng trong ứng dụng.
+
+- `.print-body`/`.print-sheet`: khung trang giả lập tờ giấy (nền trắng, bo góc, shadow nhẹ trên màn hình) — khi in (`@media print`) bỏ hết bo góc/shadow/nền xám, chỉ còn nội dung.
+- `.no-print`: đánh dấu phần tử chỉ hiện trên màn hình (nút "In phiếu", nút "Quay lại", thông báo lỗi) — ẩn hoàn toàn khi in (`display: none !important` trong `@media print`).
+- Không ép khổ giấy cụ thể qua `@page { size }` — chỉ đặt `margin`, để trình duyệt/máy in dùng đúng khổ giấy người dùng đã chọn (A4/A5 tùy máy in thực tế, đúng PRD 4.5).
+- Nút "In phiếu" gọi thẳng `window.print()` — không dùng thư viện PDF nào.
+- Thông tin công ty hiển thị **từng dòng ẩn riêng nếu trống** (không để dòng trắng thừa nếu chưa cấu hình email/website/ngân hàng...) — dùng hàm dùng chung `renderCompanyLine()` set `hidden` theo có/không có dữ liệu, không phải ẩn cả khối.
+
+## Biểu đồ báo cáo (reports.html) — cột SVG tự vẽ tay, không dùng thư viện ngoài
+
+> Bổ sung 2026-08-01 khi làm trang Báo cáo (Phase 4). Quyết định có chủ đích không dùng Chart.js hay bất kỳ thư viện biểu đồ nào — nhất quán với nguyên tắc dự án không phụ thuộc CDN/build step (đã áp dụng cho font từ Phase 1, icon từ `icons.js`). Đã tham khảo skill `dataviz` trước khi thiết kế.
+
+- Mỗi biểu đồ chỉ vẽ **1 chuỗi số liệu** (1 màu, không cần chú thích/legend — theo skill `dataviz`: "1 chuỗi không cần legend"). Nếu cần so sánh 2 chỉ số khác nhau (vd mua hàng vs bán hàng), dùng **2 biểu đồ riêng** đặt cạnh nhau thay vì gộp chung 1 biểu đồ 2 màu — tránh vi phạm quy tắc "không dùng 2 trục y" khi 2 chỉ số có thang giá trị khác nhau.
+- Cột bo góc **chỉ ở đỉnh, vuông ở đáy** (chạm baseline) — `<rect rx>` của SVG bo tất cả 4 góc nên không dùng được, phải tự vẽ `<path>` (xem hàm `roundedTopBarPath()` trong `reports.js`).
+- Nhãn giá trị rút gọn (vd "2.2tr", "1.5 tỷ") chỉ hiện ở cột cuối cùng (kỳ hiện tại) để tránh rối mắt — các cột khác xem qua `<title>` (tooltip gốc trình duyệt khi hover), không cần xây dựng tooltip HTML riêng cho biểu đồ đơn giản này.
+- `.stat-delta`/`.stat-delta--up`/`.stat-delta--down`: nhãn % tăng/giảm so với kỳ trước, luôn kèm icon mũi tên (`chevronUp`/`chevronDown`) — không dựa màu sắc đơn thuần (đúng nguyên tắc accessibility, xem skill `dataviz`).
+- Màu cột lấy trực tiếp từ CSS variable đã có (`var(--color-primary)` cho "mua hàng", `var(--color-accent)` cho "bán hàng") qua thuộc tính `fill` — không định nghĩa màu biểu đồ riêng, để đổi theme sau này (nếu có) tự động áp dụng.
+
 ## Trang cấu hình (settings) — vd Thông tin công ty, Cấu hình kho
 
 > Mọi trang cấu hình mới trong tương lai phải dùng lại đúng các class dưới đây, không tự vẽ layout riêng (đã chốt với người dùng 2026-08-01 sau khi lặp lại nhiều lần trên `warehouse-settings.html`).
@@ -106,6 +126,7 @@
 - `.switch`: toggle bật/tắt tự vẽ (không dùng checkbox mặc định của trình duyệt) — track fill gradient (dùng lại đúng gradient `.btn-primary`) + shadow khi bật, có viền + shadow nhẹ khi tắt (tránh nhìn phẳng/nhợt nhạt).
 - `.repeatable-list` + `.repeatable-add-btn` + `.repeatable-remove-btn`: danh sách nhập lặp lại (vd nhiều số điện thoại) — nút thêm viền nét đứt, mỗi dòng có nút xóa riêng.
 - `.empty-state`: dùng cho trang/khung chưa có nội dung (vd "Cấu hình bán hàng" — khung menu trống theo PRD 4.9) — luôn có icon + tiêu đề + mô tả lý do, không để trắng trơn.
+- `textarea` trong `.form-field` (bổ sung 2026-08-01, vd "Ghi chú in phiếu" ở Thông tin công ty): dùng chung style với `input`/`select` (`.form-field input, .form-field select, .form-field textarea`), chỉ thêm `resize: vertical` (không cho kéo giãn ngang, phá bố cục) — không tạo class riêng cho textarea.
 - **Quy tắc lưu bắt buộc**: mọi thay đổi trên trang cấu hình chỉ áp dụng sau khi bấm nút "Lưu thay đổi" (`.settings-actions .btn-primary`) — không tự động lưu khi người dùng bật/tắt hay gõ vào ô nhập.
 
 ### Bài học khi làm lưới chọn nhiều mục (vd chọn module cho vai trò)

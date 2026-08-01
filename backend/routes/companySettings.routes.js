@@ -19,6 +19,7 @@ const TEXT_FIELDS = [
   'bank_branch',
   'bank_account_number',
   'bank_account_holder',
+  'print_note',
 ];
 
 // phones luu dang mang JSON trong 1 cot TEXT (cho nhap tu 2 so tro len) - khong tach bang
@@ -49,7 +50,7 @@ router.put('/', requirePermission('cau_hinh'), (req, res) => {
     UPDATE company_settings
     SET company_name = ?, address = ?, tax_code = ?, email = ?, website = ?,
         bank_name = ?, bank_branch = ?, bank_account_number = ?, bank_account_holder = ?,
-        phones = ?, updated_at = datetime('now')
+        print_note = ?, phones = ?, updated_at = datetime('now')
     WHERE id = 1
   `).run(...textValues, JSON.stringify(phones));
 

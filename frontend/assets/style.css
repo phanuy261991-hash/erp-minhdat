@@ -782,7 +782,8 @@ input:focus-visible {
 }
 
 .form-field input,
-.form-field select {
+.form-field select,
+.form-field textarea {
   width: 100%;
   padding: 10px 12px;
   border-radius: var(--radius-sm);
@@ -795,8 +796,14 @@ input:focus-visible {
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
 }
 
+.form-field textarea {
+  resize: vertical;
+  line-height: 1.6;
+}
+
 .form-field input:focus,
-.form-field select:focus {
+.form-field select:focus,
+.form-field textarea:focus {
   border-color: var(--color-ring);
   background: var(--color-surface);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
@@ -1471,4 +1478,266 @@ input:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ---- Trang in phieu xuat kho (frontend/print-issue.html) - trang doc lap, khong dung
+   app-layout/sidebar nhu cac trang khac, vi muc dich la ban in sach de dua vao may in van
+   phong (xem docs/PRD.md muc 4.5). ---- */
+
+.print-body {
+  background: var(--color-background);
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.print-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 800px;
+  margin: 0 auto 16px;
+}
+
+.print-toolbar a.btn-secondary,
+.print-toolbar button.btn-primary {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.print-sheet {
+  max-width: 800px;
+  margin: 0 auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 40px;
+  font-size: 14px;
+  color: #000;
+}
+
+.print-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--color-foreground);
+  margin-bottom: 20px;
+}
+
+.print-company-name {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.print-header p {
+  margin: 2px 0;
+  font-size: 13px;
+  color: var(--color-muted-foreground);
+}
+
+.print-doc-title {
+  text-align: right;
+}
+
+.print-doc-title h1 {
+  font-size: 20px;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.print-doc-title p {
+  margin: 2px 0;
+  font-size: 13px;
+}
+
+.print-customer p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+.print-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0 24px;
+}
+
+.print-table th,
+.print-table td {
+  border: 1px solid var(--color-foreground);
+  padding: 8px 10px;
+  font-size: 13px;
+  text-align: left;
+}
+
+.print-table th {
+  background: var(--color-muted);
+  font-weight: 600;
+}
+
+.print-table td.print-num,
+.print-table th.print-num {
+  text-align: right;
+}
+
+.print-total-label {
+  text-align: right;
+  font-weight: 600;
+}
+
+.print-total-value {
+  text-align: right;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+/* Ghi chu cua cong ty (dieu kien bao hanh, chinh sach doi tra...) - cau hinh duoc qua trang
+   Thong tin cong ty (company_settings.print_note), khong hardcode. Giu xuong dong nguoi dung
+   da nhap (white-space: pre-line) vi noi dung thuong la danh sach nhieu dong. */
+.print-company-note {
+  margin-bottom: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.print-company-note-title {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+  font-style: italic;
+}
+
+.print-company-note-text {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: pre-line;
+  color: var(--color-foreground);
+}
+
+.print-signatures {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  text-align: center;
+}
+
+.print-signatures > div {
+  width: 45%;
+}
+
+.print-signatures p {
+  margin: 2px 0;
+}
+
+.print-sign-hint {
+  font-size: 12px;
+  color: var(--color-muted-foreground);
+  font-style: italic;
+}
+
+.print-sign-name {
+  margin-top: 60px;
+  font-weight: 600;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-body {
+    background: #fff;
+    padding: 0;
+  }
+
+  .print-sheet {
+    box-shadow: none;
+    border: none;
+    border-radius: 0;
+    max-width: 100%;
+    padding: 12mm;
+  }
+
+  @page {
+    margin: 12mm;
+  }
+}
+
+/* ---- Trang Bao cao (reports.html) - the/kpi + bieu do cot ve tay bang SVG (khong dung thu
+   vien ngoai, dung nguyen tac du an: khong CDN, khong build step - xem docs/DESIGN-SYSTEM.md). ---- */
+
+/* Nhan tang/giam so voi ky truoc tren stat-card - mau chi la kenh phu, luon kem icon + chu,
+   khong dua vao mau don le (xem quy tac accessibility cua skill dataviz). */
+.stat-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+}
+
+.stat-delta--up {
+  color: var(--color-accent);
+}
+
+.stat-delta--down {
+  color: var(--color-destructive);
+}
+
+.report-chart-row {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: 8px;
+}
+
+.report-chart-row .stat-grid {
+  grid-template-columns: 1fr;
+}
+
+.chart-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px 20px 8px;
+  display: flex;
+  align-items: center;
+}
+
+.report-chart-svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.chart-baseline {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.chart-bar-value {
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--color-foreground);
+  font-family: var(--font-body);
+}
+
+.chart-month-label {
+  font-size: 11px;
+  fill: var(--color-muted-foreground);
+  font-family: var(--font-body);
+}
+
+@media (max-width: 720px) {
+  .report-chart-row {
+    grid-template-columns: 1fr;
+  }
 }

@@ -15,6 +15,7 @@ const stockReceiptsRoutes = require('./routes/stockReceipts.routes');
 const stockIssuesRoutes = require('./routes/stockIssues.routes');
 const partnersRoutes = require('./routes/partners.routes');
 const debtsRoutes = require('./routes/debts.routes');
+const reportsRoutes = require('./routes/reports.routes');
 const { requireAuth } = require('./middleware/auth');
 const { requirePermission } = require('./middleware/requirePermission');
 
@@ -59,6 +60,7 @@ app.use('/api/stock-issues', requireAuth, requirePermission('kho'), stockIssuesR
 // (xem partners.routes.js).
 app.use('/api/partners', requireAuth, partnersRoutes);
 app.use('/api/debts', requireAuth, requirePermission('cong_no'), debtsRoutes);
+app.use('/api/reports', requireAuth, requirePermission('bao_cao'), reportsRoutes);
 
 // Route kiem tra server song - dung de test nhanh khi chay demo.
 app.get('/api/health', (req, res) => {
