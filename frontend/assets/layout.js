@@ -55,6 +55,7 @@ const NAV_GROUPS = [
       { key: 'warehouse-settings', label: 'Cấu hình kho', href: 'warehouse-settings.html', icon: 'sliders', module: 'cau_hinh', enabled: true },
       { key: 'customer-categories', label: 'Loại khách hàng', href: 'customer-categories.html', icon: 'tag', module: 'cau_hinh', enabled: true },
       { key: 'sales-settings', label: 'Cấu hình bán hàng', href: 'sales-settings.html', icon: 'cart', module: 'cau_hinh', enabled: true },
+      { key: 'about', label: 'Thông tin phần mềm', href: 'about.html', icon: 'info', module: null, enabled: true },
     ],
   },
 ];
@@ -110,6 +111,7 @@ function renderSidebar(user, activeKey) {
         </div>
         <button type="button" id="sidebar-logout" class="sidebar-logout" aria-label="Đăng xuất">${icon('logout', 16)}</button>
       </div>
+      <p class="sidebar-copyright label">© 2026 Bản quyền thuộc về Mr Nguyễn Phan Uy</p>
     </div>
   `;
 

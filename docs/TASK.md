@@ -153,6 +153,11 @@
 - [x] Thiết kế lại bằng skill `ui-ux-pro-max`: `.dashboard-hero` (icon mặt trời/mặt trăng + ngày tháng tiếng Việt), `.dashboard-card` kiểu bento bấm được điều hướng, `.quick-links` lọc theo quyền — xem `docs/DESIGN-SYSTEM.md`
 - [x] Test qua trình duyệt thật với tài khoản Thủ kho và Admin — số liệu đúng, lọc quyền đúng, điều hướng đúng
 
+### Bản quyền + trang "Thông tin phần mềm" (ngoài phase, theo yêu cầu người dùng 2026-08-01)
+
+- [x] Dòng bản quyền footer sidebar (mọi trang) + trang `about.html` (menu Cấu hình) — thiết kế bằng skill `ui-ux-pro-max`
+- [x] Sửa 3 lỗi CSS phát sinh khi test: subtitle rớt chữ, sidebar tràn màn hình + icon biến mất khi thu gọn, `.stat-grid` dính `.data-table-wrap` ở trang Báo cáo — chi tiết `docs/CHANGELOG.md`/`docs/DESIGN-SYSTEM.md`
+
 ## Phase 5 — Vận hành & Go-live
 
 > Bắt đầu 2026-08-01 trên máy dev (không phải máy chủ thật — xem `docs/DECISIONS.md`) — chỉ làm được phần độc lập với máy cụ thể, các bước còn lại để khi triển khai lên đúng máy chủ, xem quy trình đầy đủ `docs/DEPLOY.md`.

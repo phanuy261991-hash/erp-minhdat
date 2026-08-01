@@ -1,6 +1,6 @@
 {
   "name": "erp_minhdat",
-  "version": "1.0.0",
+  "version": "1.5.0",
   "private": true,
   "description": "He thong quan ly kho & cong no noi bo - MinhDat",
   "main": "backend/server.js",

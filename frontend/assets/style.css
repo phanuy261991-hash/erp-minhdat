@@ -275,8 +275,16 @@ input:focus-visible {
   min-height: 100vh;
 }
 
+/* height:100vh + position:sticky (thay vi chi dua vao min-height cua .app-layout) - can thiet
+   de .sidebar-nav ben duoi co chieu cao gioi han thuc su ma cuon rieng duoc, giu .sidebar-footer
+   (thong tin user + dong ban quyen) LUON hien o day man hinh - truoc day danh sach menu dai ra
+   (nay them muc "Thong tin phan mem") se day ca footer ra ngoai vung nhin thay duoc, khong co
+   cach nao cuon toi (xem phan hoi nguoi dung 2026-08-01). */
 .sidebar {
   width: 224px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
   flex-shrink: 0;
   background: var(--color-surface);
   border-right: 1px solid var(--color-border);
@@ -352,6 +360,8 @@ input:focus-visible {
 .sidebar-nav {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -377,6 +387,14 @@ input:focus-visible {
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 
+/* flex-shrink:0 - sau khi them overflow-y:auto cho .sidebar-nav (2026-08-01, xem ghi chu tren
+   .sidebar-nav), thanh cuon xuat hien lam .nav-item bi ep hep lai luc thu gon sidebar, khien
+   engine flexbox co thuat toan shrink SVG (khong co CSS width rieng, chi co attribute width/
+   height) ve 0 - icon bien mat hoan toan khi thu gon menu (phan hoi nguoi dung 2026-08-01). */
+.nav-item svg {
+  flex-shrink: 0;
+}
+
 .nav-item:hover {
   background: var(--color-muted);
 }
@@ -388,6 +406,7 @@ input:focus-visible {
 }
 
 .sidebar-footer {
+  flex-shrink: 0;
   margin-top: auto;
   padding: 10px 14px 0;
   border-top: 1px solid var(--color-border);
@@ -432,6 +451,17 @@ input:focus-visible {
   margin: 0;
   font-size: 11px;
   color: var(--color-muted-foreground);
+}
+
+/* Dong ban quyen o footer sidebar, hien tren MOI trang (render 1 lan trong layout.js) - nho
+   nhung du doc, tu an khi thu gon sidebar (class .label, giong text cac muc menu khac -
+   xem yeu cau nguoi dung 2026-08-01). */
+.sidebar-copyright {
+  margin: 10px 0 12px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--color-muted-foreground);
+  text-align: center;
 }
 
 .sidebar-logout {
@@ -490,10 +520,16 @@ input:focus-visible {
 
 /* ---- Card so lieu (dung o trang tong quan) ---- */
 
+/* margin-bottom: khong co san - khi .stat-grid dung ngay truoc .data-table-wrap (vd
+   reports.html "Ton kho hien tai") ma khong co .section-heading chen giua, 2 khoi dinh sat vao
+   nhau (margin cua .section-heading o cac ngu canh khac vo tinh che dau bug nay - xem phan hoi
+   nguoi dung 2026-08-01). Margin doc giua 2 sibling se tu collapse lay gia tri lon hon, khong
+   cong don, nen an toan them o day du da co .section-heading margin-top phia sau. */
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 14px;
+  margin-bottom: 24px;
 }
 
 .stat-card {
@@ -2119,4 +2155,78 @@ input:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* ---- Trang "Thong tin phan mem" (about.html, 2026-08-01, thiet ke bang skill ui-ux-pro-max) -
+   1 card trung tam noi bat (khac han cach trinh bay list text don dieu) de lam noi ten phan
+   mem/phien ban/ban quyen - dung dung token mau/font/radius/shadow da chot, khong tao token moi. ---- */
+
+.about-card {
+  max-width: 480px;
+  margin: 32px auto 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 44px 40px;
+  text-align: center;
+}
+
+.about-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 20px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-button);
+}
+
+.about-title {
+  margin: 0 0 6px;
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-foreground);
+}
+
+.about-subtitle {
+  margin: 0 0 18px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--color-muted-foreground);
+  text-wrap: balance;
+}
+
+.about-version-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: var(--color-accent);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.about-divider {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 28px 0;
+}
+
+.about-copyright {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--color-muted-foreground);
+}
+
+.about-copyright strong {
+  color: var(--color-foreground);
+  font-weight: 600;
 }

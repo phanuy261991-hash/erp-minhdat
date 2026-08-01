@@ -68,6 +68,7 @@ project-root/
 │  ├─ company-settings.html            (đã có) thông tin công ty (2 card song song)
 │  ├─ warehouse-settings.html          (đã có) cấu hình kho (allow_negative_stock + costing_method)
 │  ├─ sales-settings.html              (đã có) khung trống "Cấu hình bán hàng" — chưa có nội dung
+│  ├─ about.html                       (đã có, 2026-08-01) "Thông tin phần mềm" — tên/phiên bản/bản quyền, mở cho mọi tài khoản
 │  ├─ products.html                    (đã có) danh mục sản phẩm (tìm kiếm, sắp xếp, cảnh báo tồn thấp)
 │  ├─ product-detail.html              (đã có, ngoài kế hoạch ban đầu) chi tiết sản phẩm + 2 lịch sử
 │  ├─ stock-receipts.html              (đã có) lập phiếu nhập (combobox sản phẩm, chiết khấu, thời gian nhập tùy chỉnh, modal xem chi tiết, phiếu điều chỉnh bù trừ)
@@ -86,7 +87,9 @@ project-root/
 │     ├─ api.js                        (đã có) helper gọi API dùng chung
 │     ├─ auth.js                       (đã có) logic riêng trang login
 │     ├─ icons.js                      (đã có) bộ icon SVG dùng chung
-│     ├─ layout.js                     (đã có) sidebar/điều hướng dùng chung mọi trang (lọc theo permissions)
+│     ├─ layout.js                     (đã có) sidebar/điều hướng dùng chung mọi trang (lọc theo permissions), có dòng bản quyền footer (2026-08-01)
+│     ├─ dashboard.js                  (đã có, 2026-08-01) logic trang dashboard.html (lời chào động, the bento, truy cap nhanh)
+│     ├─ about.js                      (đã có, 2026-08-01) logic trang about.html
 │     ├─ users.js                      (đã có) logic trang users.html
 │     ├─ roles.js                      (đã có) logic trang roles.html
 │     ├─ company-settings.js           (đã có) logic trang company-settings.html

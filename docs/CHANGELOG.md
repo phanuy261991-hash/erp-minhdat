@@ -2,6 +2,19 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-01 (Thông tin bản quyền + trang "Thông tin phần mềm" — kèm 3 lỗi CSS phát sinh)
+
+> Người dùng yêu cầu thêm dòng bản quyền ở footer (mọi trang) và trang "Thông tin phần mềm" trong Cấu hình, thiết kế bằng skill `ui-ux-pro-max`. Trong lúc test phát sinh thêm 3 phản hồi liên tiếp: subtitle bị rớt chữ lẻ xuống dòng, icon menu biến mất khi thu gọn sidebar, phần "Tồn kho hiện tại" ở trang Báo cáo bị dính liền không có khoảng cách.
+
+- `frontend/assets/layout.js`: thêm `.sidebar-copyright` ("© 2026 Bản quyền thuộc về Mr Nguyễn Phan Uy") vào `sidebar-footer`, render 1 lần nên tự có mặt trên **mọi trang**; dùng class `label` để tự ẩn khi thu gọn sidebar giống các mục menu khác.
+- `frontend/about.html`/`assets/about.js` (mới, menu "Cấu hình" → "Thông tin phần mềm", mở cho mọi tài khoản đã đăng nhập): card trung tâm nổi bật (icon app lớn, tên phần mềm, badge "Phiên bản: 1.5.0", khối bản quyền tách riêng) — xem `docs/DESIGN-SYSTEM.md`. `package.json` cập nhật version khớp `1.0.0` → `1.5.0`.
+- Icon mới trong `icons.js`: `info` (mục menu), `arrowRight`/`sun`/`moon` đã thêm từ phiên trước (dashboard).
+- **Sửa 3 lỗi CSS phát sinh trong lúc test** (đều đã kiểm tra lại qua trình duyệt thật sau khi sửa):
+  1. `.about-subtitle` rớt 1 chữ lẻ xuống dòng 2 → giảm cỡ chữ (14px → 12.5px) + `text-wrap: balance`.
+  2. **Sidebar tràn khỏi màn hình + icon menu biến mất khi thu gọn**: `.sidebar` thiếu `height`/`position: sticky` khiến menu dài (nay >20 mục) đẩy footer ra ngoài vùng nhìn thấy — thêm `.sidebar{height:100vh; position:sticky}` + `.sidebar-nav{flex:1; min-height:0; overflow-y:auto}` để menu tự cuộn riêng. Hệ quả phụ: thanh cuộn xuất hiện làm `.nav-item` hẹp lại, khiến SVG icon (không có CSS `width` riêng) bị flexbox tự shrink về `0px` khi thu gọn sidebar (60px) — sửa bằng `.nav-item svg{flex-shrink:0}`.
+  3. `.stat-grid` dính sát `.data-table-wrap` phía sau (trang Báo cáo, mục "Tồn kho hiện tại" không có `.section-heading` chen giữa để "vô tình" tạo khoảng cách như các trang khác) — thêm `margin-bottom: 24px` cho `.stat-grid`.
+- Test qua trình duyệt thật: trang "Thông tin phần mềm" hiển thị đúng, không rớt chữ; sidebar thu gọn/mở rộng nhiều lần đều giữ đủ icon + bản quyền hiện đúng vị trí; trang Báo cáo có khoảng cách hợp lý toàn bộ các mục; test lại `product-detail.html` (cũng dùng `.stat-grid`) xác nhận không hồi quy; không lỗi console.
+
 ## 2026-08-01 (Bắt đầu Phase 5 — PM2 config, backup data.db, tài liệu triển khai)
 
 > Người dùng yêu cầu bắt đầu Phase 5. Phát hiện máy đang làm việc là máy dev (Wi-Fi, có VPN), không phải máy chủ thật sẽ đặt trong văn phòng — đã hỏi lại và người dùng xác nhận: các bước gắn với 1 máy chủ cụ thể (IP tĩnh, `pm2 startup`, go-live) để lại làm sau; hôm nay chỉ làm phần độc lập với máy (code, cấu hình, tài liệu quy trình).

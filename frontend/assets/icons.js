@@ -40,6 +40,7 @@ const ICONS = {
   arrowRight: '<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>',
   sun: '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.5M12 19v2.5M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2.5 12H5M19 12h2.5M4.2 19.8 6 18M18 6l1.8-1.8"/>',
   moon: '<path d="M20 14.5a8.5 8.5 0 1 1-8-11.2 7 7 0 0 0 8 11.2Z"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5h.01"/>',
 };
 
 function icon(name, size) {

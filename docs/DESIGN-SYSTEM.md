@@ -147,6 +147,20 @@
 - **`.quick-links`**: lưới nút link nhanh tới các thao tác hay dùng (Nhập kho, Xuất kho, Bảo hành, Báo cáo) — **lọc theo đúng quyền module** của tài khoản đang đăng nhập (giống cách `layout.js` lọc `NAV_GROUPS`), tự ẩn cả tiêu đề "Truy cập nhanh" nếu tài khoản không có quyền nào trong danh sách.
 - Vẫn dùng đúng token màu/font/radius/shadow đã chốt — không thêm màu mới, chỉ dùng lại `--color-primary`/`--color-accent`/`--color-warning` với nền pha loãng cho icon.
 
+## Trang "Thông tin phần mềm" (about.html) — card trung tâm nổi bật
+
+> Bổ sung 2026-08-01, thiết kế bằng skill `ui-ux-pro-max` theo yêu cầu người dùng.
+
+- `.about-card`: 1 card **trung tâm duy nhất** (max-width 480px, `margin: auto`) thay vì trình bày dạng danh sách text — icon app lớn (72px, gradient giống `.dashboard-hero-icon`) ở trên, tên phần mềm, mô tả ngắn, badge phiên bản (pill nền `--color-accent` pha loãng), `<hr>` phân cách, rồi đến khối bản quyền (chữ nhỏ, muted, tên người giữ bản quyền in đậm nổi bật).
+- Vào menu qua nhóm "Cấu hình" (`about.html`), `module: null` trong `layout.js` — mở cho **mọi tài khoản đã đăng nhập**, không giới hạn quyền vì chỉ là thông tin tĩnh, không nhạy cảm.
+- Dòng bản quyền ngắn (`© {năm} Bản quyền thuộc về ...`) còn lặp lại ở **footer sidebar** (`.sidebar-copyright`, render 1 lần trong `layout.js` nên tự có mặt trên mọi trang) — tự ẩn khi thu gọn sidebar (dùng chung class `.label` như các mục menu khác).
+
+### Sự cố phát sinh khi thêm dòng bản quyền vào sidebar (đáng lưu ý)
+
+- **Sidebar tràn khỏi màn hình khi menu dài**: `.sidebar` trước đây chỉ có `display:flex; flex-direction:column` không có `height` riêng, dựa vào `.app-layout{min-height:100vh}` để "stretch" — nhưng stretch chỉ set kích thước ban đầu, nội dung dài hơn 100vh (nay đã hơn 20 mục menu) vẫn tự tràn ra ngoài, đẩy phần footer (thông tin user + bản quyền) ra ngoài vùng nhìn thấy mà không cuộn tới được. Đã sửa: `.sidebar{height:100vh; position:sticky; top:0}` + `.sidebar-nav{flex:1; min-height:0; overflow-y:auto}` — menu tự cuộn riêng, footer luôn cố định hiện đủ.
+- **Icon menu biến mất khi thu gọn sidebar**: sau khi thêm `overflow-y:auto` ở trên, thanh cuộn dọc xuất hiện chiếm bớt bề ngang vốn đã rất hẹp (60px khi thu gọn) — SVG icon trong `.nav-item` (không có CSS `width` riêng, chỉ có attribute `width`/`height`) bị thuật toán flexbox shrink về `0px` khi container hết chỗ. Sửa bằng `.nav-item svg{flex-shrink:0}` — icon luôn giữ đúng kích thước dù container hẹp. **Bài học**: SVG đặt trong flex container hẹp luôn cần `flex-shrink:0` tường minh, không thể tin tưởng kích thước mặc định.
+- **`.stat-grid` dính sát `.data-table-wrap` phía sau** (vd trang Báo cáo, mục "Tồn kho hiện tại" không có `.section-heading` chen giữa 2 khối): `.stat-grid` chưa từng có `margin-bottom`, các trang khác "vô tình" không lộ bug vì luôn có `.section-heading` (đã có `margin-top`) ngay sau. Đã thêm `margin-bottom: 24px` cho `.stat-grid` — an toàn vì margin dọc giữa 2 sibling tự collapse lấy giá trị lớn hơn, không cộng dồn với margin-top của phần tử theo sau.
+
 ## Hiệu ứng & Animation
 
 - Border-radius: 8–12px cho input/button, 16–20px cho card lớn.
