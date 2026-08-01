@@ -38,9 +38,26 @@ Lệnh này tạo thư mục `dist/` chứa: `node.exe` (portable, không cần 
    3 lệnh trên chạy trong PowerShell quyền Administrator. 2 lệnh cuối khởi động lại tác vụ để nạp lại biến môi trường mới (tác vụ đang chạy đã nạp môi trường cũ từ lúc khởi động, không tự đọc lại).
 7. Cấu hình backup (xem mục 5 bên dưới) — đường dẫn `node.exe`/`scripts/backup.js` dùng trong Task Scheduler backup lấy từ chính thư mục `dist/` đã giải nén (vd `C:\ERP_MinhDat\node.exe` / `C:\ERP_MinhDat\scripts\backup.js`).
 
-### 1.3. Cập nhật phiên bản mới
+### 1.3. Cập nhật phiên bản mới (không mất dữ liệu)
 
-Đóng gói lại (`npm run build:portable`) trên máy dev, copy đè toàn bộ `dist/` mới sang máy chủ **trừ thư mục `data/`** (giữ nguyên database cũ) — dừng `start.bat`/task tự khởi động trước khi copy đè để tránh file đang bị khoá.
+**Nguyên tắc cốt lõi**: dữ liệu luôn nằm trong `data/data.db` (+ `-wal`/`-shm`), tách biệt hoàn toàn khỏi `backend/`/`frontend/`/`node_modules/`/`node.exe`. Cập nhật phiên bản = thay code, **giữ nguyên** thư mục `data/`. Migration tự chạy khi khởi động (`backend/server.js`) và **chỉ áp dụng các migration mới chưa từng chạy** (tra theo bảng `schema_migrations`) — không đụng tới dữ liệu đã có.
+
+1. **Trên máy dev**: code đã cập nhật xong (đã test kỹ), chạy `npm run build:portable` → có `dist/` mới.
+2. **Backup trước khi đụng vào máy khách hàng** (bắt buộc, dù bước sau không đáng lẽ đụng tới `data/`): vào ứng dụng đang chạy → **Cấu hình kho** → **Backup ngay**, hoặc copy tay 3 file `data/data.db`, `data/data.db-wal`, `data/data.db-shm` sang nơi khác (USB, ổ khác).
+3. **Dừng server đang chạy** trên máy khách hàng:
+   ```powershell
+   Stop-ScheduledTask -TaskName "ERP-MinhDat-KhoCongNo"
+   ```
+   (nếu chạy bằng `start.bat` thủ công thay vì Task Scheduler thì đóng cửa sổ CMD đó thay vì lệnh trên).
+4. **Thay code, giữ nguyên `data/`**: trong thư mục đã cài trên máy khách hàng (vd `C:\ERP_MinhDat\`), xoá/copy đè mọi thứ **trừ thư mục `data/`** bằng nội dung `dist/` mới — cụ thể: `backend/`, `frontend/`, `scripts/`, `node_modules/`, `node.exe`, `package.json`, `start.bat`, `install-autostart.ps1`, `uninstall-autostart.ps1`. **Không đụng, không xoá, không copy đè thư mục `data/`.**
+5. **Chạy lại**:
+   ```powershell
+   Start-ScheduledTask -TaskName "ERP-MinhDat-KhoCongNo"
+   ```
+   Xem log/console (nếu chạy `start.bat` sẽ thấy trực tiếp) — dòng `Da ap dung migration: 0xx_...sql` cho từng migration mới, hoặc `Khong co migration moi can ap dung.` nếu không có gì thay đổi ở schema. Dữ liệu cũ (sản phẩm, phiếu, công nợ, tài khoản...) vẫn còn nguyên vì `data/` không bị đụng tới.
+6. **Kiểm tra lại**: mở `http://localhost:3000`, đăng nhập bằng tài khoản cũ, xác nhận dữ liệu cũ vẫn đầy đủ và tính năng mới hoạt động đúng.
+
+**Nếu phiên bản mới có lỗi cần rollback**: giữ lại 1 bản copy của `dist/` cũ (đổi tên, đừng xoá) trước khi thay ở bước 4 — nếu cần quay lại, dừng server, thay code bằng bản `dist/` cũ, khôi phục `data/data.db` từ bản backup ở bước 2 (chỉ cần nếu bản mới đã ghi dữ liệu theo schema mới không tương thích ngược; nếu chưa kịp ghi gì thì giữ nguyên `data/` hiện tại cũng được, không cần khôi phục).
 
 ## 0. Điều kiện trước khi bắt đầu (Cách B — PM2 thủ công)
 
