@@ -147,6 +147,12 @@
 - [x] Sửa 3 lỗi CSS `[hidden]` bị ghi đè phát hiện trong lúc test tính năng này (`.empty-state`, `.page-header-actions`, `.page-header-actions .btn-secondary` — cùng dạng lỗi đã gặp ở `.form-row`/`.modal-card` trước đó, thêm `:not([hidden])`)
 - [x] Test qua trình duyệt thật: tạo bảo hành mới (tự điền SĐT/địa chỉ theo khách hàng, tính đúng ngày hết hạn theo lịch), sửa "Ngày hết hạn" trực tiếp → tự suy đúng thời gian bảo hành theo quy tắc ngày/tháng/năm; card trên trang Chi tiết khách hàng hiển thị đúng số ngày còn lại; test phân quyền bằng tài khoản Kế toán (không phải Admin) → nút Xóa ẩn đúng ở cả danh sách lẫn trang chi tiết, gọi thẳng API DELETE bị chặn 403
 
+### Làm lại trang Tổng quan (ngoài phase, theo yêu cầu người dùng 2026-08-01)
+
+- [x] `frontend/assets/dashboard.js` (mới): lời chào động theo giờ hệ thống + họ tên tài khoản; 3 card Sản phẩm/Khách hàng/Nhà cung cấp lấy số liệu thật từ API danh sách có sẵn (trước đó trang chỉ là khung tĩnh, chưa từng gọi API)
+- [x] Thiết kế lại bằng skill `ui-ux-pro-max`: `.dashboard-hero` (icon mặt trời/mặt trăng + ngày tháng tiếng Việt), `.dashboard-card` kiểu bento bấm được điều hướng, `.quick-links` lọc theo quyền — xem `docs/DESIGN-SYSTEM.md`
+- [x] Test qua trình duyệt thật với tài khoản Thủ kho và Admin — số liệu đúng, lọc quyền đúng, điều hướng đúng
+
 ## Phase 5 — Vận hành & Go-live
 
 - [ ] Cấu hình PM2 (`pm2 start`, `pm2 startup`, `pm2 save`)

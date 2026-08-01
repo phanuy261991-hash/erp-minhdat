@@ -37,6 +37,9 @@ const ICONS = {
   truck: '<rect x="1" y="7" width="13" height="10" rx="1"/><path d="M14 10h4l3 3v4h-3"/><circle cx="6.5" cy="19" r="2"/><circle cx="17.5" cy="19" r="2"/>',
   tag: '<path d="M3 11.5V5a2 2 0 0 1 2-2h6.5L20 11.5 12.5 19 3 11.5Z"/><circle cx="7.5" cy="7.5" r="1.3"/>',
   shield: '<path d="M12 3l8 3.5v5.2c0 5-3.4 8.6-8 9.8-4.6-1.2-8-4.8-8-9.8V6.5L12 3Z"/><path d="M12 8v5"/><path d="M12 16.2h.01"/>',
+  arrowRight: '<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>',
+  sun: '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.5M12 19v2.5M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2.5 12H5M19 12h2.5M4.2 19.8 6 18M18 6l1.8-1.8"/>',
+  moon: '<path d="M20 14.5a8.5 8.5 0 1 1-8-11.2 7 7 0 0 0 8 11.2Z"/>',
 };
 
 function icon(name, size) {

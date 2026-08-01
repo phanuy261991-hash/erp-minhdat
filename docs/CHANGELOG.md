@@ -2,6 +2,14 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-01 (Làm lại trang Tổng quan — dữ liệu thật + thiết kế sinh động hơn)
+
+> Trang Tổng quan trước đó chỉ là khung tĩnh: 3 stat-card ghi cứng "--", không có code nào gọi API để điền số liệu (`Công nợ phải thu`/`Phiếu hôm nay` chưa từng hoạt động). Người dùng yêu cầu đổi nội dung 3 card thành Sản phẩm/Khách hàng/Nhà cung cấp lấy dữ liệu thật, thêm lời chào động theo giờ hệ thống + họ tên tài khoản; sau đó yêu cầu dùng skill `ui-ux-pro-max` thiết kế lại cho sinh động/hiện đại hơn.
+
+- `frontend/assets/dashboard.js` (mới — trước đây logic nằm inline trong `dashboard.html`, không có file riêng): lời chào `Xin chào {buổi sáng/chiều/tối}, {họ tên}!` tính theo giờ hệ thống máy chủ (chia 3 khung thay vì 2 theo yêu cầu gốc, vì "buổi chiều" lúc 9 giờ tối là vô lý); 3 card Sản phẩm/Khách hàng/Nhà cung cấp lấy số lượng trực tiếp từ `GET /products`/`GET /partners?type=` đã có sẵn (không thêm API mới).
+- **Thiết kế lại theo skill `ui-ux-pro-max`** (đã tham khảo `--design-system`/`--domain style`/`--domain icons` trước khi code, xem `docs/DESIGN-SYSTEM.md` mục "Trang Tổng quan"): `.dashboard-hero` (icon mặt trời/mặt trăng đổi theo khung giờ + ngày tháng tiếng Việt đầy đủ thứ), `.dashboard-card` kiểu "bento" thay `.stat-card` (icon vuông màu riêng từng thẻ, **bấm được** điều hướng sang trang danh sách tương ứng, hover nổi thẻ + trượt mũi tên), khu vực "Truy cập nhanh" (`.quick-links`) — lọc đúng theo quyền module của tài khoản đang đăng nhập (Thủ kho chỉ thấy Nhập/Xuất kho, Admin thấy đủ 4 mục). Icon mới trong `icons.js`: `arrowRight`, `sun`, `moon`.
+- Test qua trình duyệt thật với 2 tài khoản: `thukho1` (chỉ quyền `kho`) → số liệu đúng, "Truy cập nhanh" chỉ hiện Nhập/Xuất kho; `admin` → hiện đủ 4 mục, bấm card "Khách hàng" điều hướng đúng sang `customers.html`; không lỗi console ở cả 2 tài khoản.
+
 ## 2026-08-01 (Bảo hành: đổi trang riêng thành modal, vẽ lại card theo mẫu, sửa 2 card dính nhau)
 
 > Phản hồi ngay sau khi làm xong module Bảo hành: ô "Thời gian bảo hành" mất cân đối, muốn form nhập là popup thay vì trang riêng, nghi ngờ tương tác 2 chiều không hoạt động. Nhân tiện: card Bảo hành trên `customer-detail.html` cần vẽ lại theo mẫu ảnh tham khảo người dùng gửi (dạng card danh sách công cụ nội bộ), và 2 card "Thông tin công ty"/"Ghi chú in phiếu" đang dính sát nhau.

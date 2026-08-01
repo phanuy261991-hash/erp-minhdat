@@ -138,6 +138,15 @@
 
 **Kết luận dùng chung**: khi cần chọn nhiều mục cùng loại hiển thị theo nhóm, luôn dùng lưới ô đều nhau kiểu trên — không dùng chip tự co giãn bo tròn hết cỡ.
 
+## Trang Tổng quan (dashboard.html) — hero chào + card "bento" + truy cập nhanh
+
+> Bổ sung 2026-08-01, thiết kế lại bằng skill `ui-ux-pro-max` theo yêu cầu người dùng ("sinh động và hiện đại hơn").
+
+- **`.dashboard-hero`**: icon vuông bo góc lớn (56px, gradient primary→secondary, giống `.btn-add`) + lời chào động (`Xin chào {buổi sáng/chiều/tối}, {họ tên}!` — tính theo giờ **hệ thống máy chủ**, không phải giờ trình duyệt) + ngày tháng tiếng Việt đầy đủ thứ (vd "Thứ Bảy, 01/08/2026"). Icon đổi mặt trời/mặt trăng theo khung giờ.
+- **`.dashboard-card`** (thay `.stat-card` cho trang Tổng quan): card **bấm được**, điều hướng thẳng sang trang danh sách tương ứng (Sản phẩm/Khách hàng/Nhà cung cấp) — icon vuông màu riêng từng thẻ (`--primary`/`--accent`/`--warning`, nền pha loãng 10%), số liệu lớn, dòng link kèm mũi tên trượt nhẹ khi hover (`transform: translateX`), card nổi lên (`translateY(-3px)`) + đậm shadow khi hover. Số liệu lấy trực tiếp từ API danh sách đã có (`GET /products`, `GET /partners?type=`), không thêm API riêng vì chỉ là đếm số lượng.
+- **`.quick-links`**: lưới nút link nhanh tới các thao tác hay dùng (Nhập kho, Xuất kho, Bảo hành, Báo cáo) — **lọc theo đúng quyền module** của tài khoản đang đăng nhập (giống cách `layout.js` lọc `NAV_GROUPS`), tự ẩn cả tiêu đề "Truy cập nhanh" nếu tài khoản không có quyền nào trong danh sách.
+- Vẫn dùng đúng token màu/font/radius/shadow đã chốt — không thêm màu mới, chỉ dùng lại `--color-primary`/`--color-accent`/`--color-warning` với nền pha loãng cho icon.
+
 ## Hiệu ứng & Animation
 
 - Border-radius: 8–12px cho input/button, 16–20px cho card lớn.

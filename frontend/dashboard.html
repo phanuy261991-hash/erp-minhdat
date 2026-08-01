@@ -11,32 +11,49 @@
     <aside id="sidebar" class="sidebar"></aside>
     <main class="app-content">
       <p class="page-eyebrow">Trang chủ</p>
-      <div class="page-header">
-        <h2>Tổng quan</h2>
+
+      <div id="dashboard-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="dashboard-error-text"></span>
       </div>
 
-      <div class="stat-grid">
-        <div class="stat-card">
-          <p class="stat-card-label">Sản phẩm</p>
-          <p class="stat-card-value">--</p>
-        </div>
-        <div class="stat-card">
-          <p class="stat-card-label">Công nợ phải thu</p>
-          <p class="stat-card-value">--</p>
-        </div>
-        <div class="stat-card">
-          <p class="stat-card-label">Phiếu hôm nay</p>
-          <p class="stat-card-value">--</p>
+      <div class="dashboard-hero">
+        <div class="dashboard-hero-icon" id="dashboard-hero-icon"></div>
+        <div>
+          <h2 id="dashboard-greeting">Tổng quan</h2>
+          <p class="dashboard-hero-subtitle" id="dashboard-date"></p>
         </div>
       </div>
+
+      <div class="dashboard-cards">
+        <a href="products.html" class="dashboard-card">
+          <div class="dashboard-card-icon dashboard-card-icon--primary" id="card-icon-products"></div>
+          <p class="dashboard-card-label">Sản phẩm</p>
+          <p class="dashboard-card-value" id="stat-products">--</p>
+          <p class="dashboard-card-link">Xem danh sách sản phẩm <span id="card-link-icon-1"></span></p>
+        </a>
+        <a href="customers.html" class="dashboard-card">
+          <div class="dashboard-card-icon dashboard-card-icon--accent" id="card-icon-customers"></div>
+          <p class="dashboard-card-label">Khách hàng</p>
+          <p class="dashboard-card-value" id="stat-customers">--</p>
+          <p class="dashboard-card-link">Xem danh sách khách hàng <span id="card-link-icon-2"></span></p>
+        </a>
+        <a href="partners.html" class="dashboard-card">
+          <div class="dashboard-card-icon dashboard-card-icon--warning" id="card-icon-suppliers"></div>
+          <p class="dashboard-card-label">Nhà cung cấp</p>
+          <p class="dashboard-card-value" id="stat-suppliers">--</p>
+          <p class="dashboard-card-link">Xem danh sách nhà cung cấp <span id="card-link-icon-3"></span></p>
+        </a>
+      </div>
+
+      <h3 class="section-heading">Truy cập nhanh</h3>
+      <div class="quick-links" id="quick-links"></div>
     </main>
   </div>
 
   <script src="assets/api.js"></script>
   <script src="assets/icons.js"></script>
   <script src="assets/layout.js"></script>
-  <script>
-    initLayout('dashboard');
-  </script>
+  <script src="assets/dashboard.js"></script>
 </body>
 </html>

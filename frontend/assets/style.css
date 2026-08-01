@@ -1952,3 +1952,144 @@ input:focus-visible {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---- Trang Tong quan (dashboard.html) - thiet ke lai sinh dong hon theo skill ui-ux-pro-max
+   (2026-08-01): hero loi chao co icon doi theo khung gio + ngay thang, the so lieu dang
+   "bento" (icon vuong mau rieng tung the, bam duoc de dieu huong sang danh sach tuong ung,
+   hover nang nhe) thay cho .stat-card thuong. Van dung dung mau/spacing/shadow da chot cua
+   he thong (khong tu y doi token), chi thay doi bo cuc + mat do chi tiet. ---- */
+
+.dashboard-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.dashboard-hero-icon {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-button);
+}
+
+.dashboard-hero-subtitle {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--color-muted-foreground);
+  text-transform: capitalize;
+}
+
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.dashboard-card {
+  display: block;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 22px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.dashboard-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 26px 50px rgba(37, 99, 235, 0.22), 0 6px 14px rgba(15, 23, 42, 0.08);
+}
+
+.dashboard-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.dashboard-card-icon--primary { background: #eff6ff; color: var(--color-primary); }
+.dashboard-card-icon--accent { background: #ecfdf5; color: var(--color-accent); }
+.dashboard-card-icon--warning { background: #fffbeb; color: var(--color-warning); }
+
+.dashboard-card-label {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--color-muted-foreground);
+}
+
+.dashboard-card-value {
+  margin: 0 0 14px;
+  font-family: var(--font-heading);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.dashboard-card-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.dashboard-card-link svg {
+  transition: transform var(--transition-fast);
+}
+
+.dashboard-card:hover .dashboard-card-link svg {
+  transform: translateX(3px);
+}
+
+.quick-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.quick-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: var(--color-foreground);
+  font-size: 14px;
+  font-weight: 600;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.quick-link:hover {
+  background: var(--color-muted);
+  border-color: var(--color-primary);
+}
+
+.quick-link-icon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--color-muted);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
