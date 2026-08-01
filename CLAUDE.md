@@ -23,9 +23,12 @@ npm install                                    # cai dependencies
 npm run migrate                                # chay cac migration chua ap dung (backend/db/migrations/)
 npm run seed:admin                             # tao tai khoan admin dau tien (doc ADMIN_USERNAME/ADMIN_PASSWORD tu bien moi truong)
 npm start                                      # chay server (node backend/server.js), mac dinh port 3000
+npm run build:portable                         # dong goi thanh thu muc dist/ tu chua node.exe (khong can cai Node tren may dich)
 pm2 start backend/server.js --name kho-app     # chay production (Phase 5, chua thiet lap)
 pm2 startup && pm2 save                        # bat buoc sau lan start dau, de tu chay lai khi may khoi dong
 ```
+
+Trien khai don gian (khong dung PM2): xem `docs/DEPLOY.md` muc "Cai dat tu ban dong goi" — dong goi bang `npm run build:portable`, copy thu muc `dist/` sang may dich, chay `start.bat`. Tai khoan Admin dau tien tao qua giao dien (`setup.html`), khong can `npm run seed:admin` trong truong hop nay.
 
 Không có build step (frontend không qua bundler). Xem [docs/DEMO.md](docs/DEMO.md) để biết cách chạy demo đầy đủ, gồm cả mô hình nhiều máy trong LAN.
 

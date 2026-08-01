@@ -16,7 +16,9 @@ const path = require('path');
 const db = require('../backend/db/database');
 
 const RETENTION_DAYS = 14;
-const DATA_FILE_PATH = path.join(__dirname, '..', 'data', 'data.db');
+// Lay tu chinh db (da tinh dung theo BASE_DIR trong database.js), khong tu ghep __dirname o day -
+// se sai khi chay tu ban dong goi .exe (xem backend/db/database.js).
+const DATA_FILE_PATH = db.dataFilePath;
 
 class BackupError extends Error {}
 

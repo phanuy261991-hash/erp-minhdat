@@ -1,4 +1,5 @@
 node_modules/
+dist/
 
 # Database runtime files - khong version-control, sinh ra qua npm run migrate/seed:admin
 data/*.db

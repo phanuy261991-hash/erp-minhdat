@@ -18,4 +18,8 @@ db.pragma('journal_mode = WAL');
 // Bat rang buoc khoa ngoai (foreign_keys) de dam bao dung quan he da thiet ke trong erd.mermaid.
 db.pragma('foreign_keys = ON');
 
+// Gan kem duong dan file data.db thuc te vao chinh instance db - de cac noi khac (vd
+// scripts/backup.js) dung chung 1 nguon, khong tu ghep lai duong dan.
+db.dataFilePath = DB_PATH;
+
 module.exports = db;

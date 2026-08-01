@@ -14,8 +14,20 @@ const eyeIcon = document.getElementById('eye-icon');
 const EYE_OPEN_SVG = '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>';
 const EYE_CLOSED_SVG = '<path d="M3 3l18 18"/><path d="M10.6 5.2A10.6 10.6 0 0 1 12 5c6.5 0 10 7 10 7a15.6 15.6 0 0 1-3.2 4.1M6.5 6.5C4 8.2 2 12 2 12s3.5 7 10 7a9.9 9.9 0 0 0 4.1-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>';
 
+// Neu he thong CHUA co tai khoan nao (lan dau chay ban dong goi .exe), chuyen sang trang
+// thiet lap thay vi hien form dang nhap vo nghia (khong co tai khoan nao de dang nhap).
 // Neu da dang nhap tu truoc (session con hieu luc), khong can hien lai form.
 (async function checkSession() {
+  try {
+    const { needs_setup: needsSetup } = await apiFetch('/setup/status');
+    if (needsSetup) {
+      window.location.href = 'setup.html';
+      return;
+    }
+  } catch (err) {
+    // Khong doc duoc trang thai setup (vd loi mang) - van cho hien form dang nhap binh thuong.
+  }
+
   try {
     await apiFetch('/auth/me');
     window.location.href = 'dashboard.html';

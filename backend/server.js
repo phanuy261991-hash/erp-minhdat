@@ -5,7 +5,9 @@ const express = require('express');
 const session = require('express-session');
 const crypto = require('crypto');
 
+const { runMigrations } = require('./db/migrate');
 const authRoutes = require('./routes/auth.routes');
+const setupRoutes = require('./routes/setup.routes');
 const usersRoutes = require('./routes/users.routes');
 const rolesRoutes = require('./routes/roles.routes');
 const companySettingsRoutes = require('./routes/companySettings.routes');
@@ -20,6 +22,17 @@ const warrantiesRoutes = require('./routes/warranties.routes');
 const reportsRoutes = require('./routes/reports.routes');
 const { requireAuth } = require('./middleware/auth');
 const { requirePermission } = require('./middleware/requirePermission');
+
+// Tu chay migration khi khoi dong (2026-08-01) - can thiet cho ban dong goi .exe chay tren may
+// nguoi dung: khong co san npm/terminal de tu chay "npm run migrate" truoc, nen server phai tu
+// dam bao schema day du moi lan khoi dong. An toan chay lai nhieu lan (migrate.js chi ap dung
+// migration CHUA co trong schema_migrations - xem backend/db/migrate.js).
+try {
+  runMigrations();
+} catch (err) {
+  console.error('[LOI] Khong the khoi tao/cap nhat database:', err.message);
+  process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -45,6 +58,9 @@ app.use(session({
   },
 }));
 
+// Khong gan requireAuth (chua ai dang nhap duoc luc chua thiet lap xong) - tu khoa lai sau khi
+// da co it nhat 1 tai khoan, xem setup.routes.js.
+app.use('/api/setup', setupRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', requireAuth, requirePermission('nguoi_dung'), usersRoutes);
 app.use('/api/roles', requireAuth, requirePermission('nguoi_dung'), rolesRoutes);

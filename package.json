@@ -12,6 +12,7 @@
     "migrate": "node backend/db/migrate.js",
     "seed:admin": "node backend/db/seedAdmin.js",
     "backup": "node scripts/backup.js",
+    "build:portable": "node scripts/build-portable.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

@@ -158,6 +158,23 @@
 - [x] Dòng bản quyền footer sidebar (mọi trang) + trang `about.html` (menu Cấu hình) — thiết kế bằng skill `ui-ux-pro-max`
 - [x] Sửa 3 lỗi CSS phát sinh khi test: subtitle rớt chữ, sidebar tràn màn hình + icon biến mất khi thu gọn, `.stat-grid` dính `.data-table-wrap` ở trang Báo cáo — chi tiết `docs/CHANGELOG.md`/`docs/DESIGN-SYSTEM.md`
 
+### Đóng gói bản portable + thiết lập lần đầu qua giao diện + tự khởi động cùng Windows (ngoài phase, theo yêu cầu người dùng 2026-08-01)
+
+> Chi tiết đầy đủ (bao gồm 1 lần thử thất bại với `pkg`): `docs/DECISIONS.md`, `docs/CHANGELOG.md`.
+
+- [x] `backend/server.js` tự gọi `runMigrations()` khi khởi động (trước đây chỉ chạy qua `npm run migrate` thủ công)
+- [x] `backend/routes/setup.routes.js` (mới): `GET /api/setup/status`, `POST /api/setup` — tạo tài khoản Admin đầu tiên qua giao diện, tự khoá vĩnh viễn sau khi có ≥1 tài khoản
+- [x] Sửa bug có từ trước trong `backend/db/seedAdmin.js` (còn dùng cột `role` cũ đã bỏ từ migration `002`)
+- [x] `frontend/setup.html`/`assets/setup.js` (mới), `frontend/assets/auth.js` cập nhật (tự chuyển hướng sang `setup.html` khi hệ thống chưa có tài khoản nào)
+- [x] Thử đóng gói bằng `@yao-pkg/pkg` thành 1 file `.exe` — thất bại (crash native-addon `better-sqlite3`, không sửa được), đã hỏi lại người dùng và chuyển hướng
+- [x] `scripts/build-portable.js` (`npm run build:portable`): đóng gói thư mục `dist/` tự chứa `node.exe` + toàn bộ app, kèm `start.bat`
+- [x] `scripts/install-autostart.ps1`/`uninstall-autostart.ps1` (Task Scheduler, chạy `AtStartup`) — chọn thay cho `node-windows` (không cần Node cài vĩnh viễn trên máy chủ)
+- [x] `backend/db/database.js`: xuất kèm `db.dataFilePath`, `scripts/backup.js` dùng lại thay vì tự ghép đường dẫn
+- [x] Test qua trình duyệt thật với bản portable (dùng đúng `node.exe` trong `dist/`, database rỗng): tự tạo DB mới → chuyển sang thiết lập lần đầu → tạo tài khoản → đăng nhập → dashboard trống đúng
+- [x] Khôi phục lại dữ liệu dev/demo gốc sau khi test xong (đã backup trước khi xoá `data/data.db` để test)
+- [x] `docs/DEPLOY.md`: thêm hướng dẫn cài đặt từ bản đóng gói `dist/`, giữ nguyên quy trình PM2 thủ công cho trường hợp cần theo dõi/quản lý process nâng cao
+- [ ] Chạy thật `install-autostart.ps1` trên đúng máy chủ chính thức (chưa làm — máy đang thao tác vẫn là máy dev, xem `docs/DECISIONS.md` mục Phase 5)
+
 ## Phase 5 — Vận hành & Go-live
 
 > Bắt đầu 2026-08-01 trên máy dev (không phải máy chủ thật — xem `docs/DECISIONS.md`) — chỉ làm được phần độc lập với máy cụ thể, các bước còn lại để khi triển khai lên đúng máy chủ, xem quy trình đầy đủ `docs/DEPLOY.md`.

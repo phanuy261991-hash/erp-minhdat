@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Thiết lập lần đầu - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="login-body">
+  <div class="login-card">
+    <div class="login-brand">
+      <span class="login-brand-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 8 12 3 3 8l9 5 9-5Z" />
+          <path d="M3 8v8l9 5 9-5V8" />
+          <path d="M12 13v8" />
+        </svg>
+      </span>
+      <h1>Thiết lập lần đầu</h1>
+      <p class="login-subtitle">Chạy lần đầu tiên — tạo tài khoản Quản trị viên (Admin) để bắt đầu sử dụng</p>
+    </div>
+
+    <section id="setup-section">
+      <form id="setup-form" class="login-form" autocomplete="off">
+        <div id="setup-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="setup-error-text"></span>
+        </div>
+
+        <label for="company_name">Tên công ty (không bắt buộc, sửa lại sau được)</label>
+        <div class="input-wrap">
+          <input type="text" id="company_name" name="company_name" autocomplete="off" />
+        </div>
+
+        <label for="full_name">Họ và tên quản trị viên</label>
+        <div class="input-wrap">
+          <input type="text" id="full_name" name="full_name" required autocomplete="off" />
+        </div>
+
+        <label for="username">Tên đăng nhập</label>
+        <div class="input-wrap">
+          <input type="text" id="username" name="username" required autocomplete="off" />
+        </div>
+
+        <label for="password">Mật khẩu (tối thiểu 6 ký tự)</label>
+        <div class="input-wrap">
+          <input type="password" id="password" name="password" required minlength="6" autocomplete="new-password" />
+        </div>
+
+        <label for="password_confirm">Xác nhận mật khẩu</label>
+        <div class="input-wrap">
+          <input type="password" id="password_confirm" name="password_confirm" required minlength="6" autocomplete="new-password" />
+        </div>
+
+        <button type="submit" id="setup-submit" class="btn-primary">
+          <span id="setup-submit-text">Tạo tài khoản &amp; bắt đầu</span>
+        </button>
+      </form>
+    </section>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/setup.js"></script>
+</body>
+</html>

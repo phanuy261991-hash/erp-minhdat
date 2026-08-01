@@ -2,7 +2,47 @@
 
 > Tài liệu này mô tả **quy trình đầy đủ** để đưa ứng dụng chạy ổn định lâu dài trên máy chủ thật trong văn phòng — khác với `docs/DEMO.md` (chỉ để chạy thử/test nhanh). Thực hiện **trên đúng máy sẽ dùng làm máy chủ** (không phải máy dev) — xem `docs/DECISIONS.md` mục "Phase 5" để biết lý do tách riêng.
 
-## 0. Điều kiện trước khi bắt đầu
+Có 2 cách triển khai — chọn 1 trong 2:
+
+- **Cách A — Cài đặt từ bản đóng gói (khuyến nghị, đơn giản hơn)**: không cần cài Node.js/npm trên máy chủ, không cần biết dòng lệnh `git`/`npm install`. Phù hợp hầu hết trường hợp. Xem mục 1 ngay dưới đây.
+- **Cách B — PM2 thủ công**: cần cài Node.js, chạy `npm install`/`pm2` bằng tay, nhưng có công cụ theo dõi process (`pm2 list`, `pm2 logs`) mạnh hơn Task Scheduler. Xem từ mục "0. Điều kiện trước khi bắt đầu" trở xuống.
+
+## 1. Cách A — Cài đặt từ bản đóng gói
+
+### 1.1. Đóng gói (thực hiện trên máy dev, có sẵn Node.js + đã `npm install`)
+
+```bash
+npm run build:portable
+```
+
+Lệnh này tạo thư mục `dist/` chứa: `node.exe` (portable, không cần cài đặt), toàn bộ `backend/`/`frontend/`/`scripts/`/`node_modules/`, `start.bat` (điểm vào double-click), và `install-autostart.ps1`/`uninstall-autostart.ps1`. Xem lý do chọn cách đóng gói này (đã thử `pkg` đóng gói thành 1 file `.exe` duy nhất trước, thất bại do lỗi native-addon) tại `docs/DECISIONS.md`.
+
+### 1.2. Cài đặt trên máy chủ thật
+
+1. Nén thư mục `dist/` thành `.zip`, copy sang máy chủ, giải nén vào 1 thư mục cố định (vd `C:\ERP_MinhDat\`).
+2. Chạy thử `start.bat` — cửa sổ dòng lệnh hiện ra, tự tạo `data\data.db` mới và áp dụng đủ migration.
+3. Mở trình duyệt tại `http://localhost:3000` — hệ thống tự chuyển sang trang **"Thiết lập lần đầu"** (vì chưa có tài khoản nào). Điền tên công ty (tuỳ chọn), họ tên quản trị viên, tên đăng nhập, mật khẩu → **"Tạo tài khoản & bắt đầu"** → đăng nhập bằng tài khoản vừa tạo.
+4. Mở Windows Firewall cho port 3000 (xem lệnh `New-NetFirewallRule` ở mục 2 bên dưới) để máy khác trong LAN truy cập được qua `http://<IP-máy-chủ>:3000`.
+5. Cài tự động khởi động cùng Windows (chạy ngầm, không cần giữ cửa sổ `start.bat` mở): chuột phải PowerShell → **Run as Administrator**, chạy:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File C:\ERP_MinhDat\install-autostart.ps1
+   ```
+   Đăng ký 1 Task Scheduler task chạy `node.exe backend\server.js` mỗi khi Windows khởi động (kể cả chưa ai đăng nhập), **chạy ngầm ngay lập tức** sau khi đăng ký (không cần đợi khởi động lại máy), tự khởi động lại tối đa 3 lần nếu tiến trình crash. Gỡ bằng `uninstall-autostart.ps1` tương tự. Đóng cửa sổ `start.bat` (nếu còn mở) trước khi chạy bước này để tránh xung đột cổng 3000.
+6. Đặt `SESSION_SECRET` cố định — **lưu ý riêng cho Cách A**: tác vụ Task Scheduler chạy dưới tài khoản `SYSTEM`, không đọc được biến môi trường cấp người dùng thường, nên **bắt buộc dùng cờ `/M`** (khác với mục 3 bên dưới viết cho Cách B/PM2):
+   ```powershell
+   & "C:\ERP_MinhDat\node.exe" -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   setx SESSION_SECRET "<dán chuỗi vừa sinh ra>" /M
+   Stop-ScheduledTask -TaskName "ERP-MinhDat-KhoCongNo"
+   Start-ScheduledTask -TaskName "ERP-MinhDat-KhoCongNo"
+   ```
+   3 lệnh trên chạy trong PowerShell quyền Administrator. 2 lệnh cuối khởi động lại tác vụ để nạp lại biến môi trường mới (tác vụ đang chạy đã nạp môi trường cũ từ lúc khởi động, không tự đọc lại).
+7. Cấu hình backup (xem mục 5 bên dưới) — đường dẫn `node.exe`/`scripts/backup.js` dùng trong Task Scheduler backup lấy từ chính thư mục `dist/` đã giải nén (vd `C:\ERP_MinhDat\node.exe` / `C:\ERP_MinhDat\scripts\backup.js`).
+
+### 1.3. Cập nhật phiên bản mới
+
+Đóng gói lại (`npm run build:portable`) trên máy dev, copy đè toàn bộ `dist/` mới sang máy chủ **trừ thư mục `data/`** (giữ nguyên database cũ) — dừng `start.bat`/task tự khởi động trước khi copy đè để tránh file đang bị khoá.
+
+## 0. Điều kiện trước khi bắt đầu (Cách B — PM2 thủ công)
 
 - Đã cài Node.js (phiên bản dùng khi phát triển) trên máy chủ.
 - Đã `npm install`, `npm run migrate`, `npm run seed:admin` trên máy chủ (xem `docs/DEMO.md` mục 2–4 nếu chưa từng chạy).
