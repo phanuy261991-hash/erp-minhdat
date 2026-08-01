@@ -2,6 +2,14 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-01 (Sửa modal cao hơn màn hình không cuộn được — áp dụng chung toàn hệ thống)
+
+> Người dùng phản ánh: modal "Lịch sử công nợ" (trang Công nợ NCC) khi mở lên cao hết khung hình nhưng không cuộn được, yêu cầu kiểm tra các giao diện khác có bị tương tự không.
+
+- Nguyên nhân: `.modal-card` (class dùng chung cho **mọi** modal trong hệ thống) không có `max-height`/`overflow-y` — khi nội dung modal dài hơn chiều cao màn hình (vd lịch sử công nợ nhiều dòng, form lập phiếu nhiều dòng sản phẩm), phần trên/dưới bị khuất ngoài viewport (do `.modal-overlay` dùng `align-items: center`) mà không có cách nào xem được.
+- Sửa 1 chỗ duy nhất (`frontend/assets/style.css`, `.modal-card`): thêm `max-height: calc(100vh - 40px)` + `overflow-y: auto` — áp dụng ngay cho toàn bộ modal hiện có (lịch sử công nợ, lập phiếu nhập/xuất, chi tiết phiếu, vai trò, người dùng, sản phẩm, đối tác...) mà không cần sửa riêng từng file, vì tất cả dùng chung 1 class.
+- Test qua trình duyệt thật ở viewport thu nhỏ (1000×500, để chắc chắn nội dung tràn màn hình): modal "Lịch sử công nợ" cuộn được đến hết, thấy đủ nút "Đóng"; modal "Lập phiếu xuất kho" (nhiều trường + bảng sản phẩm) cuộn được đến nút "Lưu phiếu", combobox tìm sản phẩm bên trong vẫn hoạt động đúng khi cuộn.
+
 ## 2026-08-01 (Sửa lệch nút + badge màu tăng/giảm cho "Điều chỉnh công nợ")
 
 > Người dùng phản ánh ngay sau khi làm xong "Điều chỉnh công nợ": 3 nút đầu trang (tìm kiếm/Điều chỉnh công nợ/Ghi nhận thanh toán) bị lệch hàng, và badge lịch sử chỉ ghi "Điều chỉnh" chung chung, không phân biệt được tăng hay giảm.

@@ -738,9 +738,16 @@ input:focus-visible {
   padding: 20px;
 }
 
+/* max-height + overflow-y:auto: modal co noi dung dai (vd Lich su cong no nhieu dong giao dich)
+   se bi cao hon man hinh va KHONG cuon duoc neu thieu 2 dong nay - .modal-overlay dat
+   align-items:center + padding:20px nen phan tran/duoi modal bi khuat ngoai viewport ma
+   khong co cach nao xem duoc (xem phan hoi nguoi dung 2026-08-01). Ap dung chung cho MOI
+   modal trong he thong (dung chung 1 class .modal-card), khong can sua rieng tung modal. */
 .modal-card {
   width: 420px;
   max-width: 100%;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
   background: var(--color-surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
