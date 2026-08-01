@@ -54,7 +54,10 @@ function renderIssueDetail(issue) {
 
   itemsTbody.innerHTML = issue.items
     .map((item) => {
-      const lineTotal = item.quantity * item.unit_price * (1 - item.discount_percent / 100);
+      // Don gia sau chiet khau (net) - hien thi tham khao truoc cot Thanh tien, Thanh tien =
+      // don gia sau CK * so luong (xem yeu cau nguoi dung 2026-08-01).
+      const netUnitPrice = item.unit_price * (1 - item.discount_percent / 100);
+      const lineTotal = item.quantity * netUnitPrice;
       return `
         <tr>
           <td>${item.product_code} - ${item.product_name}</td>
@@ -62,6 +65,7 @@ function renderIssueDetail(issue) {
           <td>${formatMoneyIssueDetail(item.quantity)}</td>
           <td>${formatMoneyIssueDetail(item.unit_price)}</td>
           <td>${item.discount_percent ? `${formatMoneyIssueDetail(item.discount_percent)}%` : '-'}</td>
+          <td>${formatMoneyIssueDetail(Math.round(netUnitPrice))}</td>
           <td>${formatMoneyIssueDetail(Math.round(lineTotal))}</td>
         </tr>
       `;

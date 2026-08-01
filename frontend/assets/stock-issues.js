@@ -158,6 +158,7 @@ function createItemRow() {
     <input type="number" class="item-quantity" min="0" step="1" placeholder="SL" />
     <input type="number" class="item-unit-price" min="0" step="1000" placeholder="Đơn giá" />
     <input type="number" class="item-discount" min="0" max="100" step="1" placeholder="0" />
+    <div class="item-net-price">0</div>
     <div class="item-line-total">0</div>
     <button type="button" class="icon-btn icon-btn-danger item-row-remove" title="Xóa dòng">${icon('trash', 14)}</button>
   `;
@@ -175,11 +176,19 @@ function removeItemRow(row) {
   }
 }
 
-function rowLineTotal(row) {
-  const quantity = Number(row.querySelector('.item-quantity').value) || 0;
+// Don gia sau chiet khau (net) - hien thi tham khao truoc cot Thanh tien, Thanh tien = don gia
+// sau CK * so luong (xem yeu cau nguoi dung 2026-08-01). unit_price luu trong DB van la gia GOC
+// (truoc chiet khau, xem stock_issue_items.discount_percent) - khong doi cach luu, chi them 1
+// o hien thi tinh toan o tang frontend.
+function rowNetUnitPrice(row) {
   const unitPrice = Number(row.querySelector('.item-unit-price').value) || 0;
   const discountPercent = Number(row.querySelector('.item-discount').value) || 0;
-  return quantity * unitPrice * (1 - discountPercent / 100);
+  return unitPrice * (1 - discountPercent / 100);
+}
+
+function rowLineTotal(row) {
+  const quantity = Number(row.querySelector('.item-quantity').value) || 0;
+  return quantity * rowNetUnitPrice(row);
 }
 
 function updateTotalAmount() {
@@ -187,6 +196,7 @@ function updateTotalAmount() {
   let total = 0;
 
   rows.forEach((row) => {
+    row.querySelector('.item-net-price').textContent = formatMoney(Math.round(rowNetUnitPrice(row)));
     const lineTotal = rowLineTotal(row);
     row.querySelector('.item-line-total').textContent = formatMoney(Math.round(lineTotal));
     total += lineTotal;

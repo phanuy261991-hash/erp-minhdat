@@ -83,7 +83,10 @@ function renderIssue(issue) {
   const itemsTbody = document.getElementById('print-items');
   itemsTbody.innerHTML = issue.items
     .map((item, index) => {
-      const lineTotal = item.quantity * item.unit_price * (1 - item.discount_percent / 100);
+      // Don gia sau chiet khau (net) - hien thi truoc cot Thanh tien, Thanh tien = don gia sau
+      // CK * so luong (xem yeu cau nguoi dung 2026-08-01).
+      const netUnitPrice = item.unit_price * (1 - item.discount_percent / 100);
+      const lineTotal = item.quantity * netUnitPrice;
       return `
         <tr>
           <td>${index + 1}</td>
@@ -93,6 +96,7 @@ function renderIssue(issue) {
           <td class="print-num">${formatMoney(item.quantity)}</td>
           <td class="print-num">${formatMoney(item.unit_price)}</td>
           <td class="print-num">${item.discount_percent ? `${item.discount_percent}%` : '-'}</td>
+          <td class="print-num">${formatMoney(Math.round(netUnitPrice))}</td>
           <td class="print-num">${formatMoney(Math.round(lineTotal))}</td>
         </tr>
       `;

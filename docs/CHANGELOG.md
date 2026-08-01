@@ -2,6 +2,18 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-01 (Thêm cột "Đơn giá sau CK" cho phiếu xuất kho)
+
+> Người dùng yêu cầu: form lập phiếu xuất, modal xem chi tiết phiếu xuất, và biểu mẫu in đều thêm cột "Đơn giá sau CK" (đơn giá sau khi áp chiết khấu) trước cột "Thành tiền" — Thành tiền = Đơn giá sau CK × Số lượng. Chỉ áp dụng cho phiếu xuất theo đúng phạm vi yêu cầu, không đổi phiếu nhập.
+
+- Chỉ là **cột hiển thị tính toán ở tầng frontend** — không đổi cách lưu dữ liệu (`stock_issue_items.unit_price` vẫn là giá gốc trước chiết khấu, `discount_percent` giữ nguyên như cũ), không đổi API/payload.
+- `frontend/stock-issues.html`: thêm `<th>Đơn giá sau CK</th>` vào bảng modal "Chi tiết phiếu xuất kho" và `<span>Đơn giá sau CK</span>` vào header dạng lưới của form "Lập phiếu xuất kho".
+- `frontend/product-detail.html`: thêm cột tương tự vào bảng modal chi tiết phiếu xuất (dùng chung `issue-detail.js`) — **không đổi** bảng chi tiết phiếu nhập (`receipt-detail-modal`) cạnh đó.
+- `frontend/assets/style.css`: form "Lập phiếu xuất" dùng CSS grid (`.item-rows-header`/`.item-row`) **dùng chung với phiếu nhập** (`stock-receipts.js`) — không sửa trực tiếp 2 class này (sẽ làm lệch cột phiếu nhập), mà thêm override scoped riêng theo `#issue-modal` (8 cột thay vì 7) + class mới `.item-net-price`.
+- `frontend/assets/stock-issues.js`: `rowNetUnitPrice()` (mới) tính đơn giá sau CK, `rowLineTotal()` dùng lại hàm này thay vì tính riêng; `updateTotalAmount()` cập nhật thêm ô `.item-net-price` mỗi dòng khi số lượng/đơn giá/chiết khấu đổi.
+- `frontend/assets/issue-detail.js`, `frontend/assets/print-issue.js`: tính `netUnitPrice` tương tự, thêm `<td>` mới trước "Thành tiền".
+- Test qua trình duyệt thật: nhập SL=2, đơn giá=100.000, chiết khấu=10% trên form lập phiếu → hiện đúng "Đơn giá sau CK" = 90.000, "Thành tiền" = 180.000, cập nhật realtime khi đổi số liệu; phiếu PX000009 (SL=2, đơn giá=50.000, CK=10%) hiển thị đúng 45.000 ở cả modal chi tiết (trang Xuất kho + trang Chi tiết sản phẩm) lẫn biểu mẫu in, không lỗi console.
+
 ## 2026-08-01 (Sửa modal cao hơn màn hình không cuộn được — áp dụng chung toàn hệ thống)
 
 > Người dùng phản ánh: modal "Lịch sử công nợ" (trang Công nợ NCC) khi mở lên cao hết khung hình nhưng không cuộn được, yêu cầu kiểm tra các giao diện khác có bị tương tự không.

@@ -85,7 +85,7 @@ Web app nội bộ, kiến trúc đơn giản (không microservices, không clou
 
 ### 4.5 In phiếu xuất (bổ sung 2026-08-01 — hoàn thành)
 - MVP: HTML + CSS `@media print` + `window.print()`, dùng máy in văn phòng thường (A4/A5) đã cài trên máy client — không cần thư viện PDF hay driver máy in nhiệt. Trang in (`print-issue.html`) độc lập, không dùng khung điều hướng chung.
-- Nội dung phiếu: **toàn bộ thông tin công ty** đã cấu hình (tên, địa chỉ, điện thoại, mã số thuế, email, website, thông tin ngân hàng), thông tin khách hàng (tên, địa chỉ, điện thoại), danh sách sản phẩm/số lượng/đơn giá/chiết khấu, tổng tiền, người lập phiếu, chỗ ký người giao/người nhận hàng.
+- Nội dung phiếu: **toàn bộ thông tin công ty** đã cấu hình (tên, địa chỉ, điện thoại, mã số thuế, email, website, thông tin ngân hàng), thông tin khách hàng (tên, địa chỉ, điện thoại), danh sách sản phẩm/số lượng/đơn giá/chiết khấu/**đơn giá sau chiết khấu** (bổ sung 2026-08-01, tính bằng đơn giá × (1 − % chiết khấu) — chỉ hiển thị tính toán, không đổi cách lưu `unit_price` gốc), tổng tiền, người lập phiếu, chỗ ký người giao/người nhận hàng.
 - **Ghi chú in phiếu** (bổ sung 2026-08-01, theo yêu cầu người dùng kèm mẫu phiếu thật): 1 đoạn văn bản tự do hiển thị dưới bảng kê sản phẩm (vd điều kiện bảo hành, chính sách đổi/trả hàng) — cấu hình được qua trang Thông tin công ty (mục 4.7), không hardcode.
 
 ### 4.6 Báo cáo (bổ sung 2026-08-01 — hoàn thành)
