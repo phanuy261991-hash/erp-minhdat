@@ -111,6 +111,21 @@
 - [x] Bật menu "Báo cáo" trong `layout.js`
 - [x] Test đầy đủ qua trình duyệt thật: trang in phiếu hiển thị đúng toàn bộ thông tin công ty + khách hàng + chiết khấu + ghi chú, chặn đúng khi chưa đăng nhập; báo cáo hiển thị đúng số liệu khớp dữ liệu thật (tồn kho, mua/bán theo tháng, công nợ), tooltip hover từng cột đúng giá trị; phân quyền `bao_cao` chặn đúng cả UI (ẩn menu, redirect) lẫn API (403)
 
+### Chỉnh sửa Báo cáo/In phiếu + tách Khách hàng (sau Phase 4, ngoài phase, theo yêu cầu người dùng 2026-08-01)
+
+- [x] `reports.html`: chuyển phần "Công nợ" lên đầu trang
+- [x] `print-issue.html`/`.js`: thêm cột "Mã sản phẩm" riêng trong bảng kê
+- [x] Sửa lỗi `print-company-note-text` thiếu `class` khiến `white-space: pre-line` không áp dụng (ghi chú in phiếu không xuống dòng đúng)
+- [x] Migration `015_customer_categories.sql`: bảng `customer_categories` (tên + hạn mức công nợ) + `partners.category_id`
+- [x] `backend/routes/customerCategories.routes.js` (mới): CRUD "Loại khách hàng"
+- [x] `partners.routes.js`: GET trả `category_name`/`category_debt_limit`, POST/PUT nhận `category_id` (validate chỉ áp dụng `type='khach_hang'`)
+- [x] `debts.routes.js`: `GET /summary` bổ sung `category_name`/`category_debt_limit`
+- [x] Frontend mới: `customers.html`/`.js` (Khách hàng), `customer-debts.html`/`.js` (Công nợ khách hàng, cảnh báo vượt hạn mức — chỉ cảnh báo không chặn), `customer-categories.html`/`.js` (Loại khách hàng, menu Cấu hình)
+- [x] `partners.html`/`.js`: đổi thành chỉ quản lý Nhà cung cấp (bỏ chọn loại, bỏ cột Loại)
+- [x] `debts.html`/`.js`: đổi thành chỉ Công nợ NCC
+- [x] `layout.js`: tách nhóm "Công nợ" cũ thành "Nhà cung cấp" + "Khách hàng"; thêm "Loại khách hàng" vào nhóm "Cấu hình"; `icons.js` thêm icon `truck`/`tag`
+- [x] Test qua trình duyệt thật: CRUD Loại khách hàng, gán loại cho khách hàng, xác nhận dữ liệu công nợ NCC cũ không mất sau migration, phiếu in xuất kho hiển thị đúng mã SP + ghi chú xuống dòng đúng
+
 ## Phase 5 — Vận hành & Go-live
 
 - [ ] Cấu hình PM2 (`pm2 start`, `pm2 startup`, `pm2 save`)

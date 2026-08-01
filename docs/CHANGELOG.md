@@ -2,6 +2,26 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-01 (Chỉnh sửa Báo cáo/In phiếu + tách Khách hàng thành module riêng)
+
+> Theo yêu cầu người dùng, ngoài phạm vi Phase 5 gốc. Trước khi tách Khách hàng đã hỏi lại 3 câu hỏi về cấu trúc menu/công nợ/hạn mức — xem `docs/DECISIONS.md` mục cùng ngày.
+
+- **Trang Báo cáo** (`reports.html`): chuyển phần "Công nợ" lên đầu trang (trước "Tồn kho hiện tại"), theo yêu cầu người dùng — chỉ đổi thứ tự HTML, không đổi logic `reports.js`.
+- **In phiếu xuất kho** (`print-issue.html`): thêm cột "Mã sản phẩm" riêng trong bảng kê (trước đây gộp chung trong ngoặc đơn sau tên hàng hóa) — `print-issue.js` tách `item.product_code` ra `<td>` riêng.
+- **Sửa lỗi ghi chú in phiếu không xuống dòng** (`print-issue.html`): phần tử `#print-company-note-text` thiếu `class="print-company-note-text"` (chỉ có `id`) nên CSS `white-space: pre-line` (đã viết đúng từ migration `014`) không được áp dụng — nội dung nhiều dòng bị dồn thành 1 đoạn liền khi in. Thêm class còn thiếu, đã test lại qua trình duyệt thật: xuống dòng đúng theo từng "Điều kiện..." đã nhập ở trang Thông tin công ty.
+- **Tách "Khách hàng" thành module riêng khỏi "Đối tác"** (trước đây `partners.html`/`debts.html` gộp chung NCC+KH):
+  - Migration `015_customer_categories.sql`: bảng `customer_categories` (tên, `debt_limit` nullable) + `partners.category_id` (FK nullable, chỉ có ý nghĩa với `type='khach_hang'`).
+  - `backend/routes/customerCategories.routes.js` (mới): CRUD "Loại khách hàng", GET mở cho mọi người đã đăng nhập, POST/PUT/DELETE quyền `cau_hinh`. Xóa bị chặn nếu đang có khách hàng thuộc loại đó.
+  - `backend/routes/partners.routes.js`: GET trả thêm `category_name`/`category_debt_limit` (LEFT JOIN); POST/PUT nhận `category_id`, validate qua `resolveCategoryId()` — tự bỏ qua (lưu `NULL`) nếu `type` không phải `khach_hang`.
+  - `backend/routes/debts.routes.js`: `GET /summary` bổ sung `category_name`/`category_debt_limit` vào kết quả (dùng cho cảnh báo hạn mức ở trang Công nợ khách hàng).
+  - `frontend/customer-categories.html`/`.js` (mới, menu "Cấu hình"): CRUD loại khách hàng.
+  - `frontend/customers.html`/`.js` (mới, menu "Khách hàng"): quản lý khách hàng đầy đủ, tái dùng API `/api/partners` (luôn gửi `type='khach_hang'` cố định), có chọn "Loại khách hàng".
+  - `frontend/customer-debts.html`/`.js` (mới, menu "Khách hàng"): công nợ khách hàng, tái dùng nguyên API `/api/debts/*` (`?type=khach_hang`) — thêm cảnh báo (icon + màu, class `.stock-low` có sẵn) khi số dư vượt `category_debt_limit`. **Chỉ cảnh báo, không chặn** lập phiếu xuất công nợ mới.
+  - `frontend/partners.html`/`.js`: đổi thành chỉ quản lý Nhà cung cấp — bỏ dropdown "Loại đối tác" (cố định `nha_cung_cap`), bỏ cột "Loại" trong bảng, đổi nhãn/tiêu đề.
+  - `frontend/debts.html`/`.js`: đổi thành chỉ Công nợ NCC — bỏ cột "Loại", bỏ nhánh `isSupplier` (không cần rẽ nhánh nữa vì chỉ còn 1 loại).
+  - `frontend/assets/layout.js`: nhóm "Công nợ" cũ tách thành 2 nhóm "Nhà cung cấp" (Nhà cung cấp, Công nợ NCC) và "Khách hàng" (Khách hàng, Công nợ khách hàng); thêm mục "Loại khách hàng" vào nhóm "Cấu hình". `frontend/assets/icons.js` thêm icon `truck` (Nhà cung cấp), `tag` (Loại khách hàng).
+- **Test qua trình duyệt thật (đăng nhập admin)**: tạo "Loại khách hàng" VIP (hạn mức 5.000.000) → hiển thị đúng bảng; gán loại VIP cho khách hàng có sẵn qua trang Khách hàng → lưu đúng, hiển thị đúng cột "Loại khách hàng" trên cả trang Khách hàng lẫn Công nợ khách hàng; trang Nhà cung cấp/Công nợ NCC chỉ hiển thị đúng NCC, dữ liệu công nợ cũ (số dư, lịch sử giao dịch) không bị mất sau migration; menu sidebar hiển thị đúng 2 nhóm mới.
+
 ## 2026-08-01 (Phase 4 hoàn thành — In phiếu xuất kho & Báo cáo)
 
 > Tiếp nối ngay sau khi hoàn thành Phase 3 + các cải tiến Xuất kho, trong cùng chuỗi phiên làm việc. Trước khi code phần Báo cáo, đã hỏi lại phạm vi cụ thể (PRD chỉ ghi chung chung) — người dùng xác nhận: làm dạng thẻ số liệu (card) cho các số tổng, có biểu đồ so sánh tăng trưởng mua hàng theo tháng so với tháng trước.

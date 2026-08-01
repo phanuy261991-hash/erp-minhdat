@@ -14,6 +14,7 @@ const productsRoutes = require('./routes/products.routes');
 const stockReceiptsRoutes = require('./routes/stockReceipts.routes');
 const stockIssuesRoutes = require('./routes/stockIssues.routes');
 const partnersRoutes = require('./routes/partners.routes');
+const customerCategoriesRoutes = require('./routes/customerCategories.routes');
 const debtsRoutes = require('./routes/debts.routes');
 const reportsRoutes = require('./routes/reports.routes');
 const { requireAuth } = require('./middleware/auth');
@@ -59,6 +60,9 @@ app.use('/api/stock-issues', requireAuth, requirePermission('kho'), stockIssuesR
 // tra quyen ('kho' hoac 'cong_no' cho POST, chi 'cong_no' cho PUT/DELETE) ben trong file route
 // (xem partners.routes.js).
 app.use('/api/partners', requireAuth, partnersRoutes);
+// GET mo cho moi nguoi da dang nhap (chon loai khach hang luc them/sua), POST/PUT/DELETE rieng
+// kiem tra quyen 'cau_hinh' ben trong file route (xem customerCategories.routes.js).
+app.use('/api/customer-categories', requireAuth, customerCategoriesRoutes);
 app.use('/api/debts', requireAuth, requirePermission('cong_no'), debtsRoutes);
 app.use('/api/reports', requireAuth, requirePermission('bao_cao'), reportsRoutes);
 

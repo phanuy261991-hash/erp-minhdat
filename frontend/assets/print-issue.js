@@ -87,7 +87,8 @@ function renderIssue(issue) {
       return `
         <tr>
           <td>${index + 1}</td>
-          <td>${item.product_name} (${item.product_code})</td>
+          <td>${item.product_code}</td>
+          <td>${item.product_name}</td>
           <td>${item.unit}</td>
           <td class="print-num">${formatMoney(item.quantity)}</td>
           <td class="print-num">${formatMoney(item.unit_price)}</td>

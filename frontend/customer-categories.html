@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loại khách hàng - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Cấu hình</p>
+      <div class="page-header">
+        <h2>Loại khách hàng</h2>
+        <div class="page-header-actions">
+          <button type="button" id="btn-add-category" class="btn-add"></button>
+        </div>
+      </div>
+
+      <div id="categories-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="categories-error-text"></span>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tên loại khách hàng</th>
+              <th>Hạn mức công nợ</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="categories-tbody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <div id="category-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3 id="category-modal-title">Thêm loại khách hàng</h3>
+      <form id="category-form">
+        <div id="category-form-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="category-form-error-text"></span>
+        </div>
+
+        <div class="form-field">
+          <label for="category-name">Tên loại khách hàng</label>
+          <input type="text" id="category-name" required autocomplete="off" placeholder="vd: VIP, Đại lý, Khách lẻ" />
+        </div>
+
+        <div class="form-field">
+          <label for="category-debt-limit">Hạn mức công nợ (để trống nếu không giới hạn)</label>
+          <input type="number" id="category-debt-limit" min="0" step="1" autocomplete="off" />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-category" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-category" class="btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/customer-categories.js"></script>
+</body>
+</html>

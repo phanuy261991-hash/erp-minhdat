@@ -24,10 +24,19 @@ const NAV_GROUPS = [
     ],
   },
   {
-    label: 'Công nợ',
+    // Truoc day la "Cong no", gop chung NCC+KH - tach rieng theo yeu cau nguoi dung 2026-08-01,
+    // nhom nay tu day chi con Nha cung cap, Khach hang chuyen sang nhom rieng ben duoi.
+    label: 'Nhà cung cấp',
     items: [
-      { key: 'partners', label: 'Đối tác', href: 'partners.html', icon: 'users', module: 'cong_no', enabled: true },
-      { key: 'debts', label: 'Công nợ', href: 'debts.html', icon: 'ledger', module: 'cong_no', enabled: true },
+      { key: 'partners', label: 'Nhà cung cấp', href: 'partners.html', icon: 'truck', module: 'cong_no', enabled: true },
+      { key: 'debts', label: 'Công nợ NCC', href: 'debts.html', icon: 'ledger', module: 'cong_no', enabled: true },
+    ],
+  },
+  {
+    label: 'Khách hàng',
+    items: [
+      { key: 'customers', label: 'Khách hàng', href: 'customers.html', icon: 'users', module: 'cong_no', enabled: true },
+      { key: 'customer-debts', label: 'Công nợ khách hàng', href: 'customer-debts.html', icon: 'ledger', module: 'cong_no', enabled: true },
     ],
   },
   {
@@ -43,6 +52,7 @@ const NAV_GROUPS = [
     items: [
       { key: 'company-settings', label: 'Thông tin công ty', href: 'company-settings.html', icon: 'building', module: 'cau_hinh', enabled: true },
       { key: 'warehouse-settings', label: 'Cấu hình kho', href: 'warehouse-settings.html', icon: 'sliders', module: 'cau_hinh', enabled: true },
+      { key: 'customer-categories', label: 'Loại khách hàng', href: 'customer-categories.html', icon: 'tag', module: 'cau_hinh', enabled: true },
       { key: 'sales-settings', label: 'Cấu hình bán hàng', href: 'sales-settings.html', icon: 'cart', module: 'cau_hinh', enabled: true },
     ],
   },

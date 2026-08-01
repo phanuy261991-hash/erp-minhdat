@@ -1,7 +1,8 @@
-// Logic trang Cong no Nha cung cap (truoc day gop chung ca KH+NCC - tach rieng theo yeu cau
-// nguoi dung 2026-08-01, xem frontend/customer-debts.js cho Khach hang). Danh sach so du tung
-// NCC (tinh tu SUM debt_ledger, khong luu so co dinh - xem GET /api/debts/summary?type=nha_cung_cap),
-// xem lich su giao dich 1 NCC, ghi nhan thanh toan (tung phan, khong can khop dung 1 khoan no).
+// Logic trang "Cong no khach hang" (tach rieng khoi trang Cong no chung theo yeu cau nguoi dung
+// 2026-08-01 - trang Cong no cu tu day chi con Nha cung cap). Dung lai nguyen API /api/debts
+// (chi loc type=khach_hang), them canh bao khi so du vuot han muc cong no cua Loai khach hang
+// (category_debt_limit tra ve tu GET /debts/summary va /debts?partner_id=) - CHI canh bao,
+// khong chan lap phieu (xem yeu cau nguoi dung 2026-08-01).
 
 let currentUser = null;
 let summaryCache = [];
@@ -14,6 +15,8 @@ const searchInput = document.getElementById('debt-search');
 
 const historyModal = document.getElementById('debt-history-modal');
 const historyInfoEl = document.getElementById('debt-history-info');
+const historyWarningBox = document.getElementById('debt-history-warning');
+const historyWarningText = document.getElementById('debt-history-warning-text');
 const historyStatsEl = document.getElementById('debt-history-stats');
 const historyTbody = document.getElementById('debt-history-tbody');
 const btnCloseHistory = document.getElementById('btn-close-debt-history');
@@ -51,18 +54,23 @@ function getVisibleSummary() {
   return summaryCache.filter((s) => s.name.toLowerCase().includes(keyword));
 }
 
-// So du > 0 nghia la con no (voi NCC: minh con phai tra ho; voi khach hang: ho con phai tra
-// minh) - dung mau canh bao rieng, khac han mau xam khi da het no, khong chi dua vao mau (kem chu).
+function isOverLimit(item) {
+  return item.category_debt_limit !== null && item.category_debt_limit !== undefined && item.balance > item.category_debt_limit;
+}
+
 function renderRow(item) {
+  const overLimit = isOverLimit(item);
   const balanceHtml = item.balance > 0
     ? `<span class="stock-low">${formatMoney(item.balance)}</span>`
     : formatMoney(item.balance);
+  const warningIcon = overLimit ? `<span class="stock-low" title="Vượt hạn mức công nợ (${formatMoney(item.category_debt_limit)} đ)">${icon('warningTriangle', 14)}</span>` : '';
 
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td>${item.name}</td>
+    <td>${item.category_name || '-'}</td>
     <td>${item.phone || '-'}</td>
-    <td>${balanceHtml}</td>
+    <td>${balanceHtml} ${warningIcon}</td>
     <td>
       <button type="button" class="icon-btn" data-action="history" data-id="${item.partner_id}" title="Xem lịch sử">${icon('eye', 14)}</button>
       <button type="button" class="icon-btn" data-action="pay" data-id="${item.partner_id}" title="Ghi nhận thanh toán">${icon('check', 14)}</button>
@@ -78,7 +86,7 @@ function renderSummary() {
 
 async function loadSummary() {
   try {
-    const { summary } = await apiFetch('/debts/summary?type=nha_cung_cap');
+    const { summary } = await apiFetch('/debts/summary?type=khach_hang');
     summaryCache = summary;
     renderSummary();
   } catch (err) {
@@ -91,7 +99,7 @@ searchInput.addEventListener('input', (event) => {
   renderSummary();
 });
 
-// ----- Lich su cong no 1 doi tac -----
+// ----- Lich su cong no 1 khach hang -----
 
 function detailInfoItem(label, value) {
   return `<div class="detail-info-item"><p class="detail-label">${label}</p><p class="detail-value">${value}</p></div>`;
@@ -106,16 +114,25 @@ function statCard(label, value, warning) {
   `;
 }
 
+function renderHistoryWarning(partner) {
+  if (partner && isOverLimit(partner)) {
+    historyWarningText.textContent = `Khách hàng đã vượt hạn mức công nợ của loại "${partner.category_name}" (${formatMoney(partner.category_debt_limit)} đ) - chỉ là cảnh báo, không chặn lập phiếu.`;
+    historyWarningBox.hidden = false;
+  } else {
+    historyWarningBox.hidden = true;
+  }
+}
+
 async function openHistoryModal(partnerId) {
   const partner = summaryCache.find((s) => String(s.partner_id) === String(partnerId));
 
   historyInfoEl.innerHTML = [
-    detailInfoItem('Nhà cung cấp', partner ? partner.name : '-'),
+    detailInfoItem('Khách hàng', partner ? partner.name : '-'),
+    detailInfoItem('Loại khách hàng', partner ? (partner.category_name || 'Không phân loại') : '-'),
   ].join('');
-  // So du la con so quan trong nhat tren man hinh nay - dung .stat-card (chu lon) thay vi
-  // detail-info-item thuong, kem canh bao mau khi con no (xem yeu cau nguoi dung 2026-07-31).
+  renderHistoryWarning(partner);
   historyStatsEl.innerHTML = partner
-    ? statCard('Cần thanh toán', formatMoney(partner.balance), partner.balance > 0)
+    ? statCard('Cần thu', formatMoney(partner.balance), partner.balance > 0)
     : '';
   historyTbody.innerHTML = '';
   historyModal.hidden = false;
@@ -125,8 +142,8 @@ async function openHistoryModal(partnerId) {
 
     if (partner) {
       historyStatsEl.innerHTML = [
-        statCard('Cần thanh toán', formatMoney(partner.balance), partner.balance > 0),
-        statCard('Tổng tiền hàng đã mua', formatMoney(totalTransacted)),
+        statCard('Cần thu', formatMoney(partner.balance), partner.balance > 0),
+        statCard('Tổng tiền hàng đã bán', formatMoney(totalTransacted)),
       ].join('');
     }
 
@@ -226,7 +243,7 @@ debtsTbody.addEventListener('click', (event) => {
 });
 
 (async function init() {
-  currentUser = await initLayout('debts');
+  currentUser = await initLayout('customer-debts');
   if (!currentUser) return;
 
   btnAddPayment.innerHTML = `${icon('plus', 16)} Ghi nhận thanh toán`;

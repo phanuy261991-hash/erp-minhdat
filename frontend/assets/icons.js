@@ -34,6 +34,8 @@ const ICONS = {
   eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
   arrowLeft: '<path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/>',
   printer: '<path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="1.5"/><path d="M6 17v4h12v-4"/><path d="M8 13h8"/>',
+  truck: '<rect x="1" y="7" width="13" height="10" rx="1"/><path d="M14 10h4l3 3v4h-3"/><circle cx="6.5" cy="19" r="2"/><circle cx="17.5" cy="19" r="2"/>',
+  tag: '<path d="M3 11.5V5a2 2 0 0 1 2-2h6.5L20 11.5 12.5 19 3 11.5Z"/><circle cx="7.5" cy="7.5" r="1.3"/>',
 };
 
 function icon(name, size) {

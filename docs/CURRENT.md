@@ -4,8 +4,9 @@
 
 ## Giai đoạn
 
-Phase 1, 1.5, 1.6, 2 (Kho), 3 (Công nợ), **4 (In phiếu & Báo cáo) đã hoàn thành**. Sẵn sàng chuyển sang Phase 5 (Vận hành & Go-live) khi người dùng yêu cầu.
+Phase 1, 1.5, 1.6, 2 (Kho), 3 (Công nợ), **4 (In phiếu & Báo cáo) đã hoàn thành**. Sau đó có thêm 1 đợt chỉnh sửa/mở rộng ngoài phase (Báo cáo, In phiếu, tách Khách hàng — xem mục dưới). Sẵn sàng chuyển sang Phase 5 (Vận hành & Go-live) khi người dùng yêu cầu.
 
+- ✅ **Chỉnh sửa Báo cáo/In phiếu + tách Khách hàng (2026-08-01, ngoài phase, theo yêu cầu người dùng)**: trang Báo cáo đổi thứ tự (Công nợ lên đầu); phiếu in xuất kho thêm cột "Mã sản phẩm" + sửa lỗi ghi chú công ty không xuống dòng (thiếu class CSS); tách hẳn "Khách hàng" thành menu riêng khỏi "Đối tác/Công nợ" (nay chỉ còn Nhà cung cấp) — thêm danh mục "Loại khách hàng" (migration `015`, có hạn mức công nợ chỉ để cảnh báo, không chặn cứng). Chi tiết đầy đủ: `docs/CHANGELOG.md`, quyết định kiến trúc: `docs/DECISIONS.md`.
 - ✅ Phase 1 → 3: xem chi tiết ở các mục cũ bên dưới, không đổi gì thêm phiên này.
 - ✅ **Phase 4 — In phiếu xuất kho** (`print-issue.html`, trang độc lập không dùng sidebar): dùng `GET /api/stock-issues/:id` có sẵn (không cần API `/print` riêng như dự tính ban đầu), hiển thị đầy đủ thông tin công ty (tên, địa chỉ, điện thoại, MST, email, website, ngân hàng) + thông tin khách hàng + bảng sản phẩm (kèm chiết khấu) + tổng tiền + chữ ký. Nút "In phiếu" (`window.print()`) trên từng dòng ở `stock-issues.html`.
 - ✅ **Ghi chú in phiếu cấu hình được** (`company_settings.print_note`, migration `014`): nội dung hiển thị dưới bảng kê trên phiếu in (điều kiện bảo hành, chính sách đổi trả...) — sửa được qua trang Thông tin công ty (textarea mới), không hardcode cứng trong code. Seed sẵn nội dung mẫu theo yêu cầu người dùng.
@@ -25,6 +26,14 @@ Phase 1, 1.5, 1.6, 2 (Kho), 3 (Công nợ), **4 (In phiếu & Báo cáo) đã ho
 - **Phase 4 — In phiếu & Báo cáo (hoàn thành)**: migration `014` (`company_settings.print_note`), `backend/routes/reports.routes.js` (mới), frontend `print-issue.html`/`.js` (mới), `reports.html`/`.js` (mới, biểu đồ cột SVG tự vẽ + `.stat-delta`), `company-settings.html`/`.js` cập nhật (textarea ghi chú in phiếu), icon `printer` mới, bật menu "Báo cáo" trong `layout.js`.
 - Tài khoản demo hiện có trong `data/data.db`: `admin` / `Demo@123456` (Admin), `thukho1` / `ThuKho@123` (Thủ kho), `khophu1` / `KhoPhu@123` (vai trò tự tạo, quyền `kho`+`cong_no`), `ketoan1` / `KeToan@123` (Kế toán). Có nhiều dữ liệu test tích lũy qua các phiên (phiếu nhập/xuất PN/PX..., vài đối tác test, vài dòng `debt_ledger` test) — không xóa được theo đúng nguyên tắc ledger, chấp nhận để lại. `company_settings` hiện có dữ liệu test đầy đủ (email/website/ngân hàng) để demo trang in phiếu.
 
+## Đã hoàn thành (tiếp — 2026-08-01, ngoài phase)
+
+- Migration `015_customer_categories.sql`: bảng `customer_categories` + `partners.category_id`.
+- Backend: `customerCategories.routes.js` (mới), `partners.routes.js`/`debts.routes.js` cập nhật hỗ trợ `category_id`/cảnh báo hạn mức.
+- Frontend mới: `customers.html`/`.js` (Khách hàng), `customer-debts.html`/`.js` (Công nợ khách hàng), `customer-categories.html`/`.js` (Loại khách hàng, menu Cấu hình).
+- Frontend cập nhật: `partners.html`/`.js` (chỉ còn Nhà cung cấp), `debts.html`/`.js` (chỉ còn Công nợ NCC), `layout.js`/`icons.js` (menu mới, icon `truck`/`tag`), `reports.html` (Công nợ lên đầu), `print-issue.html`/`.js` (cột Mã sản phẩm, sửa lỗi xuống dòng ghi chú).
+- Test qua trình duyệt thật: CRUD Loại khách hàng, gán loại cho khách hàng, xác nhận dữ liệu công nợ NCC cũ không mất sau migration, menu sidebar đúng cấu trúc mới.
+
 ## Chưa bắt đầu / chưa xong
 
 - Phase 5 (Vận hành & Go-live) theo `docs/Plan.md` mục 4: cấu hình PM2, IP tĩnh, script backup `data.db`, `SESSION_SECRET` cố định.
@@ -36,3 +45,5 @@ Phase 1, 1.5, 1.6, 2 (Kho), 3 (Công nợ), **4 (In phiếu & Báo cáo) đã ho
 ## Việc cần làm tiếp theo
 
 Chưa có việc cụ thể đang treo — chờ người dùng chọn hướng tiếp theo: Phase 5 (vận hành/go-live), hoặc yêu cầu bổ sung khác ngoài kế hoạch (vd in phiếu nhập, mở rộng báo cáo, module Bán hàng/POS).
+
+**Ghi chú nhỏ (2026-08-01)**: cảnh báo vượt hạn mức công nợ trên trang Công nợ khách hàng chưa được test với dữ liệu thật có số dư vượt hạn mức (dữ liệu test hiện tại số dư khách hàng đều = 0) — logic đã review kỹ, nên test lại khi có dữ liệu thật vượt ngưỡng.

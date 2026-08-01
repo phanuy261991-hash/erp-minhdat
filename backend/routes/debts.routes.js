@@ -24,8 +24,10 @@ router.get('/summary', (req, res) => {
   const summary = db
     .prepare(`
       SELECT p.id AS partner_id, p.name, p.type, p.phone,
+             c.name AS category_name, c.debt_limit AS category_debt_limit,
              COALESCE(SUM(CASE WHEN d.type = 'no' THEN d.amount ELSE -d.amount END), 0) AS balance
       FROM partners p
+      LEFT JOIN customer_categories c ON c.id = p.category_id
       LEFT JOIN debt_ledger d ON d.partner_id = p.id
       ${whereClause}
       GROUP BY p.id

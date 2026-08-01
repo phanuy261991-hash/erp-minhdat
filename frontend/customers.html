@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Khách hàng - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Khách hàng</p>
+      <div class="page-header">
+        <h2>Khách hàng</h2>
+        <div class="page-header-actions">
+          <div class="search-box">
+            <span class="input-icon"></span>
+            <input type="text" id="customer-search" class="search-input" placeholder="Tìm theo tên..." autocomplete="off" />
+          </div>
+          <button type="button" id="btn-add-customer" class="btn-add"></button>
+        </div>
+      </div>
+
+      <div id="customers-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="customers-error-text"></span>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tên</th>
+              <th>Loại khách hàng</th>
+              <th>Số điện thoại</th>
+              <th>Địa chỉ</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="customers-tbody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <div id="customer-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3 id="customer-modal-title">Thêm khách hàng mới</h3>
+      <form id="customer-form">
+        <div id="customer-form-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="customer-form-error-text"></span>
+        </div>
+
+        <div class="form-field">
+          <label for="customer-name">Tên</label>
+          <input type="text" id="customer-name" required autocomplete="off" />
+        </div>
+
+        <div class="form-field">
+          <label for="customer-category">Loại khách hàng (không bắt buộc)</label>
+          <select id="customer-category">
+            <option value="">-- Không phân loại --</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="customer-phone">Số điện thoại</label>
+          <input type="text" id="customer-phone" autocomplete="off" />
+        </div>
+
+        <div class="form-field">
+          <label for="customer-address">Địa chỉ</label>
+          <input type="text" id="customer-address" autocomplete="off" />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-customer" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-customer" class="btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/customers.js"></script>
+</body>
+</html>

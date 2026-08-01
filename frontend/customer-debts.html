@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Công nợ nhà cung cấp - Quản lý Kho &amp; Công nợ</title>
+  <title>Công nợ khách hàng - Quản lý Kho &amp; Công nợ</title>
   <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body class="app-body">
   <div class="app-layout">
     <aside id="sidebar" class="sidebar"></aside>
     <main class="app-content">
-      <p class="page-eyebrow">Nhà cung cấp</p>
+      <p class="page-eyebrow">Khách hàng</p>
       <div class="page-header">
-        <h2>Công nợ nhà cung cấp</h2>
+        <h2>Công nợ khách hàng</h2>
         <div class="page-header-actions">
           <div class="search-box">
             <span class="input-icon"></span>
-            <input type="text" id="debt-search" class="search-input" placeholder="Tìm theo tên nhà cung cấp..." autocomplete="off" />
+            <input type="text" id="debt-search" class="search-input" placeholder="Tìm theo tên khách hàng..." autocomplete="off" />
           </div>
           <button type="button" id="btn-add-payment" class="btn-add"></button>
         </div>
@@ -31,7 +31,8 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th>Nhà cung cấp</th>
+              <th>Khách hàng</th>
+              <th>Loại khách hàng</th>
               <th>Số điện thoại</th>
               <th>Số dư công nợ</th>
               <th></th>
@@ -47,6 +48,10 @@
     <div class="modal-card modal-card-lg">
       <h3>Lịch sử công nợ</h3>
       <div class="detail-info-grid" id="debt-history-info"></div>
+      <div id="debt-history-warning" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="debt-history-warning-text"></span>
+      </div>
       <div class="stat-grid" id="debt-history-stats"></div>
       <h4 class="section-heading">Lịch sử giao dịch</h4>
       <div class="data-table-wrap">
@@ -80,7 +85,7 @@
         </div>
 
         <div class="form-field">
-          <label for="payment-partner">Nhà cung cấp</label>
+          <label for="payment-partner">Khách hàng</label>
           <select id="payment-partner" required></select>
         </div>
 
@@ -105,6 +110,6 @@
   <script src="assets/api.js"></script>
   <script src="assets/icons.js"></script>
   <script src="assets/layout.js"></script>
-  <script src="assets/debts.js"></script>
+  <script src="assets/customer-debts.js"></script>
 </body>
 </html>

@@ -2,6 +2,16 @@
 
 > Ghi lại các quyết định đã chốt để không thảo luận lại trừ khi có lý do mới. Mỗi mục ghi ngày chốt.
 
+## 2026-08-01 — Tách Khách hàng khỏi Đối tác, thêm "Loại khách hàng"
+
+**Bối cảnh**: người dùng phản ánh chưa có "quản lý khách hàng và công nợ khách hàng" — thực ra đã có (trang Đối tác/Công nợ gộp chung NCC+KH), nhưng người dùng muốn tách riêng hẳn để rõ ràng hơn, và cần phân loại khách hàng (vd VIP, Đại lý). Đã hỏi lại 3 câu hỏi trước khi code (theo CLAUDE.md — thay đổi kiến trúc/schema phải hỏi trước):
+
+1. **Cấu trúc menu**: `frontend/partners.html` (đổi tên hiển thị "Đối tác" → "Nhà cung cấp") từ nay **chỉ quản lý NCC**, `type` luôn cố định `nha_cung_cap`, không còn chọn được. Khách hàng có trang riêng hoàn toàn mới `frontend/customers.html` (không tái dùng partners.html).
+2. **Công nợ**: tách theo đúng cấu trúc trên — `debts.html` (đổi tên "Công nợ" → "Công nợ NCC") chỉ còn NCC; `customer-debts.html` (mới) chỉ công nợ khách hàng. Cả 2 dùng chung API `/api/debts/*` (đã hỗ trợ `?type=`), không tạo API riêng.
+3. **Loại khách hàng**: bảng mới `customer_categories` (migration `015`) — tên + `debt_limit` (hạn mức công nợ, có thể để trống = không giới hạn). Chỉ áp dụng cho `partners.type='khach_hang'` (validate ở tầng API, không dùng CHECK constraint DB vì SQLite không so sánh được cột khác trong CHECK theo điều kiện gọn). **Hạn mức công nợ chỉ dùng để CẢNH BÁO trên trang Công nợ khách hàng — không chặn cứng** việc lập phiếu xuất công nợ mới (khác với `allow_negative_stock` vốn chặn cứng theo mặc định) — người dùng xác nhận rõ đây chỉ là công cụ theo dõi, không phải rào chắn nghiệp vụ.
+
+**Không đổi**: API `POST/PUT /api/partners` vẫn dùng chung 1 route cho cả 2 loại đối tác (không tách route riêng `/api/customers`) — `category_id` chỉ có hiệu lực khi `type='khach_hang'`, NCC gửi lên sẽ bị bỏ qua (luôn lưu `NULL`). Tránh nhân đôi logic CRUD cho 2 bảng thực chất giống nhau.
+
 ## 2026-08-01 — Phase 4 hoàn thành: phạm vi Báo cáo, biểu đồ tự vẽ, ghi chú in phiếu cấu hình được
 
 **Phạm vi trang Báo cáo**: PRD 4.6 chỉ ghi chung chung ("bảng; biểu đồ nếu cần") — đã hỏi lại và người dùng xác nhận: làm **dạng thẻ số liệu (card)** cho các số tổng, và **có biểu đồ** so sánh tăng trưởng mua hàng/bán hàng theo tháng so với tháng trước (khác với đề xuất ban đầu "chỉ làm bảng trước, biểu đồ để sau").

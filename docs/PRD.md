@@ -78,6 +78,11 @@ Web app nội bộ, kiến trúc đơn giản (không microservices, không clou
 - Ghi nhận thanh toán từng phần (không cần khớp đúng 1 khoản nợ/1 phiếu cụ thể), lịch sử giao dịch (cả phát sinh nợ lẫn thanh toán) xem theo từng đối tượng.
 - Quản lý danh sách đối tác (NCC/khách hàng) đầy đủ: thêm/sửa/xóa — không đổi được loại đối tác sau khi tạo, không xóa được nếu đối tác đã có lịch sử phiếu hoặc công nợ.
 
+**Tách riêng menu Khách hàng khỏi Nhà cung cấp (bổ sung 2026-08-01, theo yêu cầu người dùng)**:
+- Trang "Đối tác" (nay đổi tên hiển thị "Nhà cung cấp") chỉ còn quản lý NCC; trang "Công nợ" (nay "Công nợ NCC") chỉ còn công nợ NCC.
+- Khách hàng có menu riêng hoàn toàn: trang "Khách hàng" (quản lý danh sách) + "Công nợ khách hàng" (số dư/lịch sử/ghi nhận thanh toán) — cùng chức năng như trước, chỉ tách UI, dùng chung API `/api/partners`, `/api/debts`.
+- **Loại khách hàng** (danh mục mới, thuộc menu Cấu hình): Admin/người có quyền `cau_hinh` định nghĩa các nhóm khách hàng tùy ý (vd VIP, Đại lý, Khách lẻ), mỗi nhóm có thể đặt **hạn mức công nợ** (không bắt buộc). Gán loại khi thêm/sửa khách hàng (không bắt buộc, chỉ áp dụng cho khách hàng — không áp dụng cho NCC). Khi số dư công nợ của khách hàng vượt hạn mức của loại đang gán, trang "Công nợ khách hàng" hiển thị cảnh báo rõ ràng (icon + màu) — **chỉ cảnh báo, không chặn** việc lập phiếu xuất công nợ mới cho khách hàng đó.
+
 ### 4.5 In phiếu xuất (bổ sung 2026-08-01 — hoàn thành)
 - MVP: HTML + CSS `@media print` + `window.print()`, dùng máy in văn phòng thường (A4/A5) đã cài trên máy client — không cần thư viện PDF hay driver máy in nhiệt. Trang in (`print-issue.html`) độc lập, không dùng khung điều hướng chung.
 - Nội dung phiếu: **toàn bộ thông tin công ty** đã cấu hình (tên, địa chỉ, điện thoại, mã số thuế, email, website, thông tin ngân hàng), thông tin khách hàng (tên, địa chỉ, điện thoại), danh sách sản phẩm/số lượng/đơn giá/chiết khấu, tổng tiền, người lập phiếu, chỗ ký người giao/người nhận hàng.
