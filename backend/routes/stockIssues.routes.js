@@ -9,14 +9,52 @@ const { createStockIssue, ServiceError } = require('../services/stockIssue.servi
 const router = express.Router();
 
 const PAYMENT_STATUSES = ['da_thu_tien', 'cong_no'];
+const ADJUSTS_TYPES = ['receipt', 'issue'];
 
+// adjusts_code: xem chu thich tuong ung trong stockReceipts.routes.js.
 const SELECT_ISSUE = `
   SELECT i.id, i.code, i.partner_id, pa.name AS partner_name, i.created_by,
-         u.full_name AS created_by_name, i.note, i.payment_status, i.created_at
+         u.full_name AS created_by_name, i.note, i.payment_status, i.created_at,
+         i.adjusts_type, i.adjusts_id,
+         CASE i.adjusts_type WHEN 'receipt' THEN ar.code WHEN 'issue' THEN ai.code ELSE NULL END AS adjusts_code
   FROM stock_issues i
   LEFT JOIN partners pa ON pa.id = i.partner_id
   JOIN users u ON u.id = i.created_by
+  LEFT JOIN stock_receipts ar ON i.adjusts_type = 'receipt' AND ar.id = i.adjusts_id
+  LEFT JOIN stock_issues ai ON i.adjusts_type = 'issue' AND ai.id = i.adjusts_id
 `;
+
+// Doc + validate lien ket "dieu chinh cho phieu nao" tu body (tuy chon, xem migration 010).
+function readAdjustment(body) {
+  const { adjusts_type: adjustsType, adjusts_id: rawAdjustsId } = body || {};
+  if (!adjustsType) {
+    return { adjustsType: null, adjustsId: null };
+  }
+  if (!ADJUSTS_TYPES.includes(adjustsType)) {
+    return { error: `Loai phieu dieu chinh khong hop le: ${adjustsType}` };
+  }
+
+  const adjustsId = Number(rawAdjustsId);
+  const table = adjustsType === 'receipt' ? 'stock_receipts' : 'stock_issues';
+  const exists = db.prepare(`SELECT id FROM ${table} WHERE id = ?`).get(adjustsId);
+  if (!exists) {
+    return { error: 'Khong tim thay phieu goc de dieu chinh' };
+  }
+
+  return { adjustsType, adjustsId };
+}
+
+// issue_date tu client dang 'YYYY-MM-DD HH:MM:SS' (da quy doi ve UTC o frontend) - giong het
+// pattern readReceiptDate o stockReceipts.routes.js. Cho phep rong (dung thoi diem hien tai).
+const SQLITE_DATETIME_PATTERN = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+
+function readIssueDate(raw) {
+  if (!raw) return { issueDate: null };
+  if (!SQLITE_DATETIME_PATTERN.test(raw)) {
+    return { error: 'Thoi gian xuat khong hop le' };
+  }
+  return { issueDate: raw };
+}
 
 function readItems(rawItems) {
   if (!Array.isArray(rawItems) || rawItems.length === 0) {
@@ -28,14 +66,20 @@ function readItems(rawItems) {
     const productId = Number(raw.product_id);
     const quantity = Number(raw.quantity);
     const unitPrice = Number(raw.unit_price);
+    const discountPercent = raw.discount_percent === undefined || raw.discount_percent === null || raw.discount_percent === ''
+      ? 0
+      : Number(raw.discount_percent);
 
     if (!productId || !(quantity > 0) || !(unitPrice >= 0)) {
       return {
         error: 'Du lieu dong san pham khong hop le (thieu product_id, quantity phai > 0, unit_price phai >= 0)',
       };
     }
+    if (Number.isNaN(discountPercent) || discountPercent < 0 || discountPercent > 100) {
+      return { error: 'Chiet khau tung dong phai tu 0 den 100%' };
+    }
 
-    items.push({ productId, quantity, unitPrice });
+    items.push({ productId, quantity, unitPrice, discountPercent });
   }
 
   return { items };
@@ -56,18 +100,31 @@ router.get('/:id', (req, res) => {
   const items = db
     .prepare(`
       SELECT it.id, it.product_id, p.code AS product_code, p.name AS product_name, p.unit,
-             it.quantity, it.unit_price
+             it.quantity, it.unit_price, it.discount_percent
       FROM stock_issue_items it
       JOIN products p ON p.id = it.product_id
       WHERE it.issue_id = ?
     `)
     .all(id);
 
-  res.json({ issue: { ...issue, items } });
+  const adjustedBy = db
+    .prepare(`
+      SELECT 'receipt' AS type, code FROM stock_receipts WHERE adjusts_type = 'issue' AND adjusts_id = ?
+      UNION ALL
+      SELECT 'issue' AS type, code FROM stock_issues WHERE adjusts_type = 'issue' AND adjusts_id = ?
+    `)
+    .all(id, id);
+
+  const totalAmount = items.reduce(
+    (sum, item) => sum + item.quantity * item.unit_price * (1 - item.discount_percent / 100),
+    0
+  );
+
+  res.json({ issue: { ...issue, items, total_amount: totalAmount, adjusted_by: adjustedBy } });
 });
 
 router.post('/', (req, res) => {
-  const { partner_id: partnerId, note, payment_status: paymentStatus } = req.body || {};
+  const { partner_id: partnerId, note, payment_status: paymentStatus, issue_date: rawIssueDate } = req.body || {};
   const { items, error } = readItems((req.body || {}).items);
 
   if (error) {
@@ -79,6 +136,16 @@ router.post('/', (req, res) => {
     return res.status(400).json({ error: `payment_status khong hop le: ${resolvedPaymentStatus}` });
   }
 
+  const { issueDate, error: dateError } = readIssueDate(rawIssueDate);
+  if (dateError) {
+    return res.status(400).json({ error: dateError });
+  }
+
+  const { adjustsType, adjustsId, error: adjustError } = readAdjustment(req.body);
+  if (adjustError) {
+    return res.status(400).json({ error: adjustError });
+  }
+
   try {
     const issue = createStockIssue({
       partnerId: partnerId ? Number(partnerId) : null,
@@ -86,6 +153,9 @@ router.post('/', (req, res) => {
       note: note ? String(note).trim() : '',
       paymentStatus: resolvedPaymentStatus,
       items,
+      adjustsType,
+      adjustsId,
+      issueDate,
     });
     res.status(201).json({ issue });
   } catch (err) {

@@ -80,6 +80,22 @@
 - **Chỉ áp dụng cho trường ngắn.** Giữ nguyên 1 trường/dòng (không bọc `.form-row`) cho nội dung cần toàn bộ chiều rộng: ghi chú nhiều chữ, bảng dòng sản phẩm động, danh sách chọn nhiều mục.
 - Áp dụng cho **mọi form nhập liệu mới từ giờ trở đi** (Xuất kho, Đối tác, Công nợ...), không chỉ riêng phiếu nhập kho.
 
+## Modal xem chi tiết (chỉ đọc) — vd chi tiết phiếu nhập/xuất kho
+
+> Bổ sung 2026-07-31 khi làm modal xem chi tiết phiếu nhập/xuất kho (`receipt-detail.js`/`issue-detail.js`, dùng chung giữa trang danh sách phiếu và trang chi tiết sản phẩm).
+
+- `.detail-info-grid`/`.detail-info-item` (lưới 2 cột, `.detail-label` chữ nhỏ viết hoa màu muted + `.detail-value` chữ thường): hiển thị thông tin chỉ đọc dạng label-value — cố ý **không** dùng khung `<input>` như `.form-field`, để người dùng không nhầm là có thể sửa được (nguyên tắc "read-only phải khác biệt rõ với input"). `.full-width` cho trường cần chiếm cả 2 cột (ghi chú, liên kết phiếu điều chỉnh dài).
+- `.table-link-btn`: nút dạng link (không viền/nền, chỉ đổi màu primary + gạch chân khi hover) dùng trong ô bảng để mở modal chi tiết — vd bấm mã phiếu trong cột "Mã phiếu" ở lịch sử nhập/xuất của trang chi tiết sản phẩm.
+- Modal dùng `.modal-card-lg` (giống form lập phiếu) + bảng dòng sản phẩm tái dùng `.data-table` thường (khác `.item-row` của form lập phiếu vì không cần chỉnh sửa) + `.receipt-total-row` cho tổng tiền.
+- Đóng bằng nút "Đóng" (`.btn-secondary`) trong `.modal-actions` — không dùng nút X góc trên, nhất quán với mọi modal khác trong dự án.
+- **Số liệu cần nổi bật trong modal chỉ đọc** (bổ sung 2026-07-31, vd "Cần thanh toán"/"Cần thu" ở modal lịch sử công nợ): dùng `.stat-card`/`.stat-grid` (chữ lớn 26px, giống trang Tổng quan) thay vì `.detail-info-item` (chữ thường) cho con số quan trọng nhất màn hình — kèm modifier `.stat-card-value--warning` (màu `--color-warning`) khi số liệu cần chú ý ngay (còn nợ > 0). Đặt cạnh 1 số liệu tham chiếu khác (vd tổng tiền đã giao dịch) trong cùng `.stat-grid` để so sánh trực quan, không tách riêng từng số 1 hàng.
+
+## Toggle switch tái dùng trong form nhập liệu (không chỉ trang cấu hình)
+
+> Bổ sung 2026-07-31 khi làm toggle `payment_status` ở phiếu nhập/xuất kho. Tái dùng nguyên `.switch`/`.setting-row` đã chốt ở mục "Trang cấu hình" bên dưới — **không tạo pattern mới** dù ngữ cảnh khác (trong 1 phiếu đang lập, không phải trang cấu hình riêng). Khác biệt duy nhất: giá trị áp dụng cùng lúc khi submit cả phiếu, không có nút "Lưu" riêng cho từng mục.
+>
+> **Sửa lỗi spacing (2026-07-31, phát hiện khi dùng lại `.setting-row` trong form)**: `.setting-row` ban đầu không có `margin-bottom`, chỉ dựa vào `.setting-row + .setting-row { margin-top: 10px }` để tách các dòng liên tiếp trong trang cấu hình — nên khi đặt 1 `.setting-row` đơn lẻ ngay trước 1 `.form-field` khác (như trong form phiếu), 2 phần tử dính sát nhau (0px). Đã thêm `margin-bottom: 14px` trực tiếp vào `.setting-row` để tự đủ khoảng cách trong mọi ngữ cảnh, không phụ thuộc phần tử liền sau là gì.
+
 ## Trang cấu hình (settings) — vd Thông tin công ty, Cấu hình kho
 
 > Mọi trang cấu hình mới trong tương lai phải dùng lại đúng các class dưới đây, không tự vẽ layout riêng (đã chốt với người dùng 2026-08-01 sau khi lặp lại nhiều lần trên `warehouse-settings.html`).

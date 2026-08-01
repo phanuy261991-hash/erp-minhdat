@@ -44,14 +44,10 @@ Web app nội bộ, kiến trúc đơn giản (không microservices, không clou
 - **Vai trò Admin là vai trò đặc biệt, cố định**: luôn có toàn quyền mọi module, không thể đổi tên/xóa/sửa quyền — đảm bảo hệ thống luôn có ít nhất 1 tài khoản quản trị đầy đủ, tránh trường hợp thao tác nhầm làm mất quyền quản trị.
 - Hệ thống vẫn seed sẵn 2 vai trò mặc định để dùng ngay: **Kế toán** (Công nợ + Báo cáo), **Thủ kho** (Kho) — nhưng đây chỉ là dữ liệu khởi tạo, Admin có thể sửa tên/đổi quyền/xóa 2 vai trò này như vai trò tự tạo bất kỳ.
 
-**Quản lý tài khoản người dùng** (bổ sung 2026-07-31 — trước đó chỉ nhắc thoáng qua, chưa mô tả đầy đủ như một tính năng):
-- Chỉ **Admin** được xem danh sách tài khoản, tạo tài khoản mới (username, mật khẩu, họ tên, chọn vai trò), và khóa/mở tài khoản.
-- Không xóa cứng tài khoản — chỉ khóa (`is_active = false`), vì tài khoản đã gắn với lịch sử phiếu nhập/xuất do người đó tạo (`created_by`), xóa cứng sẽ làm mất khả năng truy vết ai đã lập phiếu.
-- Không có cơ chế tự đăng ký (self sign-up) — mọi tài khoản đều do Admin tạo thủ công.
-
-**Quản lý tài khoản người dùng** (bổ sung 2026-07-31 — trước đó chỉ nhắc thoáng qua, chưa mô tả đầy đủ như một tính năng):
-- Chỉ **Admin** được xem danh sách tài khoản, tạo tài khoản mới (username, mật khẩu, họ tên, chọn vai trò), và khóa/mở tài khoản.
-- Không xóa cứng tài khoản — chỉ khóa (`is_active = false`), vì tài khoản đã gắn với lịch sử phiếu nhập/xuất do người đó tạo (`created_by`), xóa cứng sẽ làm mất khả năng truy vết ai đã lập phiếu.
+**Quản lý tài khoản người dùng** (bổ sung 2026-07-31, cập nhật 2026-07-31 phiên sau — thêm sửa/xóa cứng):
+- Chỉ **Admin** được xem danh sách tài khoản, tạo tài khoản mới (username, mật khẩu, họ tên, chọn vai trò), sửa (họ tên/vai trò/đặt lại mật khẩu — không đổi được username), và khóa/mở tài khoản.
+- **Xóa cứng** chỉ Admin, và chỉ khi tài khoản **chưa từng** tạo phiếu nhập/xuất hoặc sửa thông tin sản phẩm (`created_by`/`changed_by`) — nếu đã có lịch sử, chỉ khóa được (giữ nguyên khả năng truy vết ai đã lập phiếu), đúng nguyên tắc áp dụng cho xóa sản phẩm (mục 4.2).
+- Không tự đổi được vai trò của chính tài khoản đang đăng nhập (tránh tự khóa quyền quản trị của chính mình).
 - Không có cơ chế tự đăng ký (self sign-up) — mọi tài khoản đều do Admin tạo thủ công.
 
 ### 4.2 Quản lý hàng tồn kho (bổ sung 2026-07-31 — giá vốn, vô hiệu hóa, lịch sử)
@@ -73,11 +69,14 @@ Web app nội bộ, kiến trúc đơn giản (không microservices, không clou
 - **Mã đơn hàng**: trường tự do (không bắt buộc) ghi số hóa đơn/đơn hàng của nhà cung cấp, khác với mã phiếu nội bộ hệ thống tự sinh — dùng để đối chiếu sau này.
 - **Tồn đầu kỳ**: dùng cơ chế phiếu nhập kho thông thường, không chọn nhà cung cấp, ghi chú rõ là "Nhập tồn đầu kỳ".
 - Lịch sử biến động kho, tra cứu theo sản phẩm/khoảng thời gian.
+- **Sửa/hủy phiếu đã lập** (bổ sung 2026-07-31): không cho sửa/xóa trực tiếp phiếu nhập/xuất đã tạo — chỉ tạo được **phiếu điều chỉnh bù trừ** (1 phiếu nhập hoặc xuất mới, ghi ngược dấu, liên kết ngược lại phiếu gốc để truy vết) nhằm giữ lịch sử ledger đầy đủ. Không giới hạn hướng bù trừ (phiếu nhập sai có thể bù bằng phiếu nhập khác hoặc phiếu xuất, và ngược lại).
 
-### 4.4 Quản lý công nợ nhà cung cấp & khách hàng
+### 4.4 Quản lý công nợ nhà cung cấp & khách hàng (bổ sung 2026-07-31 — hoàn thành)
 - Ghi nhận công nợ dạng sổ cái (ledger): mỗi giao dịch nợ/trả là 1 dòng, số dư = tổng cộng dồn — không lưu "số dư hiện tại" như 1 trường cứng.
-- Theo dõi riêng công nợ phải trả (NCC) và phải thu (khách hàng).
-- Ghi nhận thanh toán từng phần, lịch sử thanh toán theo đối tượng.
+- Theo dõi riêng công nợ phải trả (NCC, phát sinh từ phiếu nhập đánh dấu "chưa thanh toán ngay") và phải thu (khách hàng, phát sinh từ phiếu xuất đánh dấu "chưa thu tiền ngay") — cả phiếu nhập và phiếu xuất đều có trường đánh dấu trạng thái thanh toán, tự động ghi 1 dòng công nợ ngay khi lập phiếu (trong cùng transaction, không phải bước riêng).
+- Phiếu đánh dấu chưa thanh toán/thu tiền ngay **bắt buộc phải chọn đối tác** — không ghi được công nợ cho đối tượng không xác định.
+- Ghi nhận thanh toán từng phần (không cần khớp đúng 1 khoản nợ/1 phiếu cụ thể), lịch sử giao dịch (cả phát sinh nợ lẫn thanh toán) xem theo từng đối tượng.
+- Quản lý danh sách đối tác (NCC/khách hàng) đầy đủ: thêm/sửa/xóa — không đổi được loại đối tác sau khi tạo, không xóa được nếu đối tác đã có lịch sử phiếu hoặc công nợ.
 
 ### 4.5 In phiếu xuất
 - MVP: HTML + CSS `@media print` + `window.print()`, dùng máy in văn phòng thường (A4/A5) đã cài trên máy client — không cần thư viện PDF hay driver máy in nhiệt.

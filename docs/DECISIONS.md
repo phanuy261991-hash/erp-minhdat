@@ -120,6 +120,44 @@ Có cấu hình quản trị cho phép chuyển sang chế độ "xuất trướ
 
 **Quyết định**: khi thiết kế form nhập liệu mới, các trường ngắn (ngày giờ, mã, dropdown, text ngắn) nên ghép 2 trường/dòng theo chiều ngang (class `.form-row` mới trong `style.css`) thay vì luôn xếp dọc từng trường — tránh form bị kéo dài quá mức. Chỉ giữ 1 trường/dòng khi nội dung thực sự cần toàn bộ chiều rộng (ghi chú dài, bảng dòng sản phẩm động). Đã áp dụng lại cho `stock-receipts.html` (Nhà cung cấp+Thời gian nhập, Mã đơn hàng+Ghi chú). Áp dụng cho mọi form từ giờ trở đi — chi tiết xem `docs/DESIGN-SYSTEM.md`.
 
+## 2026-07-31 — Phase 2 hoàn thành: Xuất kho, modal xem chi tiết phiếu, sửa/xóa người dùng
+
+- **Xuất kho — đối tác khách hàng**: dùng đúng cơ chế dropdown + "thêm nhanh" giống hệt NCC ở phiếu nhập (chỉ đổi `type='khach_hang'`, dùng chung `GET/POST /api/partners`) — người dùng xác nhận sau 2 lần hỏi.
+- **Xuất kho — hiển thị `payment_status`**: chốt dùng 1 toggle đơn "Chưa thu tiền ngay" (mặc định tắt = `da_thu_tien`), tái dùng nguyên pattern `.switch`/`.setting-row` đã có ở trang Cấu hình kho — không dùng 2 radio ngang hàng.
+- **Modal xem chi tiết phiếu nhập kho**: thêm theo yêu cầu người dùng (ngoài kế hoạch gốc), gắn ở cả `stock-receipts.html` và `product-detail.html` (bấm mã phiếu **nhập** trong lịch sử). Ban đầu quyết định chưa làm modal tương tự cho phiếu **xuất** — sau đó người dùng yêu cầu bổ sung ngay trong cùng phiên làm việc (trước khi chuyển Phase 3), xem mục "Modal xem chi tiết phiếu xuất kho" bên dưới.
+
+## 2026-07-31 — Bổ sung modal xem chi tiết phiếu xuất kho (đối xứng với phiếu nhập)
+
+**Quyết định**: thêm `frontend/assets/issue-detail.js` (cấu trúc giống hệt `receipt-detail.js`) — gắn ở cả `stock-issues.html` (icon "mắt" trên từng dòng) và `product-detail.html` (bấm mã phiếu **xuất** trong lịch sử, trước đó là text thường). Backend chỉ cần bổ sung `total_amount` vào `GET /api/stock-issues/:id` (route đã có sẵn cấu trúc trả `items`/`adjusts_code`/`adjusted_by` từ trước, chỉ thiếu tổng tiền).
+- **Sửa/xóa người dùng**: người dùng ban đầu yêu cầu cả xóa phiếu nhập kho + vô hiệu hóa phiếu nhập kho, nhưng đã rút lại 2 yêu cầu đó sau khi được cảnh báo mâu thuẫn với nguyên tắc "không sửa/xóa trực tiếp phiếu nhập/xuất" ở `CLAUDE.md` và rủi ro dữ liệu khi lô hàng đã bị tiêu thụ một phần qua FIFO — **giữ nguyên nguyên tắc cũ, không code phần này**. Chỉ làm sửa/xóa **người dùng**: sửa (họ tên/vai trò/mật khẩu, không đổi username, chặn tự đổi vai trò chính mình) và xóa cứng (chỉ Admin, chặn nếu tài khoản đã có lịch sử tạo/sửa dữ liệu) — áp dụng đúng nguyên tắc xóa giống hệt cách đã làm với sản phẩm.
+
+## 2026-07-31 — Phase 2 hoàn thành: cơ chế phiếu điều chỉnh bù trừ
+
+**Quyết định**: không tạo bảng/loại phiếu riêng cho "phiếu điều chỉnh" — tận dụng đúng phiếu nhập/xuất đã có (`stock_receipts`/`stock_issues`), thêm 2 cột nullable `adjusts_type` (`'receipt'`/`'issue'`)/`adjusts_id` trên cả 2 bảng (migration `010`) để đánh dấu phiếu này là điều chỉnh cho phiếu nào — đúng tinh thần "phiếu mới ghi ngược dấu" đã chốt trước đó, không sửa/xóa phiếu gốc.
+
+- **Không giới hạn hướng bù trừ**: phiếu nhập sai có thể được bù bằng 1 phiếu nhập khác (nhập thiếu) hoặc 1 phiếu xuất (nhập dư) — và tương tự với phiếu xuất sai. Vì vậy trường "Điều chỉnh cho phiếu" trên cả 2 form lập phiếu đều tìm được cả mã PN lẫn PX (không giới hạn theo loại phiếu đang lập).
+- **Quyền**: dùng chung quyền `kho` như lập phiếu bình thường, không thêm quyền riêng.
+- **Hiển thị**: badge "Điều chỉnh {mã}" trên danh sách phiếu (cả nhập lẫn xuất); modal chi tiết phiếu nhập (đã có) hiển thị thêm 2 dòng nếu có dữ liệu — "Điều chỉnh cho phiếu" (chiều thuận) và "Được điều chỉnh bởi" (chiều ngược, tra bằng UNION 2 bảng vì không biết trước phiếu điều chỉnh là loại nào). Phiếu xuất không có modal chi tiết nên chưa hiển thị được 2 thông tin này ở trang Xuất kho — chấp nhận giới hạn này, nhất quán với quyết định không mở rộng modal chi tiết sang phiếu xuất ở mục trên.
+
+## 2026-07-31 — Phát hiện lỗ hổng thiết kế trước khi vào Phase 3: thiếu `payment_status` trên `stock_receipts`
+
+**Bối cảnh**: chuẩn bị code Phase 3 (Công nợ), đọc lại `docs/erd.mermaid`/`docs/Plan.md` theo đúng quy trình bắt buộc thì phát hiện bảng `stock_receipts` không có cột `payment_status` như `stock_issues` — nghĩa là schema hiện tại chỉ có chỗ lưu công nợ **phải thu** (khách hàng chưa trả tiền khi mua qua phiếu xuất), chưa có chỗ lưu công nợ **phải trả NCC** (chưa trả tiền khi nhập hàng qua phiếu nhập), dù `docs/PRD.md` mục 4.4 yêu cầu rõ "theo dõi riêng công nợ phải trả (NCC) và phải thu (khách hàng)".
+
+**Trạng thái**: đã chốt và code xong — xem mục "Phase 3 hoàn thành: công nợ phải trả NCC + sổ cái công nợ" bên dưới.
+
+## 2026-07-31 — Phase 3 hoàn thành: công nợ phải trả NCC + sổ cái công nợ
+
+**Bối cảnh**: phát hiện `stock_receipts` thiếu `payment_status` khi chuẩn bị Phase 3 (xem mục "Phát hiện lỗ hổng thiết kế" bên dưới). Đã trình bày hướng xử lý và người dùng xác nhận đúng hướng.
+
+- **`stock_receipts.payment_status`** (migration `011`): giá trị `da_thanh_toan`/`cong_no` — **đặt tên khác** `stock_issues.payment_status` (`da_thu_tien`/`cong_no`) dù cùng ý nghĩa "đã xử lý xong tiền hay chưa", vì đúng ngữ nghĩa chiều tiền khác nhau (mình trả NCC vs khách trả mình), tránh gây hiểu nhầm khi đọc code/dữ liệu.
+- **`debt_ledger`** (migration `012`): `type='no'` luôn làm tăng số dư bất kể đối tác là NCC hay khách hàng — không dùng 2 field/2 dấu riêng cho 2 chiều. Ý nghĩa số dư diễn giải theo `partners.type`: NCC → số dư là khoản **mình còn phải trả họ**; khách hàng → số dư là khoản **họ còn phải trả mình**. `type='tra'` luôn làm giảm số dư (thanh toán, dùng chung cho cả 2 chiều).
+- **Ghi nợ tự động nằm trong transaction tạo phiếu**: `debt.service.js` không tự mở transaction — hàm `recordDebtFromDocument()` được gọi bên trong transaction có sẵn của `stockReceipt.service.js`/`stockIssue.service.js`, đúng nguyên tắc "1 phiếu = 1 transaction" đã chốt từ đầu dự án (phiếu + items + movements + nợ phát sinh cùng thành công hoặc cùng rollback).
+- **Bắt buộc có đối tác khi đánh dấu công nợ**: phiếu nhập/xuất `payment_status='cong_no'` mà không chọn đối tác (`partner_id` rỗng) bị chặn 400 ngay ở service — không thể ghi nợ cho đối tượng không xác định.
+- **Ghi nhận thanh toán không gắn với 1 khoản nợ cụ thể**: cho phép trả từng phần tùy ý, không cần chọn đúng phiếu nào đang trả — đúng tinh thần ledger tổng theo đối tác (không theo dõi từng khoản nợ riêng lẻ như hóa đơn).
+- **`created_by` trên `debt_ledger`**: bổ sung thêm so với draft gốc trong `docs/Plan.md` mục 2 — để nhất quán với các bảng ghi dữ liệu khác trong dự án (`stock_receipts`, `stock_issues`, `product_change_log` đều có cột này để truy vết).
+- **Quyền quản lý đối tác đầy đủ**: `PUT`/`DELETE /api/partners/:id` chỉ quyền `cong_no` (khác `POST` "thêm nhanh" lúc lập phiếu vẫn dùng chung `kho` **hoặc** `cong_no` như đã chốt ở Phase 2) — vì đây là chức năng quản lý dữ liệu gốc đối tác, thuộc phạm vi module Công nợ theo `docs/Plan.md`.
+- **Không cho đổi "Loại đối tác" (NCC/khách hàng) sau khi tạo**: tránh đối tác đã có lịch sử phiếu nhập/xuất bị đổi nhập nhằng giữa 2 loại, gây sai lệch báo cáo/diễn giải số dư.
+
 ## Open questions — chưa chốt
 
 Xem chi tiết tại `docs/PRD.md` mục 10 và `.claude/docs/inventory-debt-ledger.md` mục "Edge case":

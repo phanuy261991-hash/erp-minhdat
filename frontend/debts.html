@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Công nợ - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Công nợ</p>
+      <div class="page-header">
+        <h2>Công nợ</h2>
+        <div class="page-header-actions">
+          <div class="search-box">
+            <span class="input-icon"></span>
+            <input type="text" id="debt-search" class="search-input" placeholder="Tìm theo tên đối tác..." autocomplete="off" />
+          </div>
+          <button type="button" id="btn-add-payment" class="btn-add"></button>
+        </div>
+      </div>
+
+      <div id="debts-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="debts-error-text"></span>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Đối tác</th>
+              <th>Loại</th>
+              <th>Số điện thoại</th>
+              <th>Số dư công nợ</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="debts-tbody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <div id="debt-history-modal" class="modal-overlay" hidden>
+    <div class="modal-card modal-card-lg">
+      <h3>Lịch sử công nợ</h3>
+      <div class="detail-info-grid" id="debt-history-info"></div>
+      <div class="stat-grid" id="debt-history-stats"></div>
+      <h4 class="section-heading">Lịch sử giao dịch</h4>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Ngày</th>
+              <th>Loại</th>
+              <th>Số tiền</th>
+              <th>Mã phiếu</th>
+              <th>Ghi chú</th>
+              <th>Người ghi nhận</th>
+            </tr>
+          </thead>
+          <tbody id="debt-history-tbody"></tbody>
+        </table>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="btn-close-debt-history" class="btn-secondary">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="payment-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3>Ghi nhận thanh toán</h3>
+      <form id="payment-form">
+        <div id="payment-form-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="payment-form-error-text"></span>
+        </div>
+
+        <div class="form-field">
+          <label for="payment-partner">Đối tác</label>
+          <select id="payment-partner" required></select>
+        </div>
+
+        <div class="form-field">
+          <label for="payment-amount">Số tiền</label>
+          <input type="number" id="payment-amount" required min="1" step="1" />
+        </div>
+
+        <div class="form-field">
+          <label for="payment-note">Ghi chú</label>
+          <input type="text" id="payment-note" placeholder="vd: Trả tiền hàng tháng 8 (không bắt buộc)" autocomplete="off" />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-payment" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-payment" class="btn-primary">Ghi nhận</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/debts.js"></script>
+</body>
+</html>

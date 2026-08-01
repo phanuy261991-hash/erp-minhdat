@@ -47,4 +47,4 @@ Nếu bất kỳ bước nào lỗi, toàn bộ transaction phải rollback — 
 
 - **Tồn kho không đủ khi xuất**: mặc định chặn cứng; có cấu hình `warehouse_settings.allow_negative_stock` cho phép xuất trước nhập bù sau (đã code + test trong `stockIssue.service.js`).
 - **Công nợ từ phiếu xuất**: chỉ phát sinh khi `stock_issues.payment_status = 'cong_no'` (cột đã có từ migration Phase 2) — việc thực sự ghi `debt_ledger` là **Phase 3, chưa code**.
-- **Sửa/hủy phiếu đã tạo**: không cho sửa/xóa trực tiếp — chỉ tạo phiếu điều chỉnh bù trừ (phiếu mới ghi ngược dấu) để giữ lịch sử. **Quyết định đã chốt nhưng cơ chế phiếu điều chỉnh vẫn chưa code** (xem `docs/TASK.md` Phase 2, mục còn treo).
+- **Sửa/hủy phiếu đã tạo**: không cho sửa/xóa trực tiếp — chỉ tạo phiếu điều chỉnh bù trừ (phiếu mới ghi ngược dấu) để giữ lịch sử. **Đã code** (migration `010_receipt_issue_adjustment.sql`): phiếu nhập/xuất mới có thể đánh dấu `adjusts_type`/`adjusts_id` trỏ về phiếu gốc (không giới hạn hướng — nhập có thể bù bằng nhập hoặc xuất, và ngược lại), không sửa/xóa phiếu gốc, chỉ ghi liên kết để truy vết cả 2 chiều.

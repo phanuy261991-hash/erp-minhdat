@@ -14,6 +14,7 @@ const productsRoutes = require('./routes/products.routes');
 const stockReceiptsRoutes = require('./routes/stockReceipts.routes');
 const stockIssuesRoutes = require('./routes/stockIssues.routes');
 const partnersRoutes = require('./routes/partners.routes');
+const debtsRoutes = require('./routes/debts.routes');
 const { requireAuth } = require('./middleware/auth');
 const { requirePermission } = require('./middleware/requirePermission');
 
@@ -53,9 +54,11 @@ app.use('/api/warehouse-settings', requireAuth, warehouseSettingsRoutes);
 app.use('/api/products', requireAuth, productsRoutes);
 app.use('/api/stock-receipts', requireAuth, requirePermission('kho'), stockReceiptsRoutes);
 app.use('/api/stock-issues', requireAuth, requirePermission('kho'), stockIssuesRoutes);
-// GET mo cho moi nguoi da dang nhap (chon doi tac luc lap phieu), POST (them nhanh) rieng
-// kiem tra quyen 'kho' hoac 'cong_no' ben trong file route (xem partners.routes.js).
+// GET mo cho moi nguoi da dang nhap (chon doi tac luc lap phieu), POST/PUT/DELETE rieng kiem
+// tra quyen ('kho' hoac 'cong_no' cho POST, chi 'cong_no' cho PUT/DELETE) ben trong file route
+// (xem partners.routes.js).
 app.use('/api/partners', requireAuth, partnersRoutes);
+app.use('/api/debts', requireAuth, requirePermission('cong_no'), debtsRoutes);
 
 // Route kiem tra server song - dung de test nhanh khi chay demo.
 app.get('/api/health', (req, res) => {

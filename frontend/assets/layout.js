@@ -20,14 +20,14 @@ const NAV_GROUPS = [
     items: [
       { key: 'products', label: 'Sản phẩm', href: 'products.html', icon: 'package', module: 'kho', enabled: true },
       { key: 'stock-receipts', label: 'Nhập kho', href: 'stock-receipts.html', icon: 'arrowDownTray', module: 'kho', enabled: true },
-      { key: 'stock-issues', label: 'Xuất kho', href: 'stock-issues.html', icon: 'arrowUpTray', module: 'kho', enabled: false },
+      { key: 'stock-issues', label: 'Xuất kho', href: 'stock-issues.html', icon: 'arrowUpTray', module: 'kho', enabled: true },
     ],
   },
   {
     label: 'Công nợ',
     items: [
-      { key: 'partners', label: 'Đối tác', href: 'partners.html', icon: 'users', module: 'cong_no', enabled: false },
-      { key: 'debts', label: 'Công nợ', href: 'debts.html', icon: 'ledger', module: 'cong_no', enabled: false },
+      { key: 'partners', label: 'Đối tác', href: 'partners.html', icon: 'users', module: 'cong_no', enabled: true },
+      { key: 'debts', label: 'Công nợ', href: 'debts.html', icon: 'ledger', module: 'cong_no', enabled: true },
     ],
   },
   {

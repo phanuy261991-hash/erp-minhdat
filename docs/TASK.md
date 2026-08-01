@@ -47,7 +47,7 @@
 - [x] Test qua API: GET/PUT `company-settings`/`warehouse-settings` — admin đọc/ghi được; `thukho1` (chỉ quyền `kho`) đọc được nhưng ghi bị chặn 403; chưa đăng nhập bị chặn 401; key cấu hình kho không hợp lệ bị chặn 400
 - [x] Test qua trình duyệt thật (từng trang, cả 2 vai trò `admin`/`thukho1`): `layout.js`/`users.html`/`users.js` — sidebar đúng menu + tên vai trò, dropdown vai trò động, tạo tài khoản `ketoan1` qua UI thành công, `thukho1` bị ẩn menu + chặn URL trực tiếp. `roles.html` — tạo/sửa/xóa vai trò qua UI phản ánh đúng ngay trên bảng. `company-settings.html` — load/lưu đủ 10 trường (gồm nhiều số điện thoại), `thukho1` bị chặn cả menu lẫn URL. `warehouse-settings.html` — bật/tắt toggle lưu đúng qua API, chặn quyền đúng. `sales-settings.html` — hiển thị đúng empty-state, chặn quyền đúng.
 
-## Phase 2 — Kho (đang làm — sản phẩm + nhập kho xong, xuất kho chưa làm)
+## Phase 2 — Kho (đã xong)
 
 > Cập nhật 2026-08-01: gộp thêm migration `partners` vào phase này — xem `docs/DECISIONS.md` mục "Gộp bảng `partners` sớm vào migration Phase 2". Chỉ gộp migration, API/frontend quản lý đối tác vẫn ở Phase 3.
 > Cập nhật 2026-07-31: mở rộng phạm vi ngoài kế hoạch gốc theo yêu cầu người dùng (giá vốn bình quân gia quyền/FIFO, chiết khấu, thời gian nhập tùy chỉnh, mã đơn hàng, vô hiệu hóa/xóa sản phẩm, trang chi tiết sản phẩm, API đối tác rút gọn). Chi tiết: `docs/DECISIONS.md`, `docs/CHANGELOG.md` mục 2026-07-31.
@@ -67,16 +67,39 @@
 - [x] Frontend `warehouse-settings.html`/`.js`: thêm chọn phương pháp tính giá vốn (radio card `.method-group`)
 - [x] Frontend `stock-receipts.html`/`stock-receipts.js`: danh sách phiếu nhập, modal lập phiếu (dropdown/thêm nhanh NCC, combobox tìm sản phẩm, số lượng/đơn giá/chiết khấu %/ĐVT tự động/thành tiền từng dòng, thời gian nhập tùy chỉnh, mã đơn hàng, tổng thành tiền, bố cục ngang `.form-row`)
 - [x] Test đầy đủ qua curl (permission, rollback, công thức giá vốn, validation) và trình duyệt thật (admin + thukho1)
-- [ ] Frontend `stock-issues.html` (lập phiếu xuất) — **chưa làm**, đang chờ chốt 2 điểm: cách xử lý khách hàng (dropdown+thêm nhanh giống NCC), cách hiển thị `payment_status`
-- [ ] Cơ chế phiếu điều chỉnh bù trừ cho sửa/hủy phiếu — chưa làm
+- [x] Migration `010_receipt_issue_adjustment.sql`: `adjusts_type`/`adjusts_id` trên `stock_receipts` và `stock_issues`
+- [x] Frontend `stock-issues.html` (lập phiếu xuất): dropdown + thêm nhanh khách hàng (giống NCC), toggle `payment_status`, combobox sản phẩm, tổng thành tiền
+- [x] Frontend `stock-receipts.html`: thêm modal xem chi tiết phiếu (`receipt-detail.js`, dùng chung với `product-detail.html` — bấm mã phiếu nhập trong lịch sử)
+- [x] Cơ chế phiếu điều chỉnh bù trừ: trường "Điều chỉnh cho phiếu" (combobox tìm cả PN/PX, `adjustment.js` dùng chung) trên cả 2 form lập phiếu; hiển thị badge trên danh sách + 2 chiều liên kết trên modal chi tiết phiếu nhập ("Điều chỉnh cho phiếu" / "Được điều chỉnh bởi")
+- [x] Test đầy đủ qua trình duyệt thật: lập phiếu xuất (chặn tồn kho không đủ, thành công khi đủ tồn, thêm nhanh khách hàng), phiếu điều chỉnh cả 2 chiều (nhập bù cho phiếu xuất, xuất bù cho phiếu nhập), liên kết 2 chiều hiển thị đúng
+- [x] Thêm sửa (họ tên/vai trò/mật khẩu)/xóa cứng (chỉ Admin, chặn nếu có lịch sử) tài khoản người dùng trên `users.html` (ngoài kế hoạch gốc Phase 1.5, làm lúc này theo yêu cầu người dùng)
 
-## Phase 3 — Công nợ
+## Phase 3 — Công nợ (đã xong)
 
 > Cập nhật 2026-08-01: bảng `partners` đã tạo ở Phase 2 — phase này chỉ còn migration `debt_ledger` + API/frontend đối tác và công nợ.
+> Cập nhật 2026-07-31 (phiên hoàn thành Phase 3): chốt thêm `payment_status` vào `stock_receipts` (migration `011`) để hỗ trợ công nợ phải trả NCC — xem `docs/DECISIONS.md`.
 
-- [ ] Migration thêm `debt_ledger`
-- [ ] `debt.service.js`, tự động ghi nợ khi phiếu xuất đánh dấu "chưa thu tiền ngay"
-- [ ] API + frontend: quản lý đối tác (`partners.routes.js`/`partners.html`), ghi nhận thanh toán, xem số dư công nợ
+- [x] Migration `011_receipt_payment_status.sql`: `stock_receipts.payment_status` (`da_thanh_toan`/`cong_no`, đối xứng `stock_issues.payment_status`)
+- [x] Migration `012_debt_ledger.sql`: bảng `debt_ledger` (kèm `created_by` để truy vết, ngoài draft gốc ở `Plan.md`)
+- [x] `debt.service.js`: `recordDebtFromDocument()` (gọi trong transaction có sẵn của `stockReceipt.service.js`/`stockIssue.service.js` khi `payment_status='cong_no'`, bắt buộc có `partnerId`), `recordPayment()` (ghi nhận thanh toán thủ công, cho phép trả từng phần), `getDebtBalance()`
+- [x] `stockReceipts.routes.js`/`stockIssues.routes.js`: đọc/validate `payment_status`, chặn 400 nếu `cong_no` mà không chọn đối tác
+- [x] `partners.routes.js` mở rộng: `PUT /:id` (sửa tên/SĐT/địa chỉ, không đổi được loại), `DELETE /:id` (chặn nếu đã có lịch sử phiếu nhập/xuất/công nợ) — quyền riêng `cong_no`
+- [x] `debts.routes.js` (mới): `GET /api/debts/summary` (số dư từng đối tác), `GET /api/debts?partner_id=` (lịch sử giao dịch), `POST /api/debts/payment` (ghi nhận thanh toán)
+- [x] Frontend `partners.html`/`partners.js`: danh sách, tìm kiếm theo tên, thêm/sửa/xóa
+- [x] Frontend `debts.html`/`debts.js`: danh sách số dư (tô màu cảnh báo nếu còn nợ), modal lịch sử giao dịch, modal ghi nhận thanh toán (dùng chung cho nút đầu trang + từng dòng đối tác)
+- [x] Frontend `stock-receipts.html`/`.js`: thêm toggle "Chưa thanh toán ngay" (tái dùng `.switch`/`.setting-row`), badge thanh toán trên danh sách + modal chi tiết phiếu
+- [x] Bật menu "Đối tác"/"Công nợ" trong `layout.js`
+- [x] Test đầy đủ qua trình duyệt thật: tạo phiếu nhập/xuất công nợ → số dư đối tác tự động tăng đúng; ghi nhận thanh toán từng phần → số dư giảm đúng; sửa/xóa đối tác (chặn đúng khi có lịch sử); chặn đúng khi `cong_no` mà không chọn đối tác; phân quyền `cong_no` chặn đúng cả UI (ẩn menu, redirect khi vào thẳng URL) lẫn API (403)
+
+### Hoàn thiện Xuất kho + Công nợ (sau Phase 3, theo yêu cầu người dùng)
+
+- [x] Modal xem chi tiết phiếu xuất kho (`issue-detail.js`) — đối xứng phiếu nhập, gắn ở `stock-issues.html` + `product-detail.html`
+- [x] Phiếu xuất: thêm "Thời gian xuất" tùy chỉnh (`issue_date`, giống `receipt_date`)
+- [x] Phiếu xuất: hiển thị SĐT/địa chỉ khi chọn khách hàng có sẵn (2 ô chỉ đọc)
+- [x] Sửa CSS: khoảng cách `.setting-row` với trường bên dưới (thêm `margin-bottom: 14px`)
+- [x] Trang Công nợ: modal lịch sử — thẻ số liệu nổi bật "Cần thanh toán"/"Cần thu" (màu cảnh báo) + "Tổng tiền hàng đã mua"/"đã bán" (`debts.routes.js` bổ sung `total_transacted`, tính trực tiếp từ `stock_receipts`/`stock_issues`)
+- [x] Migration `013_issue_discount.sql`: `stock_issue_items.discount_percent`, đối xứng phiếu nhập — cột "Chiết khấu (%)" + "Thành tiền" theo giá net trên dòng sản phẩm phiếu xuất, cập nhật `stockIssue.service.js`/`stockIssues.routes.js`/`issue-detail.js`/`debts.routes.js` (tổng tiền đã bán tính theo giá sau chiết khấu)
+- [x] Test đầy đủ qua trình duyệt thật: thời gian xuất tùy chỉnh hiển thị đúng trên danh sách; chọn khách hàng tự điền đúng SĐT/địa chỉ; khoảng cách `.setting-row` đo được đúng 14px; modal lịch sử công nợ hiển thị đúng số liệu nổi bật; chiết khấu từng dòng tính đúng thành tiền + tổng tiền phiếu
 
 ## Phase 4 — In phiếu & Báo cáo
 

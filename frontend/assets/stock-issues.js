@@ -1,48 +1,48 @@
-// Logic trang phieu nhap kho: danh sach phieu da lap + modal lap phieu moi.
-// Chon san pham tung dong bang o tim kiem goi y (combobox tu viet, khong dung <select> thuong
-// vi danh muc san pham co the nhieu - xem yeu cau nguoi dung khi thiet ke form trang nay).
-// Nha cung cap: dropdown lay tu GET /api/partners?type=nha_cung_cap, kem "them nhanh" ngay
-// trong form (POST /api/partners) - quan ly doi tac day du van o Phase 3.
+// Logic trang phieu xuat kho: danh sach phieu da lap + modal lap phieu moi.
+// Giong het pattern stock-receipts.js (combobox tim san pham, doi tac dropdown + them nhanh,
+// chiet khau tung dong - migration 013, thoi gian xuat tuy chinh), khac o cho co them toggle
+// payment_status ("Chua thu tien ngay" - xem docs/DECISIONS.md muc "Cong no phat sinh tu phieu
+// xuat") va khong co ma don hang (stock_issues khong co cot nay, khac stock_receipts).
 
 let currentUser = null;
 let productsCache = [];
 let partnersCache = [];
 let rowCounter = 0;
 
-const receiptsTbody = document.getElementById('receipts-tbody');
-const receiptsErrorBox = document.getElementById('receipts-error');
-const receiptsErrorText = document.getElementById('receipts-error-text');
+const issuesTbody = document.getElementById('issues-tbody');
+const issuesErrorBox = document.getElementById('issues-error');
+const issuesErrorText = document.getElementById('issues-error-text');
 
-const btnAddReceipt = document.getElementById('btn-add-receipt');
-const receiptModal = document.getElementById('receipt-modal');
-const receiptForm = document.getElementById('receipt-form');
-const receiptFormErrorBox = document.getElementById('receipt-form-error');
-const receiptFormErrorText = document.getElementById('receipt-form-error-text');
-const btnCancelReceipt = document.getElementById('btn-cancel-receipt');
-const btnSubmitReceipt = document.getElementById('btn-submit-receipt');
+const btnAddIssue = document.getElementById('btn-add-issue');
+const issueModal = document.getElementById('issue-modal');
+const issueForm = document.getElementById('issue-form');
+const issueFormErrorBox = document.getElementById('issue-form-error');
+const issueFormErrorText = document.getElementById('issue-form-error-text');
+const btnCancelIssue = document.getElementById('btn-cancel-issue');
+const btnSubmitIssue = document.getElementById('btn-submit-issue');
 
-const partnerSelect = document.getElementById('receipt-partner');
+const partnerSelect = document.getElementById('issue-partner');
 const newPartnerFields = document.getElementById('new-partner-fields');
 const newPartnerNameInput = document.getElementById('new-partner-name');
 const newPartnerPhoneInput = document.getElementById('new-partner-phone');
-const noteInput = document.getElementById('receipt-note');
-const receiptDateInput = document.getElementById('receipt-date');
-const orderCodeInput = document.getElementById('receipt-order-code');
-const paymentToggle = document.getElementById('receipt-payment-toggle');
+const customerPhoneDisplay = document.getElementById('issue-customer-phone');
+const customerAddressDisplay = document.getElementById('issue-customer-address');
+const noteInput = document.getElementById('issue-note');
+const issueDateInput = document.getElementById('issue-date');
+const paymentToggle = document.getElementById('issue-payment-toggle');
 const itemRowsContainer = document.getElementById('item-rows');
 const btnAddItemRow = document.getElementById('btn-add-item-row');
-const totalAmountEl = document.getElementById('receipt-total-amount');
+const totalAmountEl = document.getElementById('issue-total-amount');
 
-// 'YYYY-MM-DDTHH:MM' theo gio dia phuong trinh duyet, dung de dien san gio hien tai vao o
-// chon thoi gian nhap khi mo modal.
+// 'YYYY-MM-DDTHH:MM' theo gio dia phuong trinh duyet - dung de dien san gio hien tai vao o
+// chon thoi gian xuat khi mo modal (giong het pattern o stock-receipts.js).
 function nowForDatetimeLocal() {
   const d = new Date();
   const pad = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-// Quy doi gia tri <input type="datetime-local"> (gio dia phuong) sang 'YYYY-MM-DD HH:MM:SS'
-// UTC - dung dinh dang voi datetime('now') cua SQLite ma toan bo du lieu dang luu.
+// Quy doi gia tri <input type="datetime-local"> (gio dia phuong) sang 'YYYY-MM-DD HH:MM:SS' UTC.
 function toSqliteDatetime(localValue) {
   const d = new Date(localValue);
   return d.toISOString().slice(0, 19).replace('T', ' ');
@@ -59,49 +59,49 @@ function formatDate(sqliteDateTime) {
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function renderReceiptsError(message) {
-  receiptsErrorText.textContent = message;
-  receiptsErrorBox.hidden = false;
+function renderIssuesError(message) {
+  issuesErrorText.textContent = message;
+  issuesErrorBox.hidden = false;
 }
 
-function renderReceiptRow(receipt) {
-  const noteHtml = receipt.adjusts_code
-    ? `<span class="badge badge-inactive" title="Điều chỉnh cho phiếu ${receipt.adjusts_code}">Điều chỉnh ${receipt.adjusts_code}</span> ${receipt.note || ''}`
-    : (receipt.note || '-');
-
-  const paymentBadge = receipt.payment_status === 'cong_no'
+function renderIssueRow(issue) {
+  const paymentBadge = issue.payment_status === 'cong_no'
     ? '<span class="badge badge-inactive">Công nợ</span>'
-    : '<span class="badge badge-active">Đã thanh toán</span>';
+    : '<span class="badge badge-active">Đã thu tiền</span>';
+
+  const noteHtml = issue.adjusts_code
+    ? `<span class="badge badge-inactive" title="Điều chỉnh cho phiếu ${issue.adjusts_code}">Điều chỉnh ${issue.adjusts_code}</span> ${issue.note || ''}`
+    : (issue.note || '-');
 
   const tr = document.createElement('tr');
   tr.innerHTML = `
-    <td>${receipt.code}</td>
-    <td>${receipt.partner_name || '-'}</td>
-    <td>${receipt.created_by_name}</td>
+    <td>${issue.code}</td>
+    <td>${issue.partner_name || '-'}</td>
+    <td>${issue.created_by_name}</td>
     <td>${paymentBadge}</td>
     <td>${noteHtml}</td>
-    <td>${formatDate(receipt.created_at)}</td>
+    <td>${formatDate(issue.created_at)}</td>
     <td>
-      <button type="button" class="icon-btn" data-action="view" data-id="${receipt.id}" title="Xem chi tiết">${icon('eye', 14)}</button>
+      <button type="button" class="icon-btn" data-action="view" data-id="${issue.id}" title="Xem chi tiết">${icon('eye', 14)}</button>
     </td>
   `;
   return tr;
 }
 
-async function loadReceipts() {
+async function loadIssues() {
   try {
-    const { receipts } = await apiFetch('/stock-receipts');
-    receiptsTbody.innerHTML = '';
-    receipts.forEach((r) => receiptsTbody.appendChild(renderReceiptRow(r)));
+    const { issues } = await apiFetch('/stock-issues');
+    issuesTbody.innerHTML = '';
+    issues.forEach((i) => issuesTbody.appendChild(renderIssueRow(i)));
   } catch (err) {
-    renderReceiptsError(err.message);
+    renderIssuesError(err.message);
   }
 }
 
-receiptsTbody.addEventListener('click', (event) => {
+issuesTbody.addEventListener('click', (event) => {
   const button = event.target.closest('button[data-action="view"]');
   if (!button) return;
-  openReceiptDetailModal(button.dataset.id);
+  openIssueDetailModal(button.dataset.id);
 });
 
 async function loadProducts() {
@@ -110,17 +110,27 @@ async function loadProducts() {
 }
 
 async function loadPartners() {
-  const { partners } = await apiFetch('/partners?type=nha_cung_cap');
+  const { partners } = await apiFetch('/partners?type=khach_hang');
   partnersCache = partners;
 }
 
 function renderPartnerOptions() {
   const options = partnersCache.map((p) => `<option value="${p.id}">${p.name}</option>`).join('');
-  partnerSelect.innerHTML = `<option value="">-- Không chọn --</option>${options}<option value="__new__">+ Thêm nhà cung cấp mới</option>`;
+  partnerSelect.innerHTML = `<option value="">-- Không chọn --</option>${options}<option value="__new__">+ Thêm khách hàng mới</option>`;
+}
+
+// Chon khach hang co san -> dien thong tin lien he ra 2 o chi-doc de nguoi lap phieu tien
+// tham khao (vd giao hang), khong phai truong nhap - xem yeu cau nguoi dung 2026-07-31.
+function updateCustomerInfoDisplay() {
+  const partnerId = partnerSelect.value;
+  const partner = partnersCache.find((p) => String(p.id) === partnerId);
+  customerPhoneDisplay.value = partner && partner.phone ? partner.phone : '';
+  customerAddressDisplay.value = partner && partner.address ? partner.address : '';
 }
 
 partnerSelect.addEventListener('change', () => {
   newPartnerFields.hidden = partnerSelect.value !== '__new__';
+  updateCustomerInfoDisplay();
 });
 
 // ----- Dong san pham dong (combobox tim theo ma/ten) -----
@@ -164,8 +174,6 @@ function rowLineTotal(row) {
   return quantity * unitPrice * (1 - discountPercent / 100);
 }
 
-// Cap nhat "Thanh tien" tung dong (gia sau chiet khau) va "Tong thanh tien" toan phieu - goi
-// lai moi khi nguoi dung go so luong/don gia/chiet khau, hoac them/xoa dong.
 function updateTotalAmount() {
   const rows = Array.from(itemRowsContainer.querySelectorAll('.item-row'));
   let total = 0;
@@ -260,10 +268,11 @@ btnAddItemRow.addEventListener('click', addItemRow);
 
 // ----- Mo/dong modal -----
 
-function resetReceiptForm() {
-  receiptForm.reset();
+function resetIssueForm() {
+  issueForm.reset();
   newPartnerFields.hidden = true;
-  receiptDateInput.value = nowForDatetimeLocal();
+  issueDateInput.value = nowForDatetimeLocal();
+  updateCustomerInfoDisplay();
   itemRowsContainer.innerHTML = '';
   addItemRow();
   updateTotalAmount();
@@ -271,20 +280,20 @@ function resetReceiptForm() {
 }
 
 function openCreateModal() {
-  resetReceiptForm();
-  receiptFormErrorBox.hidden = true;
-  receiptModal.hidden = false;
+  resetIssueForm();
+  issueFormErrorBox.hidden = true;
+  issueModal.hidden = false;
 }
 
-function closeReceiptModal() {
-  receiptModal.hidden = true;
+function closeIssueModal() {
+  issueModal.hidden = true;
 }
 
-btnAddReceipt.addEventListener('click', openCreateModal);
-btnCancelReceipt.addEventListener('click', closeReceiptModal);
+btnAddIssue.addEventListener('click', openCreateModal);
+btnCancelIssue.addEventListener('click', closeIssueModal);
 
-receiptModal.addEventListener('click', (event) => {
-  if (event.target === receiptModal) closeReceiptModal();
+issueModal.addEventListener('click', (event) => {
+  if (event.target === issueModal) closeIssueModal();
 });
 
 // ----- Nop phieu -----
@@ -314,25 +323,25 @@ function collectItems() {
   }
 
   if (items.length === 0) {
-    return { error: 'Phiếu nhập phải có ít nhất 1 dòng sản phẩm' };
+    return { error: 'Phiếu xuất phải có ít nhất 1 dòng sản phẩm' };
   }
 
   return { items };
 }
 
-receiptForm.addEventListener('submit', async (event) => {
+issueForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-  receiptFormErrorBox.hidden = true;
+  issueFormErrorBox.hidden = true;
 
   const { items, error } = collectItems();
   if (error) {
-    receiptFormErrorText.textContent = error;
-    receiptFormErrorBox.hidden = false;
+    issueFormErrorText.textContent = error;
+    issueFormErrorBox.hidden = false;
     return;
   }
 
-  btnSubmitReceipt.disabled = true;
-  btnSubmitReceipt.textContent = 'Đang lưu...';
+  btnSubmitIssue.disabled = true;
+  btnSubmitIssue.textContent = 'Đang lưu...';
 
   try {
     let partnerId = partnerSelect.value || null;
@@ -340,52 +349,51 @@ receiptForm.addEventListener('submit', async (event) => {
     if (partnerId === '__new__') {
       const name = newPartnerNameInput.value.trim();
       if (!name) {
-        throw new Error('Thiếu tên nhà cung cấp mới');
+        throw new Error('Thiếu tên khách hàng mới');
       }
       const { partner } = await apiFetch('/partners', {
         method: 'POST',
-        body: JSON.stringify({ type: 'nha_cung_cap', name, phone: newPartnerPhoneInput.value.trim() }),
+        body: JSON.stringify({ type: 'khach_hang', name, phone: newPartnerPhoneInput.value.trim() }),
       });
       partnerId = partner.id;
     }
 
-    await apiFetch('/stock-receipts', {
+    await apiFetch('/stock-issues', {
       method: 'POST',
       body: JSON.stringify({
         partner_id: partnerId || null,
         note: noteInput.value.trim(),
-        order_code: orderCodeInput.value.trim(),
-        receipt_date: receiptDateInput.value ? toSqliteDatetime(receiptDateInput.value) : null,
-        payment_status: paymentToggle.checked ? 'cong_no' : 'da_thanh_toan',
+        payment_status: paymentToggle.checked ? 'cong_no' : 'da_thu_tien',
+        issue_date: issueDateInput.value ? toSqliteDatetime(issueDateInput.value) : null,
         items,
         ...getAdjustmentPayload(),
       }),
     });
 
-    closeReceiptModal();
-    await Promise.all([loadReceipts(), loadPartners()]);
+    closeIssueModal();
+    await Promise.all([loadIssues(), loadPartners()]);
     renderPartnerOptions();
   } catch (err) {
-    receiptFormErrorText.textContent = err.message;
-    receiptFormErrorBox.hidden = false;
+    issueFormErrorText.textContent = err.message;
+    issueFormErrorBox.hidden = false;
   } finally {
-    btnSubmitReceipt.disabled = false;
-    btnSubmitReceipt.textContent = 'Lưu phiếu';
+    btnSubmitIssue.disabled = false;
+    btnSubmitIssue.textContent = 'Lưu phiếu';
   }
 });
 
 (async function init() {
-  currentUser = await initLayout('stock-receipts');
+  currentUser = await initLayout('stock-issues');
   if (!currentUser) return;
 
-  btnAddReceipt.innerHTML = `${icon('plus', 16)} Lập phiếu nhập`;
+  btnAddIssue.innerHTML = `${icon('plus', 16)} Lập phiếu xuất`;
   document.querySelectorAll('.alert-icon-slot').forEach((slot) => {
     slot.innerHTML = icon('alertCircle', 16);
   });
-  initReceiptDetailModal();
   initAdjustmentField();
+  initIssueDetailModal();
 
-  await Promise.all([loadProducts(), loadPartners(), loadReceipts(), loadAdjustableDocs()]);
+  await Promise.all([loadProducts(), loadPartners(), loadIssues(), loadAdjustableDocs()]);
   renderPartnerOptions();
-  resetReceiptForm();
+  resetIssueForm();
 })();

@@ -28,14 +28,30 @@ function renderReceiptDetail(receipt) {
   const itemsTbody = document.getElementById('receipt-detail-items');
   const totalEl = document.getElementById('receipt-detail-total');
 
-  infoEl.innerHTML = [
+  const paymentBadge = receipt.payment_status === 'cong_no'
+    ? '<span class="badge badge-inactive">Công nợ</span>'
+    : '<span class="badge badge-active">Đã thanh toán</span>';
+
+  const infoItems = [
     detailInfoItem('Mã phiếu', receipt.code),
     detailInfoItem('Ngày lập', formatDateReceiptDetail(receipt.created_at)),
     detailInfoItem('Nhà cung cấp', receipt.partner_name || '-'),
     detailInfoItem('Người lập', receipt.created_by_name),
     detailInfoItem('Mã đơn hàng', receipt.order_code || '-'),
+    detailInfoItem('Thanh toán', paymentBadge),
     detailInfoItem('Ghi chú', receipt.note || '-', true),
-  ].join('');
+  ];
+
+  // Lien ket phieu dieu chinh bu tru (xem migration 010) - chi hien khi co du lieu, tranh
+  // rong khong can thiet cho phieu binh thuong.
+  if (receipt.adjusts_code) {
+    infoItems.push(detailInfoItem('Điều chỉnh cho phiếu', receipt.adjusts_code, true));
+  }
+  if (Array.isArray(receipt.adjusted_by) && receipt.adjusted_by.length > 0) {
+    infoItems.push(detailInfoItem('Được điều chỉnh bởi', receipt.adjusted_by.map((d) => d.code).join(', '), true));
+  }
+
+  infoEl.innerHTML = infoItems.join('');
 
   itemsTbody.innerHTML = receipt.items
     .map((item) => {

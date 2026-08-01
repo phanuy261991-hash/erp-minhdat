@@ -7,13 +7,43 @@ const { createStockReceipt, ServiceError } = require('../services/stockReceipt.s
 
 const router = express.Router();
 
+// adjusts_code: ma phieu goc (nhap hoac xuat) ma phieu nay dang dieu chinh bu tru cho - resolve
+// qua 2 LEFT JOIN dieu kien theo adjusts_type (giong pattern document_code o products.routes.js).
 const SELECT_RECEIPT = `
   SELECT r.id, r.code, r.order_code, r.partner_id, pa.name AS partner_name, r.created_by,
-         u.full_name AS created_by_name, r.note, r.created_at
+         u.full_name AS created_by_name, r.note, r.payment_status, r.created_at,
+         r.adjusts_type, r.adjusts_id,
+         CASE r.adjusts_type WHEN 'receipt' THEN ar.code WHEN 'issue' THEN ai.code ELSE NULL END AS adjusts_code
   FROM stock_receipts r
   LEFT JOIN partners pa ON pa.id = r.partner_id
   JOIN users u ON u.id = r.created_by
+  LEFT JOIN stock_receipts ar ON r.adjusts_type = 'receipt' AND ar.id = r.adjusts_id
+  LEFT JOIN stock_issues ai ON r.adjusts_type = 'issue' AND ai.id = r.adjusts_id
 `;
+
+const ADJUSTS_TYPES = ['receipt', 'issue'];
+const PAYMENT_STATUSES = ['da_thanh_toan', 'cong_no'];
+
+// Doc + validate lien ket "dieu chinh cho phieu nao" tu body (tuy chon, xem migration 010).
+// Phieu goc phai ton tai dung bang tuong ung voi adjusts_type.
+function readAdjustment(body) {
+  const { adjusts_type: adjustsType, adjusts_id: rawAdjustsId } = body || {};
+  if (!adjustsType) {
+    return { adjustsType: null, adjustsId: null };
+  }
+  if (!ADJUSTS_TYPES.includes(adjustsType)) {
+    return { error: `Loai phieu dieu chinh khong hop le: ${adjustsType}` };
+  }
+
+  const adjustsId = Number(rawAdjustsId);
+  const table = adjustsType === 'receipt' ? 'stock_receipts' : 'stock_issues';
+  const exists = db.prepare(`SELECT id FROM ${table} WHERE id = ?`).get(adjustsId);
+  if (!exists) {
+    return { error: 'Khong tim thay phieu goc de dieu chinh' };
+  }
+
+  return { adjustsType, adjustsId };
+}
 
 function readItems(rawItems) {
   if (!Array.isArray(rawItems) || rawItems.length === 0) {
@@ -83,11 +113,27 @@ router.get('/:id', (req, res) => {
     0
   );
 
-  res.json({ receipt: { ...receipt, items, total_amount: totalAmount } });
+  // Tra nguoc: phieu nao (nhap hoac xuat) dang dung phieu nay lam phieu goc de dieu chinh -
+  // dung UNION vi 2 bang khac nhau (khong the JOIN 1 chieu nhu adjusts_code o tren).
+  const adjustedBy = db
+    .prepare(`
+      SELECT 'receipt' AS type, code FROM stock_receipts WHERE adjusts_type = 'receipt' AND adjusts_id = ?
+      UNION ALL
+      SELECT 'issue' AS type, code FROM stock_issues WHERE adjusts_type = 'receipt' AND adjusts_id = ?
+    `)
+    .all(id, id);
+
+  res.json({ receipt: { ...receipt, items, total_amount: totalAmount, adjusted_by: adjustedBy } });
 });
 
 router.post('/', (req, res) => {
-  const { partner_id: partnerId, note, receipt_date: rawReceiptDate, order_code: orderCode } = req.body || {};
+  const {
+    partner_id: partnerId,
+    note,
+    receipt_date: rawReceiptDate,
+    order_code: orderCode,
+    payment_status: paymentStatus,
+  } = req.body || {};
   const { items, error } = readItems((req.body || {}).items);
 
   if (error) {
@@ -99,6 +145,16 @@ router.post('/', (req, res) => {
     return res.status(400).json({ error: dateError });
   }
 
+  const { adjustsType, adjustsId, error: adjustError } = readAdjustment(req.body);
+  if (adjustError) {
+    return res.status(400).json({ error: adjustError });
+  }
+
+  const resolvedPaymentStatus = paymentStatus || 'da_thanh_toan';
+  if (!PAYMENT_STATUSES.includes(resolvedPaymentStatus)) {
+    return res.status(400).json({ error: `payment_status khong hop le: ${resolvedPaymentStatus}` });
+  }
+
   try {
     const receipt = createStockReceipt({
       partnerId: partnerId ? Number(partnerId) : null,
@@ -107,6 +163,9 @@ router.post('/', (req, res) => {
       items,
       receiptDate,
       orderCode: orderCode ? String(orderCode).trim() : '',
+      adjustsType,
+      adjustsId,
+      paymentStatus: resolvedPaymentStatus,
     });
     res.status(201).json({ receipt });
   } catch (err) {

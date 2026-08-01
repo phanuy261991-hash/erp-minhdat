@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đối tác - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Công nợ</p>
+      <div class="page-header">
+        <h2>Đối tác</h2>
+        <div class="page-header-actions">
+          <div class="search-box">
+            <span class="input-icon"></span>
+            <input type="text" id="partner-search" class="search-input" placeholder="Tìm theo tên..." autocomplete="off" />
+          </div>
+          <button type="button" id="btn-add-partner" class="btn-add"></button>
+        </div>
+      </div>
+
+      <div id="partners-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="partners-error-text"></span>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tên</th>
+              <th>Loại</th>
+              <th>Số điện thoại</th>
+              <th>Địa chỉ</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="partners-tbody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <div id="partner-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3 id="partner-modal-title">Thêm đối tác mới</h3>
+      <form id="partner-form">
+        <div id="partner-form-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="partner-form-error-text"></span>
+        </div>
+
+        <div class="form-field">
+          <label for="partner-type">Loại đối tác</label>
+          <select id="partner-type" required>
+            <option value="nha_cung_cap">Nhà cung cấp</option>
+            <option value="khach_hang">Khách hàng</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="partner-name">Tên</label>
+          <input type="text" id="partner-name" required autocomplete="off" />
+        </div>
+
+        <div class="form-field">
+          <label for="partner-phone">Số điện thoại</label>
+          <input type="text" id="partner-phone" autocomplete="off" />
+        </div>
+
+        <div class="form-field">
+          <label for="partner-address">Địa chỉ</label>
+          <input type="text" id="partner-address" autocomplete="off" />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-partner" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-partner" class="btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/partners.js"></script>
+</body>
+</html>

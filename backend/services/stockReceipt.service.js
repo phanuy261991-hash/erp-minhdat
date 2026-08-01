@@ -3,6 +3,7 @@
 // "Quy tac transaction khi tao phieu").
 
 const db = require('../db/database');
+const { recordDebtFromDocument } = require('./debt.service');
 
 class ServiceError extends Error {}
 
@@ -16,9 +17,18 @@ function generateReceiptCode() {
 // dang 'YYYY-MM-DD HH:MM:SS') dung lam created_at that cho phieu + moi dong/movement/lo hang
 // lien quan - anh huong thu tu tieu thu FIFO va tinh gia binh quan gia quyen (xem
 // docs/DECISIONS.md muc "Thoi gian nhap kho"). Khong truyen thi dung thoi diem hien tai.
-function createStockReceipt({ partnerId, createdBy, note, items, receiptDate, orderCode }) {
+// adjustsType/adjustsId (tuy chon): phieu nay la phieu dieu chinh bu tru cho 1 phieu nhap/xuat
+// da co truoc do - khong sua/xoa phieu goc, chi ghi lien ket de truy vet (xem migration 010,
+// docs/DECISIONS.md muc "Sua/huy phieu da tao"). Validate ton tai phieu goc o tang route.
+// paymentStatus ('da_thanh_toan' mac dinh hoac 'cong_no', migration 011): 'cong_no' phat sinh
+// 1 dong debt_ledger (no phai tra NCC) trong CUNG transaction nay - bat buoc phai co partnerId
+// (khong the ghi no cho doi tac khong xac dinh).
+function createStockReceipt({ partnerId, createdBy, note, items, receiptDate, orderCode, adjustsType, adjustsId, paymentStatus }) {
   if (!Array.isArray(items) || items.length === 0) {
     throw new ServiceError('Phieu nhap phai co it nhat 1 dong san pham');
+  }
+  if (paymentStatus === 'cong_no' && !partnerId) {
+    throw new ServiceError('Phieu nhap cong no phai chon nha cung cap');
   }
 
   const run = db.transaction(() => {
@@ -35,11 +45,12 @@ function createStockReceipt({ partnerId, createdBy, note, items, receiptDate, or
     const timestamp = receiptDate || db.prepare("SELECT datetime('now') AS now").get().now;
 
     const code = generateReceiptCode();
+    const resolvedPaymentStatus = paymentStatus || 'da_thanh_toan';
     const receiptResult = db
       .prepare(
-        'INSERT INTO stock_receipts (code, partner_id, created_by, note, created_at, order_code) VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO stock_receipts (code, partner_id, created_by, note, created_at, order_code, adjusts_type, adjusts_id, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
       )
-      .run(code, partnerId || null, createdBy, note || '', timestamp, orderCode || '');
+      .run(code, partnerId || null, createdBy, note || '', timestamp, orderCode || '', adjustsType || null, adjustsId || null, resolvedPaymentStatus);
     const receiptId = receiptResult.lastInsertRowid;
 
     const insertItem = db.prepare(
@@ -55,6 +66,7 @@ function createStockReceipt({ partnerId, createdBy, note, items, receiptDate, or
       'INSERT INTO stock_lots (product_id, receipt_id, unit_cost, quantity_received, quantity_remaining, created_at) VALUES (?, ?, ?, ?, ?, ?)'
     );
 
+    let totalAmount = 0;
     items.forEach((item) => {
       const discountPercent = item.discountPercent || 0;
       const netUnitCost = item.unitPrice * (1 - discountPercent / 100);
@@ -62,7 +74,18 @@ function createStockReceipt({ partnerId, createdBy, note, items, receiptDate, or
       insertItem.run(receiptId, item.productId, item.quantity, item.unitPrice, discountPercent);
       insertMovement.run(item.productId, item.quantity, receiptId, netUnitCost, timestamp);
       insertLot.run(item.productId, receiptId, netUnitCost, item.quantity, item.quantity, timestamp);
+      totalAmount += item.quantity * netUnitCost;
     });
+
+    if (resolvedPaymentStatus === 'cong_no') {
+      recordDebtFromDocument({
+        partnerId,
+        amount: totalAmount,
+        referenceType: 'receipt',
+        referenceId: receiptId,
+        createdBy,
+      });
+    }
 
     return receiptId;
   });

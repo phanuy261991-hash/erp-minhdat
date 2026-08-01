@@ -504,6 +504,12 @@ input:focus-visible {
   font-weight: 600;
 }
 
+/* So lieu can chu y ngay (vd so tien can thanh toan/thu con lai > 0) - dam mau canh bao, khac
+   voi mau chu thuong khi da het no (xem trang Cong no). */
+.stat-card-value--warning {
+  color: var(--color-warning);
+}
+
 /* ---- Bang du lieu (dung chung cho danh sach o cac trang) ---- */
 
 .data-table-wrap {
@@ -937,6 +943,7 @@ input:focus-visible {
   justify-content: space-between;
   gap: 20px;
   padding: 13px 16px;
+  margin-bottom: 14px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-muted);

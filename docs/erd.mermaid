@@ -6,6 +6,7 @@ erDiagram
     PARTNERS ||--o{ STOCK_RECEIPTS : "la NCC"
     PARTNERS ||--o{ STOCK_ISSUES : "la khach hang"
     PARTNERS ||--o{ DEBT_LEDGER : "co cong no"
+    USERS ||--o{ DEBT_LEDGER : "ghi nhan"
     PRODUCTS ||--o{ STOCK_RECEIPT_ITEMS : "thuoc ve"
     PRODUCTS ||--o{ STOCK_ISSUE_ITEMS : "thuoc ve"
     PRODUCTS ||--o{ STOCK_MOVEMENTS : "bien dong"
@@ -109,6 +110,9 @@ erDiagram
         int partner_id FK "nullable"
         int created_by FK
         string note
+        string payment_status "da_thanh_toan hoac cong_no - doi xung stock_issues (Phase 3)"
+        string adjusts_type "nullable: 'receipt' hoac 'issue' - phieu nay dieu chinh bu tru cho phieu nao"
+        int adjusts_id "nullable, ket hop adjusts_type de tro toi phieu goc"
         datetime created_at "co the chinh khi lap phieu - anh huong thu tu FIFO/binh quan gia quyen"
     }
 
@@ -128,6 +132,8 @@ erDiagram
         int created_by FK
         string note
         string payment_status "da_thu_tien hoac cong_no"
+        string adjusts_type "nullable: 'receipt' hoac 'issue' - phieu nay dieu chinh bu tru cho phieu nao"
+        int adjusts_id "nullable, ket hop adjusts_type de tro toi phieu goc"
         datetime created_at
     }
 
@@ -136,7 +142,8 @@ erDiagram
         int issue_id FK
         int product_id FK
         real quantity
-        real unit_price
+        real unit_price "gia goc, chua tru chiet khau"
+        real discount_percent "0-100, chi anh huong doanh thu ghi cong no - KHONG anh huong unit_cost cua movement"
     }
 
     STOCK_MOVEMENTS {
@@ -153,11 +160,12 @@ erDiagram
     DEBT_LEDGER {
         int id PK
         int partner_id FK
-        string type
+        string type "no (tang so du) hoac tra (giam so du)"
         real amount
-        string reference_type
-        int reference_id
+        string reference_type "receipt, issue, hoac payment (thanh toan thu cong)"
+        int reference_id "nullable - NULL khi reference_type = payment"
         string note
+        int created_by FK
         datetime created_at
     }
 

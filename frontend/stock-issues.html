@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nhập kho - Quản lý Kho &amp; Công nợ</title>
+  <title>Xuất kho - Quản lý Kho &amp; Công nợ</title>
   <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body class="app-body">
@@ -12,13 +12,13 @@
     <main class="app-content">
       <p class="page-eyebrow">Kho</p>
       <div class="page-header">
-        <h2>Nhập kho</h2>
-        <button type="button" id="btn-add-receipt" class="btn-add"></button>
+        <h2>Xuất kho</h2>
+        <button type="button" id="btn-add-issue" class="btn-add"></button>
       </div>
 
-      <div id="receipts-error" class="alert alert-error" hidden>
+      <div id="issues-error" class="alert alert-error" hidden>
         <span class="alert-icon-slot"></span>
-        <span id="receipts-error-text"></span>
+        <span id="issues-error-text"></span>
       </div>
 
       <div class="data-table-wrap">
@@ -26,7 +26,7 @@
           <thead>
             <tr>
               <th>Mã phiếu</th>
-              <th>Nhà cung cấp</th>
+              <th>Khách hàng</th>
               <th>Người lập</th>
               <th>Thanh toán</th>
               <th>Ghi chú</th>
@@ -34,20 +34,20 @@
               <th>Thao tác</th>
             </tr>
           </thead>
-          <tbody id="receipts-tbody"></tbody>
+          <tbody id="issues-tbody"></tbody>
         </table>
       </div>
     </main>
   </div>
 
-  <div id="receipt-detail-modal" class="modal-overlay" hidden>
+  <div id="issue-detail-modal" class="modal-overlay" hidden>
     <div class="modal-card modal-card-lg">
-      <h3>Chi tiết phiếu nhập kho</h3>
-      <div id="receipt-detail-error" class="alert alert-error" hidden>
+      <h3>Chi tiết phiếu xuất kho</h3>
+      <div id="issue-detail-error" class="alert alert-error" hidden>
         <span class="alert-icon-slot"></span>
-        <span id="receipt-detail-error-text"></span>
+        <span id="issue-detail-error-text"></span>
       </div>
-      <div class="detail-info-grid" id="receipt-detail-info"></div>
+      <div class="detail-info-grid" id="issue-detail-info"></div>
       <h4 class="section-heading">Danh sách sản phẩm</h4>
       <div class="data-table-wrap">
         <table class="data-table">
@@ -61,68 +61,73 @@
               <th>Thành tiền</th>
             </tr>
           </thead>
-          <tbody id="receipt-detail-items"></tbody>
+          <tbody id="issue-detail-items"></tbody>
         </table>
       </div>
       <div class="receipt-total-row">
         <span>Tổng thành tiền</span>
-        <span id="receipt-detail-total">0</span>
+        <span id="issue-detail-total">0</span>
       </div>
       <div class="modal-actions">
-        <button type="button" id="btn-close-receipt-detail" class="btn-secondary">Đóng</button>
+        <button type="button" id="btn-close-issue-detail" class="btn-secondary">Đóng</button>
       </div>
     </div>
   </div>
 
-  <div id="receipt-modal" class="modal-overlay" hidden>
+  <div id="issue-modal" class="modal-overlay" hidden>
     <div class="modal-card modal-card-lg">
-      <h3>Lập phiếu nhập kho</h3>
-      <form id="receipt-form">
-        <div id="receipt-form-error" class="alert alert-error" hidden>
+      <h3>Lập phiếu xuất kho</h3>
+      <form id="issue-form">
+        <div id="issue-form-error" class="alert alert-error" hidden>
           <span class="alert-icon-slot"></span>
-          <span id="receipt-form-error-text"></span>
+          <span id="issue-form-error-text"></span>
         </div>
 
         <div class="form-row">
           <div class="form-field">
-            <label for="receipt-partner">Nhà cung cấp</label>
-            <select id="receipt-partner"></select>
+            <label for="issue-partner">Khách hàng</label>
+            <select id="issue-partner"></select>
           </div>
           <div class="form-field">
-            <label for="receipt-date">Thời gian nhập</label>
-            <input type="datetime-local" id="receipt-date" />
+            <label for="issue-date">Thời gian xuất</label>
+            <input type="datetime-local" id="issue-date" />
           </div>
         </div>
 
         <div id="new-partner-fields" class="form-field" hidden>
-          <label>Nhà cung cấp mới</label>
+          <label>Khách hàng mới</label>
           <div class="new-partner-inputs">
-            <input type="text" id="new-partner-name" placeholder="Tên nhà cung cấp" />
+            <input type="text" id="new-partner-name" placeholder="Tên khách hàng" />
             <input type="text" id="new-partner-phone" placeholder="Số điện thoại (không bắt buộc)" />
           </div>
         </div>
 
+        <div class="form-row">
+          <div class="form-field">
+            <label for="issue-customer-phone">Số điện thoại khách hàng</label>
+            <input type="text" id="issue-customer-phone" disabled placeholder="-" />
+          </div>
+          <div class="form-field">
+            <label for="issue-customer-address">Địa chỉ khách hàng</label>
+            <input type="text" id="issue-customer-address" disabled placeholder="-" />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="issue-note">Ghi chú</label>
+          <input type="text" id="issue-note" placeholder="vd: Xuất bán lẻ" autocomplete="off" />
+        </div>
+
         <div class="setting-row">
           <div class="setting-row-info">
-            <p class="setting-row-title">Chưa thanh toán ngay</p>
-            <p class="setting-row-desc">Bật nếu chưa trả tiền NCC ngay — phiếu sẽ được đánh dấu công nợ phải trả.</p>
+            <p class="setting-row-title">Chưa thu tiền ngay</p>
+            <p class="setting-row-desc">Bật nếu khách hàng chưa thanh toán ngay — phiếu sẽ được đánh dấu công nợ.</p>
           </div>
           <label class="switch">
-            <input type="checkbox" id="receipt-payment-toggle" />
+            <input type="checkbox" id="issue-payment-toggle" />
             <span class="switch-track"></span>
             <span class="switch-thumb"></span>
           </label>
-        </div>
-
-        <div class="form-row">
-          <div class="form-field">
-            <label for="receipt-order-code">Mã đơn hàng</label>
-            <input type="text" id="receipt-order-code" placeholder="Số hóa đơn/đơn hàng của NCC (không bắt buộc)" autocomplete="off" />
-          </div>
-          <div class="form-field">
-            <label for="receipt-note">Ghi chú</label>
-            <input type="text" id="receipt-note" placeholder="vd: Nhập tồn đầu kỳ" autocomplete="off" />
-          </div>
         </div>
 
         <div class="form-field">
@@ -150,13 +155,13 @@
           <button type="button" id="btn-add-item-row" class="btn-secondary btn-add-row">+ Thêm dòng</button>
           <div class="receipt-total-row">
             <span>Tổng thành tiền</span>
-            <span id="receipt-total-amount">0</span>
+            <span id="issue-total-amount">0</span>
           </div>
         </div>
 
         <div class="modal-actions">
-          <button type="button" id="btn-cancel-receipt" class="btn-secondary">Hủy</button>
-          <button type="submit" id="btn-submit-receipt" class="btn-primary">Lưu phiếu</button>
+          <button type="button" id="btn-cancel-issue" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-issue" class="btn-primary">Lưu phiếu</button>
         </div>
       </form>
     </div>
@@ -165,8 +170,8 @@
   <script src="assets/api.js"></script>
   <script src="assets/icons.js"></script>
   <script src="assets/layout.js"></script>
-  <script src="assets/receipt-detail.js"></script>
   <script src="assets/adjustment.js"></script>
-  <script src="assets/stock-receipts.js"></script>
+  <script src="assets/issue-detail.js"></script>
+  <script src="assets/stock-issues.js"></script>
 </body>
 </html>
