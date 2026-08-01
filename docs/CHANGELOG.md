@@ -2,6 +2,15 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-01 (Sửa lỗi ô "Địa chỉ" khi thêm nhanh khách hàng/NCC mới)
+
+> Người dùng phản ánh: trên phiếu Xuất kho, mục "Thêm khách hàng mới" không nhập được SĐT/địa chỉ — do form dùng chung 2 ô chỉ-đọc (`issue-customer-phone`/`issue-customer-address`, vốn để hiển thị tham khảo khi CHỌN khách hàng có sẵn) cho cả trường hợp thêm mới, trong khi khối "Khách hàng mới" chỉ có ô Tên + SĐT, thiếu hẳn ô Địa chỉ.
+
+- `stock-issues.html`/`.js`: thêm ô `#new-partner-address` vào khối "Khách hàng mới"; khối 2 ô chỉ-đọc (SĐT/Địa chỉ khách hàng, chỉ có ý nghĩa khi CHỌN khách hàng có sẵn) nay tự ẩn khi đang thêm khách hàng mới (`existingCustomerInfoRow.hidden`), tránh gây nhầm là ô nhập bị khóa. Submit gửi thêm `address` khi tạo đối tác mới.
+- **Phát hiện thêm lúc debug**: `.form-row { display: flex }` (CSS) không có `:not([hidden])` guard nên khi JS đặt `hidden = true` cho 1 khối `.form-row`, CSS vẫn thắng và khối đó **vẫn hiển thị** (đây chính là lý do khối chỉ-đọc nói trên không tự ẩn được, gây nhầm lẫn với khối nhập mới nằm ngay trên). Sửa `frontend/assets/style.css`: đổi thành `.form-row:not([hidden])`, đồng bộ với pattern đã dùng cho `.alert`/`.modal-overlay`.
+- Áp dụng luôn cho `stock-receipts.html`/`.js` (Nhập kho → "Thêm nhà cung cấp mới") — cùng lỗi thiếu ô Địa chỉ, đã hỏi và được xác nhận sửa luôn cho đồng bộ.
+- Test qua trình duyệt thật: lập phiếu xuất với khách hàng mới kèm địa chỉ → lưu đúng, kiểm tra lại trên trang Khách hàng thấy đúng địa chỉ đã nhập; khối chỉ-đọc ẩn đúng khi chọn "+ Thêm khách hàng mới", hiện lại đúng khi chọn khách hàng có sẵn; trang Nhập kho hiển thị đúng ô Địa chỉ cho NCC mới, không lỗi console.
+
 ## 2026-08-01 (Chỉnh sửa Báo cáo/In phiếu + tách Khách hàng thành module riêng)
 
 > Theo yêu cầu người dùng, ngoài phạm vi Phase 5 gốc. Trước khi tách Khách hàng đã hỏi lại 3 câu hỏi về cấu trúc menu/công nợ/hạn mức — xem `docs/DECISIONS.md` mục cùng ngày.

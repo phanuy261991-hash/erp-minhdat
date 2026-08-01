@@ -760,7 +760,11 @@ input:focus-visible {
 /* Ghep 2 truong ngan tren cung 1 dong (thay vi xep doc tung truong mot, de form khong bi
    dan qua dai) - danh cho truong ngan (ngay gio, ma, dropdown...), khong dung cho truong dai
    (ghi chu nhieu dong, bang dong san pham) - xem docs/DESIGN-SYSTEM.md. */
-.form-row {
+/* :not([hidden]) - tranh lap lai loi display:flex ghi de thuoc tinh hidden (xem .alert) - phat
+   hien khi an/hien "existing-customer-info-row" o stock-issues.js (2026-08-01): du JS dat
+   hidden=true, .form-row{display:flex} van thang vi cung do uu tien, dung sau [hidden] trong
+   stylesheet. */
+.form-row:not([hidden]) {
   display: flex;
   gap: 16px;
 }

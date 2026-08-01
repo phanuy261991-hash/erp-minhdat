@@ -25,6 +25,8 @@ const partnerSelect = document.getElementById('issue-partner');
 const newPartnerFields = document.getElementById('new-partner-fields');
 const newPartnerNameInput = document.getElementById('new-partner-name');
 const newPartnerPhoneInput = document.getElementById('new-partner-phone');
+const newPartnerAddressInput = document.getElementById('new-partner-address');
+const existingCustomerInfoRow = document.getElementById('existing-customer-info-row');
 const customerPhoneDisplay = document.getElementById('issue-customer-phone');
 const customerAddressDisplay = document.getElementById('issue-customer-address');
 const noteInput = document.getElementById('issue-note');
@@ -122,6 +124,9 @@ function renderPartnerOptions() {
 
 // Chon khach hang co san -> dien thong tin lien he ra 2 o chi-doc de nguoi lap phieu tien
 // tham khao (vd giao hang), khong phai truong nhap - xem yeu cau nguoi dung 2026-07-31.
+// An hang nay khi dang them khach hang MOI (thay bang o nhap that trong new-partner-fields) -
+// truoc day ca 2 cung hien cung luc, o dia chi chi-doc trong nhom "Khach hang moi" bi nham la
+// truong nhap khong go duoc (xem phan hoi nguoi dung 2026-08-01).
 function updateCustomerInfoDisplay() {
   const partnerId = partnerSelect.value;
   const partner = partnersCache.find((p) => String(p.id) === partnerId);
@@ -130,7 +135,9 @@ function updateCustomerInfoDisplay() {
 }
 
 partnerSelect.addEventListener('change', () => {
-  newPartnerFields.hidden = partnerSelect.value !== '__new__';
+  const isNew = partnerSelect.value === '__new__';
+  newPartnerFields.hidden = !isNew;
+  existingCustomerInfoRow.hidden = isNew;
   updateCustomerInfoDisplay();
 });
 
@@ -272,6 +279,7 @@ btnAddItemRow.addEventListener('click', addItemRow);
 function resetIssueForm() {
   issueForm.reset();
   newPartnerFields.hidden = true;
+  existingCustomerInfoRow.hidden = false;
   issueDateInput.value = nowForDatetimeLocal();
   updateCustomerInfoDisplay();
   itemRowsContainer.innerHTML = '';
@@ -354,7 +362,12 @@ issueForm.addEventListener('submit', async (event) => {
       }
       const { partner } = await apiFetch('/partners', {
         method: 'POST',
-        body: JSON.stringify({ type: 'khach_hang', name, phone: newPartnerPhoneInput.value.trim() }),
+        body: JSON.stringify({
+          type: 'khach_hang',
+          name,
+          phone: newPartnerPhoneInput.value.trim(),
+          address: newPartnerAddressInput.value.trim(),
+        }),
       });
       partnerId = partner.id;
     }

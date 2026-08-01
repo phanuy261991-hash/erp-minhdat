@@ -25,6 +25,7 @@ const partnerSelect = document.getElementById('receipt-partner');
 const newPartnerFields = document.getElementById('new-partner-fields');
 const newPartnerNameInput = document.getElementById('new-partner-name');
 const newPartnerPhoneInput = document.getElementById('new-partner-phone');
+const newPartnerAddressInput = document.getElementById('new-partner-address');
 const noteInput = document.getElementById('receipt-note');
 const receiptDateInput = document.getElementById('receipt-date');
 const orderCodeInput = document.getElementById('receipt-order-code');
@@ -344,7 +345,12 @@ receiptForm.addEventListener('submit', async (event) => {
       }
       const { partner } = await apiFetch('/partners', {
         method: 'POST',
-        body: JSON.stringify({ type: 'nha_cung_cap', name, phone: newPartnerPhoneInput.value.trim() }),
+        body: JSON.stringify({
+          type: 'nha_cung_cap',
+          name,
+          phone: newPartnerPhoneInput.value.trim(),
+          address: newPartnerAddressInput.value.trim(),
+        }),
       });
       partnerId = partner.id;
     }
