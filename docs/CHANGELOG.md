@@ -2,6 +2,14 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-01 (Mở rộng modal "Lập phiếu xuất kho" — ô tên sản phẩm quá hẹp)
+
+> Người dùng phản ánh ngay sau khi thêm cột "Đơn giá sau CK": ô tìm sản phẩm quá nhỏ (cột `1fr` trong grid 8 cột chỉ còn ~138px ở modal rộng 880px mặc định), yêu cầu kéo rộng modal.
+
+- `frontend/assets/style.css`: thêm `#issue-modal .modal-card-lg { width: 1040px; max-width: 96vw; }` — scope riêng cho modal "Lập phiếu xuất kho" (không đổi `.modal-card-lg` mặc định, tránh ảnh hưởng modal "Lập phiếu nhập kho" và các modal xem chi tiết khác đang dùng chung class này).
+- Kết quả: ô tìm sản phẩm rộng ra ~298px (từ ~138px), danh sách gợi ý hiển thị đủ tên sản phẩm dài trên 1 dòng.
+- Test qua trình duyệt thật ở viewport 1400px: modal rộng đúng 1040px, không tràn ngang, không lỗi console.
+
 ## 2026-08-01 (Thêm cột "Đơn giá sau CK" cho phiếu xuất kho)
 
 > Người dùng yêu cầu: form lập phiếu xuất, modal xem chi tiết phiếu xuất, và biểu mẫu in đều thêm cột "Đơn giá sau CK" (đơn giá sau khi áp chiết khấu) trước cột "Thành tiền" — Thành tiền = Đơn giá sau CK × Số lượng. Chỉ áp dụng cho phiếu xuất theo đúng phạm vi yêu cầu, không đổi phiếu nhập.

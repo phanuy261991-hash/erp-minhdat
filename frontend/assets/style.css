@@ -760,6 +760,15 @@ input:focus-visible {
   width: 880px;
 }
 
+/* Form "Lap phieu xuat kho" rong hon cac modal-card-lg khac - o "Tim san pham" (cot 1fr trong
+   .item-row) qua hep o 880px (chi ~138px, khong du hien ro ma+ten san pham dai), tang len de
+   co them cho (xem phan hoi nguoi dung 2026-08-01). Scope rieng theo #issue-modal, khong doi
+   .modal-card-lg mac dinh (dung chung voi form Lap phieu nhap va cac modal xem chi tiet). */
+#issue-modal .modal-card-lg {
+  width: 1040px;
+  max-width: 96vw;
+}
+
 .modal-card h3 {
   font-size: 18px;
   margin-bottom: 18px;
