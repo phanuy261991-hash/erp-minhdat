@@ -33,6 +33,52 @@ function recordPayment({ partnerId, amount, note, createdBy }) {
   return db.prepare('SELECT * FROM debt_ledger WHERE id = last_insert_rowid()').get();
 }
 
+// Dieu chinh cong no thu cong (migration 016) - sua so du sai (vd nhap nham gia von phieu nhap
+// lam ghi no NCC sai) MA KHONG sua/xoa dong ledger goc, chi ghi them 1 dong bu tru, danh dau
+// is_adjustment=1 de phan biet voi dong tu dong ('no' khi tao phieu) va thanh toan that ('tra',
+// reference_type='payment'). referenceType/referenceId (tuy chon) tro ve dung phieu nhap/xuat
+// bi sai de doi chieu - validate phieu do THUOC DUNG doi tac dang dieu chinh, tranh lien ket nham.
+function recordDebtAdjustment({ partnerId, type, amount, referenceType, referenceId, note, createdBy }) {
+  if (!['no', 'tra'].includes(type)) {
+    throw new ServiceError('Loai dieu chinh khong hop le');
+  }
+  if (!(amount > 0)) {
+    throw new ServiceError('So tien dieu chinh phai lon hon 0');
+  }
+  if (!note || !String(note).trim()) {
+    throw new ServiceError('Phai ghi ro ly do dieu chinh cong no');
+  }
+
+  const partner = db.prepare('SELECT id FROM partners WHERE id = ?').get(partnerId);
+  if (!partner) {
+    throw new ServiceError('Khong tim thay doi tac');
+  }
+
+  let resolvedReferenceType = null;
+  let resolvedReferenceId = null;
+  if (referenceType) {
+    if (!['receipt', 'issue'].includes(referenceType)) {
+      throw new ServiceError('Loai phieu goc khong hop le');
+    }
+    const table = referenceType === 'receipt' ? 'stock_receipts' : 'stock_issues';
+    const document = db.prepare(`SELECT id, partner_id FROM ${table} WHERE id = ?`).get(referenceId);
+    if (!document) {
+      throw new ServiceError('Khong tim thay phieu goc');
+    }
+    if (document.partner_id !== partnerId) {
+      throw new ServiceError('Phieu goc khong thuoc doi tac dang dieu chinh');
+    }
+    resolvedReferenceType = referenceType;
+    resolvedReferenceId = referenceId;
+  }
+
+  db.prepare(
+    'INSERT INTO debt_ledger (partner_id, type, amount, reference_type, reference_id, note, created_by, is_adjustment) VALUES (?, ?, ?, ?, ?, ?, ?, 1)'
+  ).run(partnerId, type, amount, resolvedReferenceType, resolvedReferenceId, String(note).trim(), createdBy);
+
+  return db.prepare('SELECT * FROM debt_ledger WHERE id = last_insert_rowid()').get();
+}
+
 function getDebtBalance(partnerId) {
   const row = db
     .prepare(`
@@ -44,4 +90,4 @@ function getDebtBalance(partnerId) {
   return row.balance;
 }
 
-module.exports = { recordDebtFromDocument, recordPayment, getDebtBalance, ServiceError };
+module.exports = { recordDebtFromDocument, recordPayment, recordDebtAdjustment, getDebtBalance, ServiceError };

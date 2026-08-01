@@ -126,6 +126,14 @@
 - [x] `layout.js`: tách nhóm "Công nợ" cũ thành "Nhà cung cấp" + "Khách hàng"; thêm "Loại khách hàng" vào nhóm "Cấu hình"; `icons.js` thêm icon `truck`/`tag`
 - [x] Test qua trình duyệt thật: CRUD Loại khách hàng, gán loại cho khách hàng, xác nhận dữ liệu công nợ NCC cũ không mất sau migration, phiếu in xuất kho hiển thị đúng mã SP + ghi chú xuống dòng đúng
 
+### "Điều chỉnh công nợ" (sau các mục trên, ngoài phase, theo yêu cầu người dùng 2026-08-01)
+
+- [x] Migration `016_debt_adjustment.sql`: `debt_ledger.is_adjustment`
+- [x] `debt.service.js`: `recordDebtAdjustment()` — validate type/amount/note bắt buộc, phiếu gốc (nếu chọn) phải thuộc đúng đối tác
+- [x] `debts.routes.js`: `POST /adjustment`, `GET /documents?partner_id=` (danh sách phiếu công nợ của 1 đối tác, không đòi quyền `kho`)
+- [x] Frontend `debts.html`/`.js` và `customer-debts.html`/`.js`: modal "Điều chỉnh công nợ", combobox tìm phiếu gốc theo đối tác, badge "Điều chỉnh" riêng trong lịch sử
+- [x] Test qua trình duyệt thật + API: điều chỉnh giảm số dư đúng, badge hiển thị đúng, chặn đúng khi thiếu lý do hoặc chọn nhầm phiếu của đối tác khác
+
 ## Phase 5 — Vận hành & Go-live
 
 - [ ] Cấu hình PM2 (`pm2 start`, `pm2 startup`, `pm2 save`)

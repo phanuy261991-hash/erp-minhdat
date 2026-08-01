@@ -34,7 +34,8 @@ project-root/
 │  │     ├─ 012_debt_ledger.sql (đã có) bảng debt_ledger (Phase 3)
 │  │     ├─ 013_issue_discount.sql (đã có) stock_issue_items.discount_percent (đối xứng migration 008 của phiếu nhập)
 │  │     ├─ 014_company_print_note.sql (đã có) company_settings.print_note (ghi chú hiển thị khi in phiếu xuất kho)
-│  │     └─ 015_customer_categories.sql (đã có) bảng customer_categories (loại khách hàng, kem han muc cong no) + partners.category_id
+│  │     ├─ 015_customer_categories.sql (đã có) bảng customer_categories (loại khách hàng, kem han muc cong no) + partners.category_id
+│  │     └─ 016_debt_adjustment.sql (đã có, 2026-08-01) debt_ledger.is_adjustment ("Điều chỉnh công nợ")
 │  ├─ middleware/
 │  │  ├─ auth.js                       (đã có) requireAuth (kiểm tra session)
 │  │  └─ requirePermission.js          (đã có) requirePermission(module) + requireAnyPermission([module,...])
@@ -125,7 +126,7 @@ project-root/
 | `stock_movements` | id PK, product_id FK, movement_type, quantity, unit_cost, reference_type, reference_id, created_at | ledger biến động kho — tồn kho = SUM(movement) theo product; `unit_cost` là snapshot giá vốn tại thời điểm phát sinh (không tính lại về sau) |
 | `stock_lots` | id PK, product_id FK, receipt_id FK, unit_cost, quantity_received, quantity_remaining, created_at | 1 dòng = 1 lô hàng nhập; `quantity_remaining` trừ dần theo thứ tự cũ nhất trước (FIFO vật lý) bất kể `costing_method` đang chọn; dùng để tính giá vốn bình quân gia quyền/FIFO (xem `costing.service.js`) |
 | `product_change_log` | id PK, product_id FK, changed_by FK(users), field_name, old_value, new_value, created_at | lịch sử chỉnh sửa thông tin sản phẩm — chỉ ghi khi `PUT /api/products/:id` thực sự đổi giá trị |
-| `debt_ledger` | id PK, partner_id FK, type, amount, reference_type, reference_id, note, created_by FK(users), created_at | type ∈ {no, tra}; số dư = SUM cộng dồn theo partner_id; `reference_type` ∈ {receipt, issue, payment} — `payment` (ghi nhận thanh toán thủ công) có `reference_id` NULL vì không gắn với 1 phiếu cụ thể; `created_by` bổ sung ngoài draft gốc để nhất quán truy vết với các bảng khác (xem `docs/DECISIONS.md`) |
+| `debt_ledger` | id PK, partner_id FK, type, amount, reference_type, reference_id, note, created_by FK(users), created_at, is_adjustment | type ∈ {no, tra}; số dư = SUM cộng dồn theo partner_id; `reference_type` ∈ {receipt, issue, payment} — `payment` (ghi nhận thanh toán thủ công) có `reference_id` NULL vì không gắn với 1 phiếu cụ thể; `created_by` bổ sung ngoài draft gốc để nhất quán truy vết với các bảng khác (xem `docs/DECISIONS.md`); `is_adjustment` (migration `016`, 2026-08-01) đánh dấu dòng "Điều chỉnh công nợ" thủ công — phân biệt với dòng tự động và thanh toán thật |
 | `schema_migrations` | version PK, applied_at | migration runner đọc bảng này |
 
 **Nguyên tắc quan trọng** (đã thống nhất ở bước trước, nhắc lại để dev không quên khi code):
@@ -187,6 +188,8 @@ Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân qu
 | GET | `/api/debts/summary?type=` | `cong_no` | Số dư hiện tại từng đối tác (tính từ `SUM debt_ledger`) |
 | GET | `/api/debts?partner_id=` | `cong_no` | Lịch sử giao dịch công nợ 1 đối tác, kèm `total_transacted` (tổng tiền hàng đã mua/bán tính trực tiếp từ `stock_receipts`/`stock_issues`, không phải từ `debt_ledger`) |
 | POST | `/api/debts/payment` | `cong_no` | Ghi nhận thanh toán (cho phép trả từng phần) |
+| GET | `/api/debts/documents?partner_id=` | `cong_no` | Danh sách phiếu nhập/xuất `cong_no` của 1 đối tác — dùng cho combobox chọn "phiếu gốc bị sai" khi điều chỉnh công nợ (2026-08-01, không đòi quyền `kho` như `/api/stock-receipts`) |
+| POST | `/api/debts/adjustment` | `cong_no` | "Điều chỉnh công nợ" (2026-08-01, khác Ghi nhận thanh toán) — sửa số dư sai không sửa/xóa phiếu gốc, xem `docs/DECISIONS.md` |
 | GET | `/api/reports/inventory` | `bao_cao` | Tồn kho hiện tại từng sản phẩm + giá vốn (luôn bình quân gia quyền) + giá trị tồn, tổng giá trị toàn kho |
 | GET | `/api/reports/stock-movements?months=` | `bao_cao` | Tổng hợp mua hàng/bán hàng theo từng tháng (mặc định 6 tháng gần nhất, điền 0 cho tháng trống) |
 | GET | `/api/reports/debts` | `bao_cao` | Tổng phải trả (NCC)/phải thu (khách hàng) toàn hệ thống |

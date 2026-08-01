@@ -1,0 +1,12 @@
+-- Migration 016: co che "Dieu chinh cong no" - sua duoc so du debt_ledger sai (vd nhap sai gia
+-- von phieu nhap dan den ghi no NCC sai) MA KHONG sua/xoa dong ledger goc, dung nguyen tac ledger
+-- da chon cho toan du an (xem .claude/docs/inventory-debt-ledger.md).
+--
+-- Truoc migration nay, debt_ledger chi co 2 loai dong: 'no' (tu dong khi tao phieu cong_no,
+-- reference_type='receipt'/'issue') va 'tra' (ghi nhan thanh toan thu cong, reference_type=
+-- 'payment', reference_id=NULL). Dieu chinh cong no la 1 dang dong THU CONG khac ca 2 loai tren:
+-- co the tang hoac giam so du (type='no' hoac 'tra' tuy chieu sai), tuy chon lien ket nguoc ve
+-- dung phieu nhap/xuat bi sai (reference_type='receipt'/'issue', giong dong tu dong) de doi
+-- chieu - nhung KHONG PHAI dong tu dong khi tao phieu. Can 1 co rieng de phan biet trong lich su
+-- (badge UI khac "Phat sinh no"/"Thanh toan"), tranh nham la giao dich that.
+ALTER TABLE debt_ledger ADD COLUMN is_adjustment INTEGER NOT NULL DEFAULT 0;

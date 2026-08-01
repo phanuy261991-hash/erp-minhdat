@@ -2,6 +2,16 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-01 ("Điều chỉnh công nợ" — sửa số dư sai không cần sửa/xóa phiếu gốc)
+
+> Người dùng hỏi: nếu nhập sai giá vốn trên phiếu nhập thì công nợ NCC bị sai theo, xử lý thế nào? Trả lời: đây là lỗ hổng đã biết trước (ghi trong `docs/CURRENT.md`/`docs/TASK.md`) — cơ chế "phiếu điều chỉnh bù trừ" có sẵn chỉ sửa được tồn kho, không sửa được `debt_ledger` (vì `recordDebtFromDocument()` luôn ghi `type='no'`, một phiếu bù trừ sẽ CỘNG THÊM nợ chứ không trừ). Đề xuất 2 hướng, người dùng chọn xây cơ chế đúng (hướng 2).
+
+- Migration `016_debt_adjustment.sql`: `debt_ledger.is_adjustment` (cờ đánh dấu dòng điều chỉnh thủ công, phân biệt với dòng tự động khi tạo phiếu và thanh toán thật).
+- `debt.service.js`: `recordDebtAdjustment()` — cho chọn `type` ('no' tăng/'tra' giảm) tùy chiều sai, bắt buộc `note` (lý do), tùy chọn `referenceType`/`referenceId` trỏ về đúng phiếu nhập/xuất bị sai — **validate phiếu đó thuộc đúng đối tác đang điều chỉnh** (chặn liên kết nhầm sang đối tác khác).
+- `debts.routes.js`: `POST /api/debts/adjustment` (tạo điều chỉnh), `GET /api/debts/documents?partner_id=` (danh sách phiếu `cong_no` của 1 đối tác — dùng cho combobox chọn "phiếu gốc bị sai", **không dùng** `/api/stock-receipts`/`/api/stock-issues` vì 2 route đó yêu cầu quyền `kho`, sẽ chặn nhầm tài khoản chỉ có quyền `cong_no` như vai trò Kế toán); `GET /summary`, `GET /` (lịch sử) trả thêm `is_adjustment`.
+- Frontend (`debts.html`/`.js` và `customer-debts.html`/`.js`, cùng cấu trúc cho cả NCC lẫn khách hàng): modal "Điều chỉnh công nợ" mới (nút đầu trang + icon `sliders` từng dòng) — chọn đối tác, loại điều chỉnh (tăng/giảm), số tiền, combobox tìm phiếu gốc theo mã (tự lọc lại đúng đối tác khi đổi select), lý do bắt buộc. Lịch sử công nợ hiển thị badge riêng `badge-protected` "Điều chỉnh" (tái dùng CSS có sẵn của badge vai trò bảo vệ) để không nhầm với "Phát sinh nợ"/"Thanh toán" thật. CSS mới: `.modal-subtitle` (dòng giải thích ngắn dưới tiêu đề modal).
+- Test qua trình duyệt thật: tạo điều chỉnh giảm 10.000 cho NCC "Cong ty CP Thep Hoa Phat" liên kết PN000012 → số dư 110.000 → 100.000 đúng, lịch sử hiện đúng badge "Điều chỉnh" kèm mã phiếu + lý do; test qua API: thiếu lý do bị chặn 400, chọn phiếu gốc thuộc đối tác khác bị chặn 400 ("Phiếu gốc không thuộc đối tác đang điều chỉnh"); trang Công nợ khách hàng có cùng tính năng, không lỗi console.
+
 ## 2026-08-01 (Sửa lỗi ô "Địa chỉ" khi thêm nhanh khách hàng/NCC mới)
 
 > Người dùng phản ánh: trên phiếu Xuất kho, mục "Thêm khách hàng mới" không nhập được SĐT/địa chỉ — do form dùng chung 2 ô chỉ-đọc (`issue-customer-phone`/`issue-customer-address`, vốn để hiển thị tham khảo khi CHỌN khách hàng có sẵn) cho cả trường hợp thêm mới, trong khi khối "Khách hàng mới" chỉ có ô Tên + SĐT, thiếu hẳn ô Địa chỉ.

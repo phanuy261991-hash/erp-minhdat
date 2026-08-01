@@ -4,7 +4,7 @@
 
 const express = require('express');
 const db = require('../db/database');
-const { recordPayment, ServiceError } = require('../services/debt.service');
+const { recordPayment, recordDebtAdjustment, ServiceError } = require('../services/debt.service');
 
 const router = express.Router();
 
@@ -82,7 +82,7 @@ router.get('/', (req, res) => {
 
   const entries = db
     .prepare(`
-      SELECT d.id, d.type, d.amount, d.reference_type, d.reference_id, d.note, d.created_at,
+      SELECT d.id, d.type, d.amount, d.reference_type, d.reference_id, d.note, d.created_at, d.is_adjustment,
              u.full_name AS created_by_name,
              CASE d.reference_type WHEN 'receipt' THEN r.code WHEN 'issue' THEN i.code ELSE NULL END AS document_code
       FROM debt_ledger d
@@ -109,6 +109,56 @@ router.post('/payment', (req, res) => {
       partnerId: Number(partnerId),
       amount: Number(amount),
       note: note ? String(note).trim() : '',
+      createdBy: req.session.user.id,
+    });
+    res.status(201).json({ entry });
+  } catch (err) {
+    if (err instanceof ServiceError) {
+      return res.status(400).json({ error: err.message });
+    }
+    throw err;
+  }
+});
+
+// Danh sach phieu nhap/xuat CONG_NO cua 1 doi tac - dung cho combobox chon "phieu goc bi sai"
+// khi dieu chinh cong no (migration 016). Chi lay phieu cong_no vi chi phieu do moi phat sinh
+// dong debt_ledger dang can dieu chinh - phieu da_thanh_toan/da_thu_tien khong lien quan.
+router.get('/documents', (req, res) => {
+  const partnerId = Number(req.query.partner_id);
+  if (!partnerId) {
+    return res.status(400).json({ error: 'Thieu partner_id' });
+  }
+
+  const receipts = db
+    .prepare("SELECT id, code, created_at FROM stock_receipts WHERE partner_id = ? AND payment_status = 'cong_no' ORDER BY created_at DESC")
+    .all(partnerId)
+    .map((r) => ({ type: 'receipt', id: r.id, code: r.code, created_at: r.created_at }));
+
+  const issues = db
+    .prepare("SELECT id, code, created_at FROM stock_issues WHERE partner_id = ? AND payment_status = 'cong_no' ORDER BY created_at DESC")
+    .all(partnerId)
+    .map((i) => ({ type: 'issue', id: i.id, code: i.code, created_at: i.created_at }));
+
+  res.json({ documents: [...receipts, ...issues].sort((a, b) => (a.created_at < b.created_at ? 1 : -1)) });
+});
+
+// Dieu chinh cong no thu cong (migration 016, khac "Ghi nhan thanh toan"): sua so du sai (vd
+// nhap nham gia von phieu nhap) ma khong sua/xoa dong ledger goc - xem debt.service.js.
+router.post('/adjustment', (req, res) => {
+  const { partner_id: partnerId, type, amount, reference_type: referenceType, reference_id: referenceId, note } = req.body || {};
+
+  if (!partnerId) {
+    return res.status(400).json({ error: 'Thieu doi tac' });
+  }
+
+  try {
+    const entry = recordDebtAdjustment({
+      partnerId: Number(partnerId),
+      type,
+      amount: Number(amount),
+      referenceType: referenceType || null,
+      referenceId: referenceId ? Number(referenceId) : null,
+      note,
       createdBy: req.session.user.id,
     });
     res.status(201).json({ entry });

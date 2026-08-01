@@ -33,11 +33,12 @@ Phase 1, 1.5, 1.6, 2 (Kho), 3 (Công nợ), **4 (In phiếu & Báo cáo) đã ho
 - Frontend mới: `customers.html`/`.js` (Khách hàng), `customer-debts.html`/`.js` (Công nợ khách hàng), `customer-categories.html`/`.js` (Loại khách hàng, menu Cấu hình).
 - Frontend cập nhật: `partners.html`/`.js` (chỉ còn Nhà cung cấp), `debts.html`/`.js` (chỉ còn Công nợ NCC), `layout.js`/`icons.js` (menu mới, icon `truck`/`tag`), `reports.html` (Công nợ lên đầu), `print-issue.html`/`.js` (cột Mã sản phẩm, sửa lỗi xuống dòng ghi chú).
 - Test qua trình duyệt thật: CRUD Loại khách hàng, gán loại cho khách hàng, xác nhận dữ liệu công nợ NCC cũ không mất sau migration, menu sidebar đúng cấu trúc mới.
+- Sửa lỗi ô "Địa chỉ" không nhập được khi thêm nhanh khách hàng/NCC mới trên phiếu xuất/nhập kho (thiếu ô nhập + lỗi CSS `.form-row` đè lên thuộc tính `hidden`).
+- **"Điều chỉnh công nợ"** (migration `016_debt_adjustment.sql`, `debt_ledger.is_adjustment`): sửa số dư công nợ sai (vd nhập nhầm giá vốn phiếu nhập) mà không sửa/xóa phiếu gốc — ghi thêm 1 dòng `debt_ledger` (tăng hoặc giảm tùy chọn), tùy chọn liên kết về đúng phiếu nhập/xuất bị sai (validate đúng đối tác), bắt buộc ghi lý do. Có ở cả trang Công nợ NCC và Công nợ khách hàng (nút đầu trang + icon từng dòng), badge riêng "Điều chỉnh" trong lịch sử để không nhầm với thanh toán thật.
 
 ## Chưa bắt đầu / chưa xong
 
 - Phase 5 (Vận hành & Go-live) theo `docs/Plan.md` mục 4: cấu hình PM2, IP tĩnh, script backup `data.db`, `SESSION_SECRET` cố định.
-- Cơ chế phiếu điều chỉnh bù trừ hiện chỉ áp dụng cho tồn kho (`stock_receipts`/`stock_issues`) — chưa có cơ chế tương tự để điều chỉnh 1 dòng `debt_ledger` ghi sai. Chưa có yêu cầu cụ thể, để khi phát sinh nhu cầu thực tế.
 - Module Bán hàng/POS đầy đủ — cần buổi trao đổi yêu cầu nghiệp vụ riêng. Hiện chỉ có khung menu trống (`sales-settings.html`).
 - **Cần người dùng xác nhận lại**: nội dung "Ghi chú in phiếu" mặc định (seed từ migration `014`) có 1 dòng bị suy đoán lại vì ảnh mẫu gốc bị cắt ở lề ("Các sản phẩm thương hiệu khác bảo hành theo tiêu chuẩn của nhà sản xuất") — cần vào trang Thông tin công ty kiểm tra/sửa lại cho đúng nguyên văn nếu cần.
 - In phiếu hiện chỉ có cho **phiếu xuất kho** (đúng phạm vi PRD 4.5 "In phiếu xuất") — chưa có mẫu in cho phiếu nhập kho, chưa có yêu cầu cụ thể.

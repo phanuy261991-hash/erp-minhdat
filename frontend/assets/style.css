@@ -740,6 +740,15 @@ input:focus-visible {
   margin-bottom: 18px;
 }
 
+/* Dong giai thich ngan duoi tieu de modal (vd modal Dieu chinh cong no) - cung style voi
+   .setting-row-desc de dong bo giong chu phu toan bo he thong. */
+.modal-subtitle {
+  margin: -10px 0 18px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-muted-foreground);
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;

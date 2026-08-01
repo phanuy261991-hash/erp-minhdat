@@ -32,6 +32,23 @@ const paymentPartnerSelect = document.getElementById('payment-partner');
 const paymentAmountInput = document.getElementById('payment-amount');
 const paymentNoteInput = document.getElementById('payment-note');
 
+const btnAddAdjustment = document.getElementById('btn-add-adjustment');
+const adjustmentModal = document.getElementById('adjustment-modal');
+const adjustmentForm = document.getElementById('adjustment-form');
+const adjustmentFormErrorBox = document.getElementById('adjustment-form-error');
+const adjustmentFormErrorText = document.getElementById('adjustment-form-error-text');
+const btnCancelAdjustment = document.getElementById('btn-cancel-adjustment');
+const btnSubmitAdjustment = document.getElementById('btn-submit-adjustment');
+const adjustmentPartnerSelect = document.getElementById('adjustment-partner');
+const adjustmentTypeSelect = document.getElementById('adjustment-type');
+const adjustmentAmountInput = document.getElementById('adjustment-amount');
+const adjustmentNoteInput = document.getElementById('adjustment-note');
+const adjustmentDocSearchInput = document.getElementById('adjustment-doc-search');
+const adjustmentDocTypeInput = document.getElementById('adjustment-doc-type');
+const adjustmentDocIdInput = document.getElementById('adjustment-doc-id');
+const adjustmentDocSuggestions = document.getElementById('adjustment-doc-suggestions');
+let adjustableDocsCache = [];
+
 function formatMoney(value) {
   return Number(value).toLocaleString('vi-VN');
 }
@@ -74,6 +91,7 @@ function renderRow(item) {
     <td>
       <button type="button" class="icon-btn" data-action="history" data-id="${item.partner_id}" title="Xem lịch sử">${icon('eye', 14)}</button>
       <button type="button" class="icon-btn" data-action="pay" data-id="${item.partner_id}" title="Ghi nhận thanh toán">${icon('check', 14)}</button>
+      <button type="button" class="icon-btn" data-action="adjust" data-id="${item.partner_id}" title="Điều chỉnh công nợ">${icon('sliders', 14)}</button>
     </td>
   `;
   return tr;
@@ -149,9 +167,14 @@ async function openHistoryModal(partnerId) {
 
     historyTbody.innerHTML = entries
       .map((e) => {
-        const typeBadge = e.type === 'no'
-          ? '<span class="badge badge-inactive">Phát sinh nợ</span>'
-          : '<span class="badge badge-active">Thanh toán</span>';
+        let typeBadge;
+        if (e.is_adjustment) {
+          typeBadge = '<span class="badge badge-protected">Điều chỉnh</span>';
+        } else if (e.type === 'no') {
+          typeBadge = '<span class="badge badge-inactive">Phát sinh nợ</span>';
+        } else {
+          typeBadge = '<span class="badge badge-active">Thanh toán</span>';
+        }
         return `
           <tr>
             <td>${formatDate(e.created_at)}</td>
@@ -230,6 +253,129 @@ paymentForm.addEventListener('submit', async (event) => {
   }
 });
 
+// ----- Dieu chinh cong no (migration 016, khac "Ghi nhan thanh toan") -----
+
+function renderAdjustmentPartnerOptions() {
+  adjustmentPartnerSelect.innerHTML = summaryCache
+    .map((s) => `<option value="${s.partner_id}">${s.name} - còn ${formatMoney(s.balance)}</option>`)
+    .join('');
+}
+
+async function loadAdjustableDocs(partnerId) {
+  adjustableDocsCache = [];
+  if (!partnerId) return;
+  try {
+    const { documents } = await apiFetch(`/debts/documents?partner_id=${partnerId}`);
+    adjustableDocsCache = documents.map((d) => ({
+      ...d,
+      label: `${d.code} (${d.type === 'receipt' ? 'Phiếu nhập' : 'Phiếu xuất'})`,
+    }));
+  } catch (err) {
+    renderDebtsError(err.message);
+  }
+}
+
+function renderAdjustmentDocSuggestions(keyword) {
+  const kw = keyword.trim().toLowerCase();
+  if (!kw) {
+    adjustmentDocSuggestions.innerHTML = '';
+    return;
+  }
+
+  const matches = adjustableDocsCache.filter((d) => d.code.toLowerCase().includes(kw)).slice(0, 8);
+  if (matches.length === 0) {
+    adjustmentDocSuggestions.innerHTML = '<div class="combobox-empty">Không tìm thấy phiếu công nợ nào của đối tác này</div>';
+    return;
+  }
+
+  adjustmentDocSuggestions.innerHTML = matches
+    .map((d) => `<div class="combobox-option" data-type="${d.type}" data-id="${d.id}" data-label="${d.label}">${d.label}</div>`)
+    .join('');
+}
+
+function resetAdjustmentDocField() {
+  adjustmentDocSearchInput.value = '';
+  adjustmentDocTypeInput.value = '';
+  adjustmentDocIdInput.value = '';
+  adjustmentDocSuggestions.innerHTML = '';
+}
+
+adjustmentDocSearchInput.addEventListener('input', (event) => {
+  adjustmentDocTypeInput.value = '';
+  adjustmentDocIdInput.value = '';
+  renderAdjustmentDocSuggestions(event.target.value);
+});
+
+adjustmentDocSuggestions.addEventListener('click', (event) => {
+  const option = event.target.closest('.combobox-option');
+  if (!option) return;
+  adjustmentDocTypeInput.value = option.dataset.type;
+  adjustmentDocIdInput.value = option.dataset.id;
+  adjustmentDocSearchInput.value = option.dataset.label;
+  adjustmentDocSuggestions.innerHTML = '';
+});
+
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('#adjustment-doc-search') && !event.target.closest('#adjustment-doc-suggestions')) {
+    adjustmentDocSuggestions.innerHTML = '';
+  }
+});
+
+async function openAdjustmentModal(partnerId) {
+  renderAdjustmentPartnerOptions();
+  adjustmentForm.reset();
+  resetAdjustmentDocField();
+  adjustmentFormErrorBox.hidden = true;
+  if (partnerId) adjustmentPartnerSelect.value = partnerId;
+  adjustmentModal.hidden = false;
+  await loadAdjustableDocs(adjustmentPartnerSelect.value);
+}
+
+function closeAdjustmentModal() {
+  adjustmentModal.hidden = true;
+}
+
+btnAddAdjustment.addEventListener('click', () => openAdjustmentModal(null));
+btnCancelAdjustment.addEventListener('click', closeAdjustmentModal);
+adjustmentModal.addEventListener('click', (event) => {
+  if (event.target === adjustmentModal) closeAdjustmentModal();
+});
+
+adjustmentPartnerSelect.addEventListener('change', () => {
+  resetAdjustmentDocField();
+  loadAdjustableDocs(adjustmentPartnerSelect.value);
+});
+
+adjustmentForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  adjustmentFormErrorBox.hidden = true;
+  btnSubmitAdjustment.disabled = true;
+  btnSubmitAdjustment.textContent = 'Đang ghi...';
+
+  try {
+    const body = {
+      partner_id: Number(adjustmentPartnerSelect.value),
+      type: adjustmentTypeSelect.value,
+      amount: Number(adjustmentAmountInput.value),
+      note: adjustmentNoteInput.value.trim(),
+    };
+    if (adjustmentDocTypeInput.value && adjustmentDocIdInput.value) {
+      body.reference_type = adjustmentDocTypeInput.value;
+      body.reference_id = Number(adjustmentDocIdInput.value);
+    }
+
+    await apiFetch('/debts/adjustment', { method: 'POST', body: JSON.stringify(body) });
+    closeAdjustmentModal();
+    await loadSummary();
+  } catch (err) {
+    adjustmentFormErrorText.textContent = err.message;
+    adjustmentFormErrorBox.hidden = false;
+  } finally {
+    btnSubmitAdjustment.disabled = false;
+    btnSubmitAdjustment.textContent = 'Ghi điều chỉnh';
+  }
+});
+
 debtsTbody.addEventListener('click', (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
@@ -239,6 +385,8 @@ debtsTbody.addEventListener('click', (event) => {
     openHistoryModal(id);
   } else if (action === 'pay') {
     openPaymentModal(id);
+  } else if (action === 'adjust') {
+    openAdjustmentModal(id);
   }
 });
 
@@ -247,6 +395,7 @@ debtsTbody.addEventListener('click', (event) => {
   if (!currentUser) return;
 
   btnAddPayment.innerHTML = `${icon('plus', 16)} Ghi nhận thanh toán`;
+  btnAddAdjustment.innerHTML = `${icon('sliders', 16)} Điều chỉnh công nợ`;
   document.querySelector('.search-box .input-icon').innerHTML = icon('search', 16);
   document.querySelectorAll('.alert-icon-slot').forEach((slot) => {
     slot.innerHTML = icon('alertCircle', 16);

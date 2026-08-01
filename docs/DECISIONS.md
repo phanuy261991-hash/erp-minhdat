@@ -2,6 +2,17 @@
 
 > Ghi lại các quyết định đã chốt để không thảo luận lại trừ khi có lý do mới. Mỗi mục ghi ngày chốt.
 
+## 2026-08-01 — "Điều chỉnh công nợ": sửa số dư sai không sửa/xóa phiếu gốc
+
+**Bối cảnh**: người dùng hỏi cách xử lý khi nhập sai giá vốn trên phiếu nhập làm công nợ NCC bị sai theo. Cơ chế "phiếu điều chỉnh bù trừ" có sẵn (migration `010`) chỉ sửa được **tồn kho** (vì `stock_movements` có 2 chiều `in`/`out` triệt tiêu nhau) — không sửa được **công nợ**, vì `recordDebtFromDocument()` luôn ghi `type='no'` (tăng nợ) bất kể là phiếu nhập hay xuất; một phiếu bù trừ (dù là nhập hay xuất) sẽ **cộng thêm nợ** thay vì trừ, làm sai lệch nặng hơn.
+
+**Quyết định**: xây riêng cơ chế "Điều chỉnh công nợ" (khác "Ghi nhận thanh toán" vốn không gắn với phiếu cụ thể, `reference_type='payment'`):
+- Migration `016`: thêm `debt_ledger.is_adjustment` (cờ, không đổi CHECK constraint nào) — phân biệt dòng điều chỉnh thủ công với dòng tự động (`no`) và thanh toán thật (`tra`, `reference_type='payment'`).
+- Cho phép chọn chiều điều chỉnh (`type='no'` tăng hoặc `'tra'` giảm) tùy theo sai lệch thực tế, **tùy chọn** liên kết về đúng phiếu nhập/xuất bị sai (`reference_type`/`reference_id`, tái dùng đúng 2 giá trị `receipt`/`issue` đã có, không thêm giá trị CHECK mới) để đối chiếu — **bắt buộc validate phiếu đó thuộc đúng đối tác** đang điều chỉnh, tránh liên kết nhầm.
+- **Bắt buộc ghi lý do** (`note`) — khác `payment.note` vốn không bắt buộc, vì đây là sửa sai sót, cần giữ vết rõ ràng cho việc đối chiếu sau này.
+- Route `GET /api/debts/documents?partner_id=` (mới) thay vì tái dùng `/api/stock-receipts`/`/api/stock-issues` cho combobox chọn phiếu gốc — 2 route đó đòi quyền `kho`, trong khi trang Công nợ chỉ đòi quyền `cong_no` (vd vai trò Kế toán không có `kho`), tái dùng sẽ gây 403 sai.
+- Không thêm bảng/route riêng cho "khách hàng" vs "NCC" — dùng chung `debt.service.js`/`debts.routes.js`, chỉ khác UI (`debts.html` vs `customer-debts.html`, đã tách từ trước).
+
 ## 2026-08-01 — Tách Khách hàng khỏi Đối tác, thêm "Loại khách hàng"
 
 **Bối cảnh**: người dùng phản ánh chưa có "quản lý khách hàng và công nợ khách hàng" — thực ra đã có (trang Đối tác/Công nợ gộp chung NCC+KH), nhưng người dùng muốn tách riêng hẳn để rõ ràng hơn, và cần phân loại khách hàng (vd VIP, Đại lý). Đã hỏi lại 3 câu hỏi trước khi code (theo CLAUDE.md — thay đổi kiến trúc/schema phải hỏi trước):
