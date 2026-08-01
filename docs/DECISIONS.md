@@ -2,6 +2,20 @@
 
 > Ghi lại các quyết định đã chốt để không thảo luận lại trừ khi có lý do mới. Mỗi mục ghi ngày chốt.
 
+## 2026-08-01 — Phase 5: chỉ làm phần độc lập máy chủ trên máy dev, để lại phần gắn máy thật
+
+**Bối cảnh**: người dùng yêu cầu bắt đầu Phase 5 (Vận hành & Go-live). Kiểm tra `ipconfig` trên máy đang thao tác phát hiện đây là máy cá nhân/dev (card Wi-Fi, IP do DHCP cấp `192.168.3.14`, có adapter OpenVPN) — không phải máy chủ sẽ đặt cố định trong văn phòng theo đúng mô hình PRD ("một máy chủ chạy 24/7, các máy khác trong LAN truy cập qua IP nội bộ"). Đã hỏi lại và người dùng xác nhận **đây chỉ là máy dev**, việc đặt IP tĩnh/PM2 startup thật sẽ làm sau trên đúng máy chủ.
+
+**Quyết định phạm vi**: tách Phase 5 thành 2 nhóm việc:
+1. **Làm ngay, không phụ thuộc máy cụ thể** (code + tài liệu): `ecosystem.config.js`, `scripts/backup.js` + UI cấu hình đường dẫn backup, `docs/DEPLOY.md` (quy trình đầy đủ, viết sẵn để làm theo khi có máy chủ thật).
+2. **Để lại khi có máy chủ thật**: đặt IP tĩnh, `pm2 start`/`pm2-startup install`/`pm2 save`, đặt Windows Task Scheduler chạy backup, test LAN nhiều máy, go-live.
+
+**Các quyết định kỹ thuật cụ thể khi hiện thực hóa nhóm 1**:
+- **Đường dẫn backup do người dùng tự chọn qua UI** (`warehouse_settings.backup_path`, migration `018`), không hardcode cố định trong `scripts/backup.js` — theo đúng yêu cầu người dùng ("cho phép người dùng chọn đường dẫn chứa file backup trên máy" khi được hỏi ở bước trước, xem lịch sử hội thoại). Trang "Cấu hình kho" có thêm nút "Backup ngay" để xác nhận cấu hình đúng ngay lập tức, không phải đợi đến giờ chạy lịch tự động mới biết có lỗi.
+- **PM2 trên Windows dùng thêm gói `pm2-windows-startup`** — lệnh `pm2 startup` chính thức của PM2 chỉ hỗ trợ Linux/macOS (dùng systemd/launchd), không có hiệu lực trên Windows. `docs/DEPLOY.md` ghi rõ điều này để tránh làm theo hướng dẫn PM2 gốc không áp dụng được.
+- **`SESSION_SECRET` không đặt trong `ecosystem.config.js`** (file commit vào git) — hướng dẫn đặt qua `setx` (biến môi trường hệ thống Windows) trong `docs/DEPLOY.md`, đúng nguyên tắc "không hardcode thông tin bí mật" của `CLAUDE.md`.
+- **Backup dùng `wal_checkpoint(TRUNCATE)` trước khi copy file** — vì dự án bắt buộc WAL mode, dữ liệu mới nhất có thể còn nằm trong file `data.db-wal` chưa được ghi vào `data.db` chính; nếu copy trực tiếp không checkpoint có thể mất giao dịch gần nhất trong bản backup.
+
 ## 2026-08-01 — Module "Bảo hành" đổi từ trang riêng sang modal, vẽ lại card theo mẫu tham khảo
 
 **Bối cảnh**: ngay sau khi làm xong module Bảo hành theo thiết kế "1 trang `warranty-detail.html` dùng chung cho thêm mới/sửa" (xem quyết định gốc bên dưới), người dùng phản hồi 3 điểm: (1) ô "Thời gian bảo hành" hiển thị mất cân đối, (2) muốn phần nhập liệu là **popup** giống mọi trang khác trong hệ thống thay vì trang riêng, (3) nghi ngờ tương tác 2 chiều Thời gian bảo hành ↔ Ngày hết hạn không hoạt động. Đã sửa cả 3:

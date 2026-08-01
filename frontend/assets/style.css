@@ -944,6 +944,33 @@ input:focus-visible {
   margin-top: 0;
 }
 
+/* Nut "Backup ngay" (Cau hinh kho, Phase 5) - dat canh o duong dan, khong o cuoi form nhu
+   .settings-actions vi day la hanh dong phu (kiem tra ngay), khong phai luu cau hinh chinh. */
+.settings-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.settings-row-actions .btn-secondary {
+  width: auto;
+  margin-top: 0;
+}
+
+.backup-result-text {
+  font-size: 13px;
+  color: var(--color-muted-foreground);
+}
+
+.backup-result-text--success {
+  color: var(--color-accent);
+}
+
+.backup-result-text--error {
+  color: var(--color-destructive);
+}
+
 /* ---- Danh sach nhap lap lai (vd nhieu so dien thoai) - moi dong 1 input + nut xoa,
    nut them dang duong vien net dut de phan biet voi input that. ---- */
 

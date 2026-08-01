@@ -2,6 +2,18 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-01 (Bắt đầu Phase 5 — PM2 config, backup data.db, tài liệu triển khai)
+
+> Người dùng yêu cầu bắt đầu Phase 5. Phát hiện máy đang làm việc là máy dev (Wi-Fi, có VPN), không phải máy chủ thật sẽ đặt trong văn phòng — đã hỏi lại và người dùng xác nhận: các bước gắn với 1 máy chủ cụ thể (IP tĩnh, `pm2 startup`, go-live) để lại làm sau; hôm nay chỉ làm phần độc lập với máy (code, cấu hình, tài liệu quy trình).
+
+- `ecosystem.config.js` (mới, gốc dự án): cấu hình PM2 (`pm2 start ecosystem.config.js`) — **không** ghi `SESSION_SECRET` trong file (file này commit vào git) — đọc từ biến môi trường hệ thống đã đặt trước.
+- Migration `018_backup_path.sql`: `warehouse_settings.backup_path` — theo yêu cầu người dùng, đường dẫn lưu backup do người dùng **tự chọn qua giao diện** (không hardcode cố định trong script).
+- `scripts/backup.js` (mới): đọc `backup_path` từ DB, `wal_checkpoint(TRUNCATE)` trước khi copy (đảm bảo bản backup có đủ dữ liệu mới nhất, không thiếu phần còn nằm trong file `-wal`), copy `data.db` kèm timestamp, tự xóa bản backup cũ hơn 14 ngày. Dùng được qua CLI (`npm run backup`, mới thêm vào `package.json`) hoặc gọi lại từ API.
+- `backend/routes/warehouseSettings.routes.js`: thêm `TEXT_KEYS` (cho phép `backup_path` là chuỗi tự do, khác `BOOLEAN_KEYS`/`ENUM_KEYS` sẵn có) và `POST /warehouse-settings/backup` ("Backup ngay", quyền `cau_hinh`) — gọi lại `scripts/backup.js`, trả về đường dẫn file vừa tạo hoặc lỗi rõ ràng nếu chưa cấu hình đường dẫn.
+- `frontend/warehouse-settings.html`/`.js`: thêm mục "Sao lưu dữ liệu" (ô nhập đường dẫn + nút "Backup ngay") — bấm "Backup ngay" tự lưu đường dẫn hiện tại rồi backup ngay lập tức, tránh trường hợp bấm backup nhưng đường dẫn mới gõ chưa được lưu.
+- `docs/DEPLOY.md` (mới) — quy trình triển khai đầy đủ, khác `docs/DEMO.md` (chỉ để test nhanh): IP tĩnh (2 cách, khuyến nghị DHCP reservation trên router), Windows Firewall, đặt `SESSION_SECRET` cố định qua `setx` (giải thích rõ hệ quả nếu không đặt: mất session mỗi lần restart), PM2 + **`pm2-windows-startup`** (vì `pm2 startup` chính thức không hỗ trợ Windows), Windows Task Scheduler cho backup hàng ngày, checklist go-live đầy đủ. `CLAUDE.md` bổ sung link tới tài liệu này.
+- Test qua trình duyệt thật (đăng nhập admin): nhập đường dẫn backup (thư mục scratchpad), bấm "Backup ngay" → tạo đúng file `data-<timestamp>.db` trên đĩa (đã xác nhận bằng lệnh `ls` ngoài ứng dụng); đăng nhập tài khoản Kế toán (không có quyền `cau_hinh`) gọi thẳng `POST /api/warehouse-settings/backup` → bị chặn đúng 403.
+
 ## 2026-08-01 (Làm lại trang Tổng quan — dữ liệu thật + thiết kế sinh động hơn)
 
 > Trang Tổng quan trước đó chỉ là khung tĩnh: 3 stat-card ghi cứng "--", không có code nào gọi API để điền số liệu (`Công nợ phải thu`/`Phiếu hôm nay` chưa từng hoạt động). Người dùng yêu cầu đổi nội dung 3 card thành Sản phẩm/Khách hàng/Nhà cung cấp lấy dữ liệu thật, thêm lời chào động theo giờ hệ thống + họ tên tài khoản; sau đó yêu cầu dùng skill `ui-ux-pro-max` thiết kế lại cho sinh động/hiện đại hơn.

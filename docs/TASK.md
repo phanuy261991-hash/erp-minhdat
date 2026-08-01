@@ -155,9 +155,16 @@
 
 ## Phase 5 — Vận hành & Go-live
 
-- [ ] Cấu hình PM2 (`pm2 start`, `pm2 startup`, `pm2 save`)
-- [ ] Đặt IP tĩnh/DHCP reservation cho máy chủ
-- [ ] Viết script backup `data.db` định kỳ
+> Bắt đầu 2026-08-01 trên máy dev (không phải máy chủ thật — xem `docs/DECISIONS.md`) — chỉ làm được phần độc lập với máy cụ thể, các bước còn lại để khi triển khai lên đúng máy chủ, xem quy trình đầy đủ `docs/DEPLOY.md`.
+
+- [x] `ecosystem.config.js` — cấu hình PM2 sẵn dùng, không hardcode `SESSION_SECRET`
+- [x] Migration `018_backup_path.sql` + `scripts/backup.js` (checkpoint WAL, copy `data.db`, tự dọn bản backup cũ >14 ngày)
+- [x] `POST /api/warehouse-settings/backup` ("Backup ngay") + UI cấu hình đường dẫn backup trong "Cấu hình kho" (người dùng tự chọn đường dẫn, không hardcode)
+- [x] `docs/DEPLOY.md` (mới) — quy trình đầy đủ: IP tĩnh, Windows Firewall, `SESSION_SECRET`, PM2 + `pm2-windows-startup` (Windows không hỗ trợ `pm2 startup` chính thức), Task Scheduler cho backup, checklist go-live
+- [x] Test qua trình duyệt thật: "Backup ngay" tạo đúng file trên đĩa; chặn đúng 403 khi gọi API không có quyền `cau_hinh`
+- [ ] Cấu hình PM2 thật (`pm2 start`, `pm2-startup install`, `pm2 save`) — trên máy chủ thật
+- [ ] Đặt IP tĩnh/DHCP reservation cho máy chủ thật
+- [ ] Đặt Windows Task Scheduler chạy backup hàng ngày trên máy chủ thật
 - [ ] Test toàn bộ luồng với dữ liệu thật, đào tạo người dùng
 - [ ] Go-live, theo dõi 1 tuần đầu
 

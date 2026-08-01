@@ -36,7 +36,8 @@ project-root/
 │  │     ├─ 014_company_print_note.sql (đã có) company_settings.print_note (ghi chú hiển thị khi in phiếu xuất kho)
 │  │     ├─ 015_customer_categories.sql (đã có) bảng customer_categories (loại khách hàng, kem han muc cong no) + partners.category_id
 │  │     ├─ 016_debt_adjustment.sql (đã có, 2026-08-01) debt_ledger.is_adjustment ("Điều chỉnh công nợ")
-│  │     └─ 017_warranties.sql (đã có, 2026-08-01) bảng warranties (Bảo hành, gắn khách hàng)
+│  │     ├─ 017_warranties.sql (đã có, 2026-08-01) bảng warranties (Bảo hành, gắn khách hàng)
+│  │     └─ 018_backup_path.sql (đã có, 2026-08-01) warehouse_settings.backup_path (Phase 5)
 │  ├─ middleware/
 │  │  ├─ auth.js                       (đã có) requireAuth (kiểm tra session)
 │  │  └─ requirePermission.js          (đã có) requirePermission(module) + requireAnyPermission([module,...])
@@ -109,9 +110,10 @@ project-root/
 │     ├─ reports.js                    (đã có) logic trang reports.html (bieu do cot SVG tu ve)
 │     └─ fonts/                        (đã có) file .woff2 host offline + fonts.css
 ├─ data/
-│  └─ data.db                          (đã có) file SQLite, backup định kỳ (Phase 5, chưa có script)
-└─ scripts/
-   └─ backup.js hoặc backup.sh         Phase 5, chưa tạo — copy data.db sang nơi lưu trữ khác theo lịch
+│  └─ data.db                          (đã có) file SQLite
+├─ scripts/
+│  └─ backup.js                        (đã có, 2026-08-01) copy data.db sang backup_path (warehouse_settings), tự xóa bản cũ >14 ngày — chạy tay (`npm run backup`) hoặc qua Windows Task Scheduler (xem docs/DEPLOY.md)
+└─ ecosystem.config.js                 (đã có, 2026-08-01) cấu hình PM2 (Phase 5) — `pm2 start ecosystem.config.js`
 ```
 
 ## 2. Database Schema chi tiết
@@ -122,7 +124,7 @@ project-root/
 | `roles` | id PK, name, is_protected, created_at | is_protected=1 cho vai trò Admin — không cho sửa tên/xóa |
 | `role_permissions` | role_id FK(roles), module_key, PRIMARY KEY(role_id, module_key) | 1 dòng = 1 module vai trò đó được truy cập; module_key là hằng số cố định trong code (không phải bảng riêng) |
 | `company_settings` | id PK (CHECK id=1), company_name, address, tax_code, email, website, phones, bank_name, bank_branch, bank_account_number, bank_account_holder, print_note, updated_at | chỉ 1 dòng duy nhất; `phones` lưu mảng JSON dạng text (cho nhập từ 2 số trở lên) — không tách bảng riêng vì luôn gắn 1-1 với dòng duy nhất này; `print_note` (migration 014, Phase 4) — ghi chú hiển thị dưới bảng kê khi in phiếu xuất kho |
-| `warehouse_settings` | key PK, value, updated_at | dạng key-value, mở rộng dần; key: `allow_negative_stock`, `costing_method` (`binh_quan_gia_quyen` mặc định hoặc `fifo`) |
+| `warehouse_settings` | key PK, value, updated_at | dạng key-value, mở rộng dần; key: `allow_negative_stock`, `costing_method` (`binh_quan_gia_quyen` mặc định hoặc `fifo`), `backup_path` (đường dẫn lưu backup `data.db`, Phase 5, 2026-08-01 — để trống nếu chưa cấu hình) |
 | `products` | id PK, code, name, unit, cost_price, sale_price, low_stock_threshold, is_active, created_at | tồn kho không lưu ở đây; `cost_price` là giá tham chiếu nhập tay, giá vốn thực tế tính từ `stock_lots` (xem `costing.service.js`); `is_active=0` = vô hiệu hóa (vẫn hiện, không chọn được khi lập phiếu mới) |
 | `partners` | id PK, type, name, phone, address, category_id, created_at | type ∈ {nha_cung_cap, khach_hang}; `category_id` FK(customer_categories) nullable — chỉ có ý nghĩa khi type='khach_hang' (validate ở API, không CHECK ở DB), 2026-08-01 |
 | `customer_categories` | id PK, name, debt_limit, created_at | migration `015`, 2026-08-01 — danh mục "Loại khách hàng" (name UNIQUE), `debt_limit` nullable = không giới hạn, chỉ dùng để CẢNH BÁO trên trang Công nợ khách hàng (không chặn cứng) |
@@ -173,6 +175,7 @@ Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân qu
 | PUT | `/api/company-settings` | `cau_hinh` | Cập nhật thông tin công ty |
 | GET | `/api/warehouse-settings` | Đã đăng nhập | Cấu hình kho hiện tại (vd `allow_negative_stock`) |
 | PUT | `/api/warehouse-settings` | `cau_hinh` | Cập nhật cấu hình kho |
+| POST | `/api/warehouse-settings/backup` | `cau_hinh` | "Backup ngay" (Phase 5, 2026-08-01) — chạy `scripts/backup.js` ngay lập tức, trả về đường dẫn file backup vừa tạo |
 | GET | `/api/products` | Đã đăng nhập | Danh mục + tồn kho hiện tại |
 | POST | `/api/products` | `kho` | Thêm sản phẩm |
 | PUT | `/api/products/:id` | `kho` | Sửa sản phẩm (ghi `product_change_log` nếu có thay đổi) |
@@ -284,9 +287,19 @@ Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân qu
 - [x] Test qua trình duyệt thật: trang in hiển thị đúng đầy đủ (công ty/khách hàng/chiết khấu/ghi chú), chặn đúng khi chưa đăng nhập; báo cáo khớp số liệu thật, tooltip đúng; phân quyền `bao_cao` chặn đúng UI+API
 
 ### Phase 5 — Vận hành & Go-live
-- [ ] Cấu hình PM2 (`pm2 start`, `pm2 startup`, `pm2 save`)
-- [ ] Đặt IP tĩnh/DHCP reservation cho máy chủ
-- [ ] Viết script backup `data.db` định kỳ (cron/Task Scheduler)
+
+> Cập nhật 2026-08-01: bắt đầu Phase 5 trên máy dev (không phải máy chủ thật) — chỉ chuẩn bị được phần code/cấu hình độc lập với máy cụ thể (backup, PM2 config, tài liệu quy trình); các bước gắn với máy chủ thật (IP tĩnh, `pm2 startup`, test LAN, go-live) để lại làm khi triển khai lên đúng máy chủ, xem `docs/DEPLOY.md` (mới) — hướng dẫn đầy đủ từng bước.
+
+- [x] `ecosystem.config.js` (gốc dự án) — cấu hình PM2 sẵn dùng (`pm2 start ecosystem.config.js`), không hardcode `SESSION_SECRET` trong file (đọc từ biến môi trường hệ thống)
+- [x] Migration `018_backup_path.sql`: `warehouse_settings.backup_path` (đường dẫn lưu backup, người dùng tự chọn qua UI thay vì hardcode cố định)
+- [x] `scripts/backup.js`: checkpoint WAL trước khi copy `data.db`, tự xóa bản backup cũ hơn 14 ngày; dùng được cả qua CLI (`npm run backup`) lẫn gọi lại từ API
+- [x] `backend/routes/warehouseSettings.routes.js`: `POST /warehouse-settings/backup` ("Backup ngay", quyền `cau_hinh`) + `TEXT_KEYS` cho `backup_path`
+- [x] Frontend `warehouse-settings.html`/`.js`: mục "Sao lưu dữ liệu" — ô nhập đường dẫn + nút "Backup ngay"
+- [x] `docs/DEPLOY.md` (mới): quy trình đầy đủ IP tĩnh, Windows Firewall, `SESSION_SECRET`, PM2 + `pm2-windows-startup` (Windows không hỗ trợ `pm2 startup` chính thức), Task Scheduler cho backup, checklist go-live
+- [x] Test qua trình duyệt thật: nhập đường dẫn backup, bấm "Backup ngay" → tạo đúng file trên đĩa; tài khoản không có quyền `cau_hinh` gọi thẳng API bị chặn 403
+- [ ] Đặt IP tĩnh/DHCP reservation cho máy chủ thật (chưa làm — cần đúng máy chủ, xem `docs/DEPLOY.md` mục 1)
+- [ ] Chạy `pm2 start`/`pm2-startup install`/`pm2 save` trên máy chủ thật (chưa làm — xem `docs/DEPLOY.md` mục 3–4)
+- [ ] Đặt Windows Task Scheduler chạy backup hàng ngày trên máy chủ thật (chưa làm — xem `docs/DEPLOY.md` mục 5)
 - [ ] Test toàn bộ luồng với dữ liệu thật, đào tạo người dùng
 - [ ] Go-live, theo dõi 1 tuần đầu để chỉnh sửa
 

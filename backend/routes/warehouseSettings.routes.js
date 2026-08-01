@@ -5,6 +5,7 @@
 const express = require('express');
 const db = require('../db/database');
 const { requirePermission } = require('../middleware/requirePermission');
+const { runBackup, BackupError } = require('../../scripts/backup');
 
 const router = express.Router();
 
@@ -15,6 +16,8 @@ const BOOLEAN_KEYS = ['allow_negative_stock'];
 const ENUM_KEYS = {
   costing_method: ['binh_quan_gia_quyen', 'fifo'],
 };
+// Key dang van ban tu do (Phase 5: duong dan thu muc luu backup data.db, xem backup.js).
+const TEXT_KEYS = ['backup_path'];
 
 function serializeSettings(rows) {
   const settings = {};
@@ -33,7 +36,7 @@ router.put('/', requirePermission('cau_hinh'), (req, res) => {
   const body = req.body || {};
   const keys = Object.keys(body);
 
-  const invalidKeys = keys.filter((key) => !BOOLEAN_KEYS.includes(key) && !ENUM_KEYS[key]);
+  const invalidKeys = keys.filter((key) => !BOOLEAN_KEYS.includes(key) && !ENUM_KEYS[key] && !TEXT_KEYS.includes(key));
   if (invalidKeys.length > 0) {
     return res.status(400).json({ error: `Cau hinh khong hop le: ${invalidKeys.join(', ')}` });
   }
@@ -54,6 +57,20 @@ router.put('/', requirePermission('cau_hinh'), (req, res) => {
 
   const rows = db.prepare('SELECT key, value FROM warehouse_settings').all();
   res.json({ settings: serializeSettings(rows) });
+});
+
+// Backup ngay (Phase 5) - dung nut "Backup ngay" tren giao dien de nguoi dung xac nhan duong
+// dan da cau hinh dung, khong can doi lich Windows Task Scheduler chay tu dong (xem scripts/backup.js).
+router.post('/backup', requirePermission('cau_hinh'), (req, res) => {
+  try {
+    const destPath = runBackup();
+    res.json({ ok: true, path: destPath });
+  } catch (err) {
+    if (err instanceof BackupError) {
+      return res.status(400).json({ error: err.message });
+    }
+    throw err;
+  }
 });
 
 module.exports = router;

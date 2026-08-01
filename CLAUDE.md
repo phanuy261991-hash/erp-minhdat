@@ -80,5 +80,6 @@ Tồn kho sản phẩm và số dư công nợ không lưu dưới dạng 1 cộ
 - [docs/CHANGELOG.md](docs/CHANGELOG.md) — lịch sử thay đổi.
 - [docs/DECISIONS.md](docs/DECISIONS.md) — các quyết định kiến trúc/nghiệp vụ đã chốt.
 - [docs/DEMO.md](docs/DEMO.md) — hướng dẫn chạy demo trên máy, kể cả mô hình nhiều máy trong LAN.
+- [docs/DEPLOY.md](docs/DEPLOY.md) — quy trình triển khai thật lên máy chủ chính thức (Phase 5: IP tĩnh, PM2, SESSION_SECRET, backup tự động).
 - [docs/DESIGN-SYSTEM.md](docs/DESIGN-SYSTEM.md) — chuẩn thiết kế giao diện (màu, font, style, icon). Mọi trang UI mới phải dùng skill `ui-ux-pro-max` và tuân theo tài liệu này để đồng bộ.
 - [docs/handoff/](docs/handoff/) — các file handoff giữa các phiên làm việc (chỉ tạo khi có yêu cầu).

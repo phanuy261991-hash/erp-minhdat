@@ -11,6 +11,9 @@ const settingsErrorText = document.getElementById('settings-error-text');
 const settingsSuccessBox = document.getElementById('settings-success');
 const allowNegativeStockToggle = document.getElementById('allow_negative_stock');
 const costingMethodGroup = document.getElementById('costing-method-group');
+const backupPathInput = document.getElementById('backup_path');
+const btnRunBackup = document.getElementById('btn-run-backup');
+const backupResultText = document.getElementById('backup-result-text');
 
 function getCostingMethod() {
   const checked = costingMethodGroup.querySelector('input[name="costing_method"]:checked');
@@ -23,6 +26,7 @@ async function loadSettings() {
     allowNegativeStockToggle.checked = Boolean(settings.allow_negative_stock);
     const target = costingMethodGroup.querySelector(`input[value="${settings.costing_method}"]`);
     if (target) target.checked = true;
+    backupPathInput.value = settings.backup_path || '';
   } catch (err) {
     settingsErrorText.textContent = err.message;
     settingsErrorBox.hidden = false;
@@ -42,6 +46,7 @@ warehouseForm.addEventListener('submit', async (event) => {
       body: JSON.stringify({
         allow_negative_stock: allowNegativeStockToggle.checked,
         costing_method: getCostingMethod(),
+        backup_path: backupPathInput.value.trim(),
       }),
     });
     settingsSuccessBox.hidden = false;
@@ -51,6 +56,43 @@ warehouseForm.addEventListener('submit', async (event) => {
   } finally {
     btnSaveWarehouse.disabled = false;
     btnSaveWarehouse.textContent = 'Lưu thay đổi';
+  }
+});
+
+// "Backup ngay" - luu duong dan hien tai (tranh backup nham duong dan cu chua luu) roi goi
+// POST /warehouse-settings/backup ngay lap tuc, khong doi lich Windows Task Scheduler - dung
+// de nguoi dung xac nhan duong dan da cau hinh dung (xem scripts/backup.js).
+btnRunBackup.addEventListener('click', async () => {
+  backupResultText.textContent = '';
+  backupResultText.className = 'backup-result-text';
+
+  if (!backupPathInput.value.trim()) {
+    backupResultText.textContent = 'Vui lòng nhập thư mục lưu backup trước.';
+    backupResultText.classList.add('backup-result-text--error');
+    return;
+  }
+
+  btnRunBackup.disabled = true;
+  btnRunBackup.textContent = 'Đang backup...';
+
+  try {
+    await apiFetch('/warehouse-settings', {
+      method: 'PUT',
+      body: JSON.stringify({
+        allow_negative_stock: allowNegativeStockToggle.checked,
+        costing_method: getCostingMethod(),
+        backup_path: backupPathInput.value.trim(),
+      }),
+    });
+    const { path } = await apiFetch('/warehouse-settings/backup', { method: 'POST' });
+    backupResultText.textContent = `Đã backup thành công: ${path}`;
+    backupResultText.classList.add('backup-result-text--success');
+  } catch (err) {
+    backupResultText.textContent = err.message;
+    backupResultText.classList.add('backup-result-text--error');
+  } finally {
+    btnRunBackup.disabled = false;
+    btnRunBackup.innerHTML = `${icon('arrowDownTray', 16)} Backup ngay`;
   }
 });
 
@@ -64,6 +106,7 @@ warehouseForm.addEventListener('submit', async (event) => {
   document.querySelectorAll('.alert-icon-success-slot').forEach((slot) => {
     slot.innerHTML = icon('check', 16);
   });
+  btnRunBackup.innerHTML = `${icon('arrowDownTray', 16)} Backup ngay`;
 
   await loadSettings();
 })();

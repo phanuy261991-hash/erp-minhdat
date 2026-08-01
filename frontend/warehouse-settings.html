@@ -64,6 +64,18 @@
           </div>
         </div>
 
+        <div class="settings-section">
+          <h3 class="settings-section-title">Sao lưu dữ liệu</h3>
+          <div class="form-field">
+            <label for="backup_path">Thư mục lưu file backup (nên chọn ổ đĩa/thư mục khác ổ chứa dự án)</label>
+            <input type="text" id="backup_path" placeholder="vd: D:\Backups\ERP_MinhDat" autocomplete="off" />
+          </div>
+          <div class="settings-row-actions">
+            <button type="button" id="btn-run-backup" class="btn-secondary"></button>
+            <span id="backup-result-text" class="backup-result-text"></span>
+          </div>
+        </div>
+
         <div class="settings-actions">
           <button type="submit" id="btn-save-warehouse" class="btn-primary">Lưu thay đổi</button>
         </div>
