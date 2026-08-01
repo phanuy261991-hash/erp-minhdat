@@ -78,8 +78,7 @@ project-root/
 │  ├─ customer-debts.html              (đã có, 2026-08-01) Công nợ khách hàng, cảnh báo khi vượt hạn mức Loại khách hàng
 │  ├─ customer-categories.html         (đã có, 2026-08-01) CRUD "Loại khách hàng", thuộc menu Cấu hình
 │  ├─ customer-detail.html             (đã có, 2026-08-01, mới) chi tiết khách hàng + the Bảo hành
-│  ├─ warranties.html                  (đã có, 2026-08-01) danh sách Bảo hành
-│  ├─ warranty-detail.html             (đã có, 2026-08-01) thêm mới/xem/sửa Bảo hành (dùng chung 1 trang)
+│  ├─ warranties.html                  (đã có, 2026-08-01) danh sách Bảo hành + modal thêm mới/sửa
 │  ├─ reports.html                     (đã có) Phase 4 — ton kho + mua/ban theo thang (bieu do SVG tu ve) + cong no tong hop
 │  └─ assets/
 │     ├─ style.css                     (đã có) design system (xem docs/DESIGN-SYSTEM.md)
@@ -105,7 +104,6 @@ project-root/
 │     ├─ customer-categories.js        (đã có, 2026-08-01) logic trang customer-categories.html
 │     ├─ customer-detail.js            (đã có, 2026-08-01) logic trang customer-detail.html
 │     ├─ warranties.js                 (đã có, 2026-08-01) logic trang warranties.html
-│     ├─ warranty-detail.js            (đã có, 2026-08-01) logic trang warranty-detail.html
 │     ├─ warranty-calc.js              (đã có, 2026-08-01) hàm dùng chung: tính 2 chiều thời gian bảo hành ↔ ngày hết hạn, số ngày còn lại
 │     ├─ print-issue.js                (đã có) logic trang print-issue.html
 │     ├─ reports.js                    (đã có) logic trang reports.html (bieu do cot SVG tu ve)

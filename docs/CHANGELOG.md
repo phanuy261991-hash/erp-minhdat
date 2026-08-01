@@ -2,6 +2,17 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-01 (Bảo hành: đổi trang riêng thành modal, vẽ lại card theo mẫu, sửa 2 card dính nhau)
+
+> Phản hồi ngay sau khi làm xong module Bảo hành: ô "Thời gian bảo hành" mất cân đối, muốn form nhập là popup thay vì trang riêng, nghi ngờ tương tác 2 chiều không hoạt động. Nhân tiện: card Bảo hành trên `customer-detail.html` cần vẽ lại theo mẫu ảnh tham khảo người dùng gửi (dạng card danh sách công cụ nội bộ), và 2 card "Thông tin công ty"/"Ghi chú in phiếu" đang dính sát nhau.
+
+- **Bỏ `frontend/warranty-detail.html`/`frontend/assets/warranty-detail.js`** — chuyển toàn bộ logic thêm mới/sửa vào modal `#warranty-modal` trên `frontend/warranties.html`/`.js` (đúng pattern list+modal dùng chung mọi trang khác). Hỗ trợ mở sẵn qua URL: `?customer_id=` (thêm mới, chọn sẵn khách hàng — dùng khi bấm "+ Thêm bảo hành" từ trang chi tiết khách hàng) và `?edit=` (sửa 1 bản ghi — dùng khi bấm "Xem chi tiết" trên card).
+- **Sửa layout ô "Thời gian bảo hành"**: trước dùng chung class `.new-partner-inputs` (thiết kế cho nhiều ô text `flex:1` bằng nhau) khiến ô số và ô chọn đơn vị (Ngày/Tháng/Năm) co giãn lệch — thêm class riêng `.warranty-duration-row` (ô số `flex:2`, ô chọn `flex:1` + `min-width:110px`).
+- **Xác nhận lại tương tác 2 chiều Thời gian bảo hành ↔ Ngày hết hạn hoạt động đúng** qua trình duyệt thật (gõ "3" vào ô số → ngày hết hạn tự nhảy đúng +3 năm theo lịch; sửa ngày hết hạn thành đúng 30 ngày sau ngày nghiệm thu → ô thời gian tự đổi thành "1 tháng"). Dữ liệu lỗi (hạn năm "2078") người dùng từng thấy là do dữ liệu test cũ bị ảnh hưởng bởi lỗi CSS `[hidden]` ở trang cũ (xem `docs/DECISIONS.md`) — đã xóa dữ liệu test cũ, tạo lại sạch.
+- **Vẽ lại card "Bảo hành"** (`customer-detail.js`, CSS `.warranty-card*` viết lại toàn bộ) theo đúng mẫu ảnh tham khảo: icon vuông bo góc màu theo trạng thái (`.warranty-card-icon--ok/warning/expired/inactive`) + tiêu đề (ghi chú bảo hành, hoặc "Thông tin bảo hành" nếu để trống) + phụ đề "Nghiệm thu dd/mm/yyyy"; 2 dòng thông tin phụ (ngày hết hạn, thời gian bảo hành); hàng dưới cùng là nhãn trạng thái dạng chữ màu không nền (`.warranty-card-tag`) đối diện số ngày còn lại cỡ lớn (`.warranty-card-value`) — 4 mức màu đồng bộ: còn hạn (xanh) / sắp hết hạn ≤30 ngày (cam) / hết hạn (đỏ) / vô hiệu hóa (xám). Icon bút chì góc phải mở modal sửa (`warranties.html?edit=`).
+- **Sửa lỗi 2 card "Thông tin công ty"/"Ghi chú in phiếu" dính nhau**: `.settings-card` và `.settings-columns` chưa từng có `margin-bottom` — thêm `margin-bottom: 20px` cho cả 2, áp dụng chung mọi trang dùng `.settings-card` (`company-settings.html`, `warehouse-settings.html`).
+- Test qua trình duyệt thật: tạo bảo hành mới qua popup (gõ số lượng năm thật bằng bàn phím, không chỉ giả lập sự kiện) → tính đúng ngày hết hạn theo lịch; sửa ngày hết hạn → tự suy đúng thời gian bảo hành; mở popup sửa từ icon bút chì trên danh sách và từ card trên `customer-detail.html` đều điền đúng dữ liệu; card hiển thị đúng theo mẫu mới; `warehouse-settings.html` (dùng chung `.settings-card`) không bị ảnh hưởng bởi thay đổi spacing.
+
 ## 2026-08-01 (Thêm module "Bảo hành" — gắn khách hàng, card ngày còn lại trên trang chi tiết)
 
 > Người dùng yêu cầu module mới hoàn toàn: quản lý bảo hành gắn với khách hàng cụ thể, hiển thị "còn bao nhiêu ngày" trên 1 trang chi tiết khách hàng (trang này chưa từng tồn tại trước đây).

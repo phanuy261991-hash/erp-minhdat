@@ -883,6 +883,7 @@ input:focus-visible {
 
 .settings-card {
   max-width: 760px;
+  margin-bottom: 20px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -898,6 +899,7 @@ input:focus-visible {
   grid-template-columns: 1.2fr 1fr;
   align-items: start;
   gap: 20px;
+  margin-bottom: 20px;
 }
 
 .settings-columns .settings-card {
@@ -1448,6 +1450,24 @@ input:focus-visible {
   flex: 1;
 }
 
+/* So + don vi cho "Thoi gian bao hanh" (warranties.html) - rieng vi ghep 1 o so voi 1 o chon
+   don vi (khac .new-partner-inputs von danh cho nhieu o text cung kieu) - o so can rong hon
+   don vi de go duoc so nhieu chu so, khong dung flex:1 deu nhau nhu truoc gay mat can doi
+   (xem phan hoi nguoi dung 2026-08-01). */
+.warranty-duration-row {
+  display: flex;
+  gap: 10px;
+}
+
+.warranty-duration-row input {
+  flex: 2;
+}
+
+.warranty-duration-row select {
+  flex: 1;
+  min-width: 110px;
+}
+
 /* ---- Khoi thong tin chi doc (vd modal xem chi tiet phieu nhap/xuat) - co chu ly ".form-field"
    (spacing/label giong nhau) nhung KHONG dung khung input, de phan biet ro voi truong nhap lieu
    (xem quy tac read-only-distinction). ---- */
@@ -1800,14 +1820,15 @@ input:focus-visible {
   overflow: visible;
 }
 
-/* ---- The "Bao hanh" tren trang Chi tiet khach hang (customer-detail.html) - so ngay con lai
-   la con so quan trong nhat nen dung chu rat lon (giong huong .stat-card-value nhung to hon vi
-   day la NOI DUNG CHINH cua the, khong phai 1 trong nhieu so lieu phu) + mau theo do khan cap
-   (con nhieu/sap het/da het han) - xem yeu cau nguoi dung 2026-08-01. ---- */
+/* ---- The "Bao hanh" tren trang Chi tiet khach hang (customer-detail.html) - theo mau tham
+   khao nguoi dung cung cap (card danh sach cong cu/chi phi noi bo): icon vuong bo goc mau theo
+   trang thai + tieu de/phu de, 2 dong thong tin phu mau xam, hang duoi cung la nhan trang thai
+   (chu mau, khong nen) doi dien so lon (gia tri chinh cua the) - ap dung cho "con lai bao nhieu
+   ngay" thay vi gia tri tien nhu mau goc (xem yeu cau nguoi dung 2026-08-01). ---- */
 
 .warranty-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 16px;
 }
 
@@ -1819,34 +1840,94 @@ input:focus-visible {
   padding: 20px;
 }
 
-.warranty-card-header {
+.warranty-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.warranty-card-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
+  justify-content: center;
 }
 
-.warranty-card-days {
-  font-family: var(--font-heading);
-  font-size: 40px;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--color-accent);
+.warranty-card-icon--ok { background: #ecfdf5; color: var(--color-accent); }
+.warranty-card-icon--warning { background: #fffbeb; color: var(--color-warning); }
+.warranty-card-icon--expired { background: #fef2f2; color: var(--color-destructive); }
+.warranty-card-icon--inactive { background: var(--color-muted); color: var(--color-muted-foreground); }
+
+.warranty-card-heading {
+  flex: 1;
+  min-width: 0;
 }
 
-.warranty-card-days--warning {
-  color: var(--color-warning);
+.warranty-card-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.warranty-card-days--expired {
-  color: var(--color-destructive);
-}
-
-.warranty-card-days-label {
-  margin: 4px 0 16px;
+.warranty-card-subtitle {
+  margin: 2px 0 0;
   font-size: 13px;
   color: var(--color-muted-foreground);
 }
+
+.warranty-card-edit {
+  flex-shrink: 0;
+}
+
+.warranty-card-meta {
+  margin: 0 0 20px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--color-muted-foreground);
+}
+
+.warranty-card-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.warranty-card-tag {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.warranty-card-tag--ok { color: var(--color-accent); }
+.warranty-card-tag--warning { color: var(--color-warning); }
+.warranty-card-tag--expired { color: var(--color-destructive); }
+.warranty-card-tag--inactive { color: var(--color-muted-foreground); }
+
+.warranty-card-value {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.warranty-card-value-unit {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.warranty-card-value--ok { color: var(--color-accent); }
+.warranty-card-value--warning { color: var(--color-warning); }
+.warranty-card-value--expired { color: var(--color-destructive); }
+.warranty-card-value--inactive { color: var(--color-muted-foreground); }
 
 .chart-baseline {
   stroke: var(--color-border);

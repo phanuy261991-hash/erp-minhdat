@@ -139,7 +139,8 @@
 - [x] Migration `017_warranties.sql`: bảng `warranties` (chỉ gắn khách hàng, không gắn NCC)
 - [x] `backend/routes/warranties.routes.js`: CRUD đầy đủ, validate `partner_id` phải là `khach_hang`, `expiry_date > acceptance_date`; xóa cứng chỉ Admin (`is_protected`)
 - [x] `frontend/warranties.html`/`.js`: danh sách, tìm kiếm theo tên khách hàng, vô hiệu hóa/mở lại, xóa (ẩn nút nếu không phải Admin)
-- [x] `frontend/warranty-detail.html`/`.js`: 1 trang dùng chung cho thêm mới + xem/sửa (lưu thay đổi ngay trên trang, không dùng modal) — tương tác 2 chiều Thời gian bảo hành ↔ Ngày hết hạn (`frontend/assets/warranty-calc.js`, hàm dùng chung)
+- [x] `frontend/warranties.html`/`.js`: modal thêm mới/sửa (ban đầu làm trang riêng `warranty-detail.html`, đã bỏ theo phản hồi người dùng — đổi thành popup như mọi trang khác trong hệ thống) — tương tác 2 chiều Thời gian bảo hành ↔ Ngày hết hạn (`frontend/assets/warranty-calc.js`, hàm dùng chung), hỗ trợ mở sẵn qua URL (`?customer_id=` thêm mới, `?edit=` sửa) khi điều hướng từ `customer-detail.html`
+- [x] Sửa lại giao diện card "Bảo hành" trên `customer-detail.html` theo mẫu tham khảo người dùng cung cấp (icon vuông màu theo trạng thái + tiêu đề/phụ đề + nhãn trạng thái đối diện số ngày còn lại) và sửa lỗi 2 card "Thông tin công ty"/"Ghi chú in phiếu" dính nhau (`.settings-card`/`.settings-columns` thiếu `margin-bottom`)
 - [x] `frontend/customer-detail.html`/`.js` (trang mới, trước đây `customers.html` chưa có trang chi tiết riêng): thông tin cơ bản khách hàng + card Bảo hành (số ngày còn lại + ngày hết hạn, màu theo mức khẩn cấp)
 - [x] `customers.js`: thêm icon "Xem chi tiết" liên kết sang `customer-detail.html`
 - [x] `layout.js`/`icons.js`: thêm mục "Bảo hành" vào nhóm Khách hàng, icon `shield` mới

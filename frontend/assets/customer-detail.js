@@ -31,42 +31,47 @@ function renderCustomerInfo(customer) {
   ].join('');
 }
 
-// Mau + nhan theo do khan cap: am (da het han) -> do; <=30 ngay -> cam; con lai -> xanh.
-function daysRemainingClass(daysRemaining) {
-  if (daysRemaining < 0) return 'warranty-card-days--expired';
-  if (daysRemaining <= 30) return 'warranty-card-days--warning';
-  return '';
+// Mau theo do khan cap: vo hieu hoa -> xam; da het han -> do; <=30 ngay -> cam; con lai -> xanh.
+// Dung 1 "muc" (ok/warning/expired/inactive) cho ca icon/nhan trang thai/so lon, dam bao dong
+// bo mau theo mau tham khao nguoi dung cung cap (2026-08-01).
+function warrantyUrgencyLevel(warranty, daysRemaining) {
+  if (!warranty.is_active) return 'inactive';
+  if (daysRemaining < 0) return 'expired';
+  if (daysRemaining <= 30) return 'warning';
+  return 'ok';
 }
 
-function daysRemainingLabel(daysRemaining) {
-  if (daysRemaining < 0) return `đã hết hạn ${Math.abs(daysRemaining)} ngày trước`;
-  if (daysRemaining === 0) return 'hết hạn hôm nay';
-  return 'ngày còn lại';
-}
-
-function statusBadge(warranty, daysRemaining) {
-  if (!warranty.is_active) return '<span class="badge badge-inactive">Đã vô hiệu hóa</span>';
-  if (daysRemaining < 0) return '<span class="badge badge-down">Hết hạn</span>';
-  if (daysRemaining <= 30) return '<span class="badge badge-active">Sắp hết hạn</span>';
-  return '<span class="badge badge-active">Còn hạn</span>';
-}
+const URGENCY_TAG_LABEL = {
+  ok: 'Còn hạn',
+  warning: 'Sắp hết hạn',
+  expired: 'Hết hạn',
+  inactive: 'Đã vô hiệu hóa',
+};
 
 function renderWarrantyCard(warranty) {
   const daysRemaining = warrantyDaysRemaining(warranty.expiry_date);
-  const daysDisplay = daysRemaining < 0 ? Math.abs(daysRemaining) : daysRemaining;
+  const level = warrantyUrgencyLevel(warranty, daysRemaining);
+  const valueDisplay = daysRemaining < 0 ? Math.abs(daysRemaining) : daysRemaining;
+  const valueUnit = daysRemaining < 0 ? 'ngày trước' : 'ngày';
+  const title = warranty.note ? warranty.note : 'Thông tin bảo hành';
 
   return `
     <div class="warranty-card">
-      <div class="warranty-card-header">
-        ${statusBadge(warranty, daysRemaining)}
-        <a href="warranty-detail.html?id=${warranty.id}" class="table-link-btn">Xem chi tiết</a>
+      <div class="warranty-card-top">
+        <div class="warranty-card-icon warranty-card-icon--${level}">${icon('shield', 20)}</div>
+        <div class="warranty-card-heading">
+          <p class="warranty-card-title" title="${title}">${title}</p>
+          <p class="warranty-card-subtitle">Nghiệm thu ${formatWarrantyDateVN(warranty.acceptance_date)}</p>
+        </div>
+        <a href="warranties.html?edit=${warranty.id}" class="icon-btn warranty-card-edit" title="Xem/sửa chi tiết">${icon('pencil', 14)}</a>
       </div>
-      <p class="warranty-card-days ${daysRemainingClass(daysRemaining)}">${daysDisplay}</p>
-      <p class="warranty-card-days-label">${daysRemainingLabel(daysRemaining)}</p>
-      <div class="detail-info-grid">
-        ${detailInfoItem('Ngày hết hạn', formatWarrantyDateVN(warranty.expiry_date))}
-        ${detailInfoItem('Ngày nghiệm thu', formatWarrantyDateVN(warranty.acceptance_date))}
-        ${detailInfoItem('Thời gian bảo hành', formatWarrantyDuration(warranty.duration_value, warranty.duration_unit))}
+      <p class="warranty-card-meta">
+        Ngày hết hạn: ${formatWarrantyDateVN(warranty.expiry_date)}<br />
+        Thời gian bảo hành: ${formatWarrantyDuration(warranty.duration_value, warranty.duration_unit)}
+      </p>
+      <div class="warranty-card-footer">
+        <span class="warranty-card-tag warranty-card-tag--${level}">${URGENCY_TAG_LABEL[level]}</span>
+        <span class="warranty-card-value warranty-card-value--${level}">${valueDisplay} <span class="warranty-card-value-unit">${valueUnit}</span></span>
       </div>
     </div>
   `;
@@ -88,7 +93,7 @@ function renderWarranties(warranties) {
 
   document.getElementById('btn-back').innerHTML = icon('arrowLeft', 16);
   btnAddWarranty.innerHTML = `${icon('plus', 16)} Thêm bảo hành`;
-  btnAddWarranty.href = `warranty-detail.html?customer_id=${customerId}`;
+  btnAddWarranty.href = `warranties.html?customer_id=${customerId}`;
   document.querySelectorAll('.alert-icon-slot').forEach((slot) => {
     slot.innerHTML = icon('alertCircle', 16);
   });

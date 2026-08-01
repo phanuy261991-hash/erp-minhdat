@@ -18,7 +18,7 @@
             <span class="input-icon"></span>
             <input type="text" id="warranty-search" class="search-input" placeholder="Tìm theo tên khách hàng..." autocomplete="off" />
           </div>
-          <a href="warranty-detail.html" id="btn-add-warranty" class="btn-add"></a>
+          <button type="button" id="btn-add-warranty" class="btn-add"></button>
         </div>
       </div>
 
@@ -44,6 +44,67 @@
         </table>
       </div>
     </main>
+  </div>
+
+  <div id="warranty-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3 id="warranty-modal-title">Thêm bảo hành mới</h3>
+      <form id="warranty-form">
+        <div id="warranty-form-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="warranty-form-error-text"></span>
+        </div>
+
+        <div class="form-field">
+          <label for="warranty-partner">Khách hàng</label>
+          <select id="warranty-partner" required></select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="warranty-phone">Số điện thoại</label>
+            <input type="text" id="warranty-phone" autocomplete="off" />
+          </div>
+          <div class="form-field">
+            <label for="warranty-address">Địa chỉ</label>
+            <input type="text" id="warranty-address" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="warranty-acceptance-date">Ngày nghiệm thu</label>
+            <input type="date" id="warranty-acceptance-date" required />
+          </div>
+          <div class="form-field">
+            <label for="warranty-expiry-date">Ngày hết hạn</label>
+            <input type="date" id="warranty-expiry-date" required />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="warranty-duration-value">Thời gian bảo hành</label>
+          <div class="warranty-duration-row">
+            <input type="number" id="warranty-duration-value" min="1" step="1" required />
+            <select id="warranty-duration-unit">
+              <option value="ngay">Ngày</option>
+              <option value="thang">Tháng</option>
+              <option value="nam" selected>Năm</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="warranty-note">Ghi chú</label>
+          <input type="text" id="warranty-note" placeholder="Không bắt buộc" autocomplete="off" />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-warranty" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-warranty" class="btn-primary">Tạo bảo hành</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <script src="assets/api.js"></script>
