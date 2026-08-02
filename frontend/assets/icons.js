@@ -41,6 +41,7 @@ const ICONS = {
   sun: '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.5M12 19v2.5M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2.5 12H5M19 12h2.5M4.2 19.8 6 18M18 6l1.8-1.8"/>',
   moon: '<path d="M20 14.5a8.5 8.5 0 1 1-8-11.2 7 7 0 0 0 8 11.2Z"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5h.01"/>',
+  wallet: '<path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h12A1.5 1.5 0 0 1 18 7.5V9"/><rect x="3" y="9" width="18" height="11.5" rx="2"/><path d="M15.5 15.5a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4Z"/>',
 };
 
 function icon(name, size) {

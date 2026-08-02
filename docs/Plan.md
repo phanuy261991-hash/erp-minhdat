@@ -1,7 +1,7 @@
 # Plan chi tiết: Hệ thống Quản lý Kho & Công nợ nội bộ
 
-**Dựa trên**: PRD v1.1 — cập nhật 2026-08-01
-**Version**: v1.1 — cập nhật 2026-08-01 (mục 2b, Phase 1.6)
+**Dựa trên**: PRD v1.4 — cập nhật 2026-08-02
+**Version**: v1.2 — cập nhật 2026-08-02 (module Sổ quỹ, ngoài phase)
 
 ---
 
@@ -37,7 +37,8 @@ project-root/
 │  │     ├─ 015_customer_categories.sql (đã có) bảng customer_categories (loại khách hàng, kem han muc cong no) + partners.category_id
 │  │     ├─ 016_debt_adjustment.sql (đã có, 2026-08-01) debt_ledger.is_adjustment ("Điều chỉnh công nợ")
 │  │     ├─ 017_warranties.sql (đã có, 2026-08-01) bảng warranties (Bảo hành, gắn khách hàng)
-│  │     └─ 018_backup_path.sql (đã có, 2026-08-01) warehouse_settings.backup_path (Phase 5)
+│  │     ├─ 018_backup_path.sql (đã có, 2026-08-01) warehouse_settings.backup_path (Phase 5)
+│  │     └─ 019_cash_book.sql (đã có, 2026-08-02) module So quy: cash_book_settings, cash_categories, cash_vouchers (doc lap voi debt_ledger)
 │  ├─ middleware/
 │  │  ├─ auth.js                       (đã có) requireAuth (kiểm tra session)
 │  │  └─ requirePermission.js          (đã có) requirePermission(module) + requireAnyPermission([module,...])
@@ -54,12 +55,16 @@ project-root/
 │  │  ├─ customerCategories.routes.js  (đã có, 2026-08-01) CRUD "Loại khách hàng" (tên + hạn mức công nợ)
 │  │  ├─ debts.routes.js               (đã có) Phase 3 — summary (kèm category_debt_limit), lịch sử theo đối tác, ghi nhận thanh toán
 │  │  ├─ reports.routes.js             (đã có) Phase 4 — inventory/stock-movements/debts, tinh truc tiep tu bang goc
-│  │  └─ warranties.routes.js          (đã có, 2026-08-01) CRUD Bao hanh, xoa chi Admin
+│  │  ├─ warranties.routes.js          (đã có, 2026-08-01) CRUD Bao hanh, xoa chi Admin
+│  │  ├─ cashVouchers.routes.js        (đã có, 2026-08-02) Phieu thu/chi (list+summary theo thang, tao, xoa, /staff) - module doc lap "so_quy"
+│  │  ├─ cashCategories.routes.js      (đã có, 2026-08-02) CRUD "Loai thu chi"
+│  │  └─ cashBookSettings.routes.js    (đã có, 2026-08-02) GET/PUT Quy dau ky (cash_book_settings, singleton)
 │  └─ services/
 │     ├─ stockReceipt.service.js       (đã có) transaction: tạo phiếu nhập + movements + lô hàng + ghi nợ NCC neu cong_no
 │     ├─ stockIssue.service.js         (đã có) transaction: tạo phiếu xuất + movements, tiêu thụ lô + ghi nợ khach hang neu cong_no
 │     ├─ costing.service.js            (đã có) tính giá vốn bình quân gia quyền/FIFO (Phase 2)
-│     └─ debt.service.js               (đã có) Phase 3 — ghi nợ (trong transaction cua phieu)/thanh toan/tinh so du
+│     ├─ debt.service.js               (đã có) Phase 3 — ghi nợ (trong transaction cua phieu)/thanh toan/tinh so du
+│     └─ cashVoucher.service.js        (đã có, 2026-08-02) tao ma PT/PC, tinh Quy dau ky/Tong thu/Tong chi/Ton quy theo thang (moc thoi gian UTC+7 co dinh)
 ├─ frontend/
 │  ├─ login.html                       (đã có)
 │  ├─ dashboard.html                   (đã có) trang chủ sau đăng nhập
@@ -82,6 +87,8 @@ project-root/
 │  ├─ customer-detail.html             (đã có, 2026-08-01, mới) chi tiết khách hàng + the Bảo hành
 │  ├─ warranties.html                  (đã có, 2026-08-01) danh sách Bảo hành + modal thêm mới/sửa
 │  ├─ reports.html                     (đã có) Phase 4 — ton kho + mua/ban theo thang (bieu do SVG tu ve) + cong no tong hop
+│  ├─ cash-book.html                   (đã có, 2026-08-02) Sổ quỹ — danh sách phiếu thu/chi theo tháng (chọn Tháng/Năm), thẻ Quỹ đầu kỳ/Tổng thu/Tổng chi/Tồn quỹ, modal lập phiếu (kèm tạo nhanh "Loại thu chi")
+│  ├─ cash-categories.html             (đã có, 2026-08-02) CRUD "Loại thu chi", thuộc menu Quỹ
 │  └─ assets/
 │     ├─ style.css                     (đã có) design system (xem docs/DESIGN-SYSTEM.md)
 │     ├─ api.js                        (đã có) helper gọi API dùng chung
@@ -111,6 +118,8 @@ project-root/
 │     ├─ warranty-calc.js              (đã có, 2026-08-01) hàm dùng chung: tính 2 chiều thời gian bảo hành ↔ ngày hết hạn, số ngày còn lại
 │     ├─ print-issue.js                (đã có) logic trang print-issue.html
 │     ├─ reports.js                    (đã có) logic trang reports.html (bieu do cot SVG tu ve)
+│     ├─ cash-book.js                  (đã có, 2026-08-02) logic trang cash-book.html
+│     ├─ cash-categories.js            (đã có, 2026-08-02) logic trang cash-categories.html
 │     └─ fonts/                        (đã có) file .woff2 host offline + fonts.css
 ├─ data/
 │  └─ data.db                          (đã có) file SQLite
@@ -140,6 +149,9 @@ project-root/
 | `stock_lots` | id PK, product_id FK, receipt_id FK, unit_cost, quantity_received, quantity_remaining, created_at | 1 dòng = 1 lô hàng nhập; `quantity_remaining` trừ dần theo thứ tự cũ nhất trước (FIFO vật lý) bất kể `costing_method` đang chọn; dùng để tính giá vốn bình quân gia quyền/FIFO (xem `costing.service.js`) |
 | `product_change_log` | id PK, product_id FK, changed_by FK(users), field_name, old_value, new_value, created_at | lịch sử chỉnh sửa thông tin sản phẩm — chỉ ghi khi `PUT /api/products/:id` thực sự đổi giá trị |
 | `debt_ledger` | id PK, partner_id FK, type, amount, reference_type, reference_id, note, created_by FK(users), created_at, is_adjustment | type ∈ {no, tra}; số dư = SUM cộng dồn theo partner_id; `reference_type` ∈ {receipt, issue, payment} — `payment` (ghi nhận thanh toán thủ công) có `reference_id` NULL vì không gắn với 1 phiếu cụ thể; `created_by` bổ sung ngoài draft gốc để nhất quán truy vết với các bảng khác (xem `docs/DECISIONS.md`); `is_adjustment` (migration `016`, 2026-08-01) đánh dấu dòng "Điều chỉnh công nợ" thủ công — phân biệt với dòng tự động và thanh toán thật |
+| `cash_book_settings` | id PK (CHECK id=1), opening_balance, updated_at | migration `019`, 2026-08-02 — Quỹ đầu kỳ, nhập 1 lần, tự động cộng dồn qua các tháng (không lưu riêng từng tháng) |
+| `cash_categories` | id PK, name, type (`thu`/`chi`), created_at | migration `019` — danh mục "Loại thu chi", `UNIQUE(name, type)` |
+| `cash_vouchers` | id PK, code, type, category_id FK NOT NULL, counterpart_name, handled_by FK(users), amount, note, record_business_result, created_by FK(users), created_at | migration `019` — Phiếu thu (`code` = `PT000001...`) / Phiếu chi (`PC000001...`), riêng từng type; **độc lập hoàn toàn với `debt_ledger`** (không ghi công nợ); không sửa được, chỉ tạo + xóa cứng; `created_at` nhận giá trị tùy chỉnh từ form (giống `stock_receipts`), quyết định phiếu thuộc tháng nào |
 | `schema_migrations` | version PK, applied_at | migration runner đọc bảng này |
 
 **Nguyên tắc quan trọng** (đã thống nhất ở bước trước, nhắc lại để dev không quên khi code):
@@ -152,7 +164,7 @@ Sơ đồ ERD tương ứng: xem file `erd.mermaid` đi kèm (cần bổ sung `r
 
 Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân quyền theo module**:
 
-- `module_key` là hằng số cố định trong code (không lưu thành bảng riêng vì đây là tập hợp module do ứng dụng định nghĩa, không phải dữ liệu người dùng tạo ra): `kho`, `cong_no`, `bao_cao`, `nguoi_dung`, `cau_hinh`. Mở rộng thêm khi có module mới (vd `ban_hang` khi module Bán hàng/POS được lên kế hoạch).
+- `module_key` là hằng số cố định trong code (không lưu thành bảng riêng vì đây là tập hợp module do ứng dụng định nghĩa, không phải dữ liệu người dùng tạo ra): `kho`, `cong_no`, `bao_cao`, `nguoi_dung`, `cau_hinh`, `so_quy` (Sổ quỹ, 2026-08-02). Mở rộng thêm khi có module mới (vd `ban_hang` khi module Bán hàng/POS được lên kế hoạch).
 - Vai trò Admin (`is_protected = 1`) mặc nhiên có mọi `module_key`, không lưu dòng nào trong `role_permissions` cho Admin — middleware luôn cho qua nếu `role.is_protected = 1`, không cần tra bảng.
 - Middleware `requireRole('admin')` kiểu cũ (so khớp tên vai trò) được thay bằng `requirePermission('module_key')` (tra `role_permissions` theo `role_id` của user, hoặc cho qua thẳng nếu vai trò `is_protected`).
 - `GET /api/auth/me` trả thêm danh sách `permissions` (mảng `module_key`) của user hiện tại, để frontend (`layout.js`) lọc menu mà không cần gọi thêm API.
@@ -212,6 +224,13 @@ Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân qu
 | POST/PUT | `/api/warranties(/:id)` | `cong_no` | Tạo/sửa Bảo hành — validate `partner_id` phải là `type='khach_hang'`, `expiry_date` > `acceptance_date` |
 | PATCH | `/api/warranties/:id/deactivate` \| `/activate` | `cong_no` | Vô hiệu hóa/mở lại |
 | DELETE | `/api/warranties/:id` | Chỉ Admin (`is_protected`) | Xóa cứng — không kiểm tra "đã có lịch sử" vì không có bảng nào khác tham chiếu `warranties.id` |
+| GET | `/api/cash-vouchers?month=YYYY-MM` | `so_quy` | Danh sách phiếu thu/chi của 1 tháng (bắt buộc `month`, không tự suy đoán) + `summary` (Quỹ đầu kỳ/Tổng thu/Tổng chi/Tồn quỹ) (2026-08-02) |
+| POST | `/api/cash-vouchers` | `so_quy` | Tạo phiếu thu/chi — validate danh mục đúng chiều (`type` khớp `category.type`) |
+| DELETE | `/api/cash-vouchers/:id` | `so_quy` | Xóa cứng — không có ràng buộc nào chặn (module độc lập) |
+| GET | `/api/cash-vouchers/staff` | `so_quy` | Danh sách tài khoản đang hoạt động cho dropdown "Người thu/chi" |
+| GET/POST/PUT/DELETE | `/api/cash-categories(/:id)` | `so_quy` | CRUD "Loại thu chi" — xóa chặn nếu đã có phiếu dùng loại đó |
+| GET | `/api/cash-book-settings` | Đã đăng nhập | Đọc Quỹ đầu kỳ hiện tại |
+| PUT | `/api/cash-book-settings` | `so_quy` | Cập nhật Quỹ đầu kỳ (giá trị gốc, tự cộng dồn qua các tháng) |
 
 > Admin (`is_protected`) luôn qua được mọi route ở trên, không cần liệt kê riêng.
 
@@ -315,6 +334,17 @@ Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân qu
 - [ ] Đặt Windows Task Scheduler chạy backup hàng ngày trên máy chủ thật (chưa làm — xem `docs/DEPLOY.md` mục 5)
 - [ ] Test toàn bộ luồng với dữ liệu thật, đào tạo người dùng
 - [ ] Go-live, theo dõi 1 tuần đầu để chỉnh sửa
+
+### Module "Sổ quỹ" (ngoài phase, theo yêu cầu người dùng 2026-08-02)
+
+- [x] Migration `019_cash_book.sql`: `cash_book_settings` (singleton, Quỹ đầu kỳ), `cash_categories` (Loại thu/chi, seed 6 mục mẫu), `cash_vouchers` (độc lập với `debt_ledger`), seed quyền `so_quy` cho vai trò Kế toán
+- [x] `backend/config/modules.js`: thêm module_key `so_quy`
+- [x] `backend/services/cashVoucher.service.js`: sinh mã `PT`/`PC` riêng từng loại, `monthBoundsUtc()` (mốc thời gian UTC+7 cố định — xem `docs/DECISIONS.md`), `getCashBookSummary()`, `createCashVoucher()` (validate danh mục đúng chiều)
+- [x] `backend/routes/cashVouchers.routes.js`, `cashCategories.routes.js`, `cashBookSettings.routes.js` — mount vào `server.js`
+- [x] Frontend `cash-book.html`/`.js` (danh sách theo tháng, chọn Tháng/Năm tiếng Việt — không dùng `<input type="month">` vì hiển thị theo locale trình duyệt không ép được tiếng Việt, thẻ tổng hợp, modal lập phiếu dùng chung cho Thu/Chi kèm nút "+ Tạo loại mới" tạo nhanh danh mục ngay trên form, modal Quỹ đầu kỳ, modal xem chi tiết chỉ đọc), `cash-categories.html`/`.js` (CRUD "Loại thu chi")
+- [x] `frontend/assets/layout.js`: nhóm nav mới "Quỹ" (sau "Khách hàng", trước "Quản trị"); `icons.js` thêm icon `wallet`
+- [x] `style.css`: `.text-accent`/`.text-destructive` (màu cột Giá trị), `.month-select`/`.month-select-group` (chọn Tháng/Năm), `.form-field-label-row` (nhãn kèm nút "+ Tạo loại mới")
+- [x] Test qua trình duyệt thật (Chrome headless điều khiển CDP thô): tạo/xóa phiếu thu/chi, tính đúng Quỹ đầu kỳ/Tổng thu/Tổng chi/Tồn quỹ, ranh giới tháng đúng theo giờ VN (test phiếu 23:30 và 00:30 giờ VN quanh nửa đêm cuối tháng), xóa danh mục đang dùng bị chặn đúng, phân quyền `so_quy` chặn đúng UI+API (trừ `GET /api/cash-book-settings` mở cho mọi tài khoản), xác nhận không ghi gì vào `debt_ledger`, tạo nhanh "Loại thu chi" ngay trên modal lập phiếu hoạt động đúng
 
 ## 5. Kiểm thử cơ bản mỗi phase
 

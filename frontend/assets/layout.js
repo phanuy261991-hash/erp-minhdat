@@ -41,6 +41,15 @@ const NAV_GROUPS = [
     ],
   },
   {
+    // Module "So quy" (2026-08-02) - doc lap hoan toan voi Cong no, khong ghi debt_ledger
+    // (xem docs/DECISIONS.md). Dat rieng nhom, sau "Khach hang" truoc "Quan tri".
+    label: 'Quỹ',
+    items: [
+      { key: 'cash-book', label: 'Sổ quỹ', href: 'cash-book.html', icon: 'wallet', module: 'so_quy', enabled: true },
+      { key: 'cash-categories', label: 'Loại thu chi', href: 'cash-categories.html', icon: 'tag', module: 'so_quy', enabled: true },
+    ],
+  },
+  {
     label: 'Quản trị',
     items: [
       { key: 'reports', label: 'Báo cáo', href: 'reports.html', icon: 'chartBar', module: 'bao_cao', enabled: true },

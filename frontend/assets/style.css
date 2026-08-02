@@ -558,6 +558,22 @@ input:focus-visible {
   color: var(--color-warning);
 }
 
+/* Bien the mau cho thang so tong hop So quy (cash-book.html, 2026-08-02): Quy dau ky xanh duong,
+   Tong thu xanh la, Tong chi do (kem dau "-" truoc so de the hien giam) - Ton quy giu mau mac
+   dinh (khong dung modifier nao), am thi tu nhien co dau "-" qua toLocaleString(), khong can
+   to mau rieng de phan biet. */
+.stat-card-value--primary {
+  color: var(--color-primary);
+}
+
+.stat-card-value--accent {
+  color: var(--color-accent);
+}
+
+.stat-card-value--destructive {
+  color: var(--color-destructive);
+}
+
 /* ---- Bang du lieu (dung chung cho danh sach o cac trang) ---- */
 
 .data-table-wrap {
@@ -630,6 +646,16 @@ input:focus-visible {
   color: var(--color-destructive);
 }
 
+/* Tien ich mau chu dung lai duoc (vd cot "Gia tri" cua phieu thu/chi o So quy) - khong dat ten
+   theo tinh nang cu the vi day la tien ich mau chung, khong phai khai niem rieng cua 1 module. */
+.text-accent {
+  color: var(--color-accent);
+}
+
+.text-destructive {
+  color: var(--color-destructive);
+}
+
 /* ---- Thanh cong cu tren dau bang du lieu (o tim kiem canh nut hanh dong) ---- */
 
 /* :not([hidden]) - tranh lap lai loi display de len thuoc tinh hidden (xem .alert) - phat hien
@@ -682,6 +708,33 @@ input:focus-visible {
 }
 
 .search-input:focus {
+  border-color: var(--color-ring);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Chon Thang/Nam dung tren cash-book.html (thay <input type="month"> - hien thi theo locale
+   trinh duyet, khong ep duoc tieng Viet "Tháng 8/2026"). Dat truc tiep trong .page-header-actions
+   nhu .search-input - KHONG dung .form-field (co margin-bottom:14px, danh cho form doc, gay lech
+   dong voi nut khi dat chung 1 hang ngang, xem phan hoi nguoi dung 2026-08-02). */
+.month-select-group {
+  display: flex;
+  gap: 6px;
+}
+
+.month-select {
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-foreground);
+  outline: none;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.month-select:focus {
   border-color: var(--color-ring);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
@@ -879,6 +932,27 @@ input:focus-visible {
   font-weight: 600;
   color: var(--color-muted-foreground);
   margin-bottom: 6px;
+}
+
+/* Nhan truong kem 1 nut lien ket ben phai (vd "+ Tao loai moi" tren modal Tao phieu thu/chi) -
+   label khong con la con truc tiep cua .form-field khi nam trong hang nay nen phai lap lai style
+   cua ".form-field > label" o day (xem cash-book.html). */
+.form-field-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.form-field-label-row label {
+  margin-bottom: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+}
+
+.form-field-label-row .table-link-btn {
+  font-size: 13px;
 }
 
 .form-field input,

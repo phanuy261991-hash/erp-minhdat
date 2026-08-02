@@ -1,7 +1,7 @@
 # PRD: Hệ thống Quản lý Kho & Công nợ nội bộ
 
-**Version**: v1.3 — cập nhật 2026-08-01 (bổ sung 4.1/4.7/4.8/4.9/4.10; mục 4 "Vận hành" + rủi ro liên quan cập nhật thêm phương án đóng gói portable/Task Scheduler song song PM2)
-**Trạng thái**: Phase 1 → 4 đã hoàn thành toàn bộ (nền tảng, kho, công nợ, in phiếu, báo cáo) + nhiều mở rộng ngoài phase (Bảo hành, tách Khách hàng, Điều chỉnh công nợ, đóng gói portable). Phase 5 (Vận hành & Go-live) đang làm — xem trạng thái chính xác tại `docs/CURRENT.md`. Các mục 4.x vẫn có thể bổ sung khi phát sinh nhu cầu mới (xem `docs/DECISIONS.md`).
+**Version**: v1.4 — cập nhật 2026-08-02 (bổ sung 4.11 Sổ quỹ)
+**Trạng thái**: Phase 1 → 4 đã hoàn thành toàn bộ (nền tảng, kho, công nợ, in phiếu, báo cáo) + nhiều mở rộng ngoài phase (Bảo hành, tách Khách hàng, Điều chỉnh công nợ, đóng gói portable, Sổ quỹ). Phase 5 (Vận hành & Go-live) đang làm — xem trạng thái chính xác tại `docs/CURRENT.md`. Các mục 4.x vẫn có thể bổ sung khi phát sinh nhu cầu mới (xem `docs/DECISIONS.md`).
 
 > Tên dự án là working title. Đổi tên theo tên công ty/thương hiệu thực tế khi cần.
 
@@ -119,6 +119,14 @@ Web app nội bộ, kiến trúc đơn giản (không microservices, không clou
 - Vô hiệu hóa/mở lại: mọi người có quyền module `cong_no`. **Xóa cứng chỉ Admin** — khác các đối tượng khác trong hệ thống vốn thường cho phép xóa nếu chưa có lịch sử, ở đây xóa luôn bị giới hạn Admin theo đúng yêu cầu.
 - **Giao diện chi tiết khách hàng** (trang mới `customer-detail.html`, chưa có trước đây): hiển thị thông tin cơ bản khách hàng + toàn bộ bản ghi bảo hành của khách hàng đó dưới dạng **Card**, mỗi card hiện "Số ngày còn lại" (số lớn, đổi màu theo mức độ khẩn cấp: còn nhiều — xanh, ≤30 ngày — cam, đã hết hạn — đỏ) và "Ngày hết hạn" cụ thể, lấy trực tiếp từ dữ liệu bảo hành (không lưu số ngày còn lại cố định — luôn tính lại từ ngày hết hạn tại thời điểm xem, đúng nguyên tắc không lưu giá trị suy ra được của dự án).
 
+### 4.11 Sổ quỹ (bổ sung 2026-08-02, theo yêu cầu người dùng)
+- Quản lý dòng tiền mặt của doanh nghiệp qua **phiếu thu** và **phiếu chi**, độc lập hoàn toàn với module Công nợ (mục 4.4) — không tự động ghi/giảm công nợ đối tác nào, không liên kết danh sách Nhà cung cấp/Khách hàng có sẵn (trường "Đối tượng nộp/nhận" chỉ là tên tự do).
+- Mỗi phiếu gồm: mã tự sinh (`PT000001...` cho phiếu thu, `PC000001...` cho phiếu chi, riêng từng loại), thời gian (chỉnh được, quyết định phiếu thuộc tháng nào), Loại thu/chi (chọn từ danh mục "Loại thu chi" — có thể tạo nhanh ngay trên form lập phiếu, không cần rời sang trang riêng), Người thu/chi (chọn 1 tài khoản người dùng, mặc định tài khoản đang đăng nhập), Tên người nộp/nhận (tự do, không bắt buộc), Số tiền, Ghi chú, cờ "Hạch toán kết quả kinh doanh" (hiện chỉ lưu, chưa có báo cáo lãi/lỗ nào dùng đến).
+- **Quỹ đầu kỳ**: nhập 1 lần duy nhất (số dư tiền mặt thực tế lúc bắt đầu dùng module) — các tháng sau tự động cộng dồn từ lịch sử phiếu, không nhập lại từng tháng.
+- Danh sách phiếu mặc định hiển thị **tháng hiện tại** (tự làm mới khi sang tháng mới, không cần thao tác), xem lại tháng cũ qua bộ lọc Tháng/Năm. Thanh tổng hợp Quỹ đầu kỳ/Tổng thu/Tổng chi/Tồn quỹ của đúng tháng đang xem — tất cả tính trực tiếp từ tổng cộng dồn (đúng nguyên tắc ledger xuyên suốt dự án), không lưu số dư cố định.
+- **Phiếu thu/chi không sửa được sau khi tạo, chỉ xóa cứng** (khác nguyên tắc "chỉ tạo phiếu điều chỉnh bù trừ" của Kho/Công nợ — vì module này không có gì tham chiếu ngược, không cần giữ vết như ledger). Quyền tạo/xóa chỉ cần quyền module `so_quy`, không phân biệt theo hành động (đúng triết lý phân quyền theo module, mục 4.1).
+- Danh mục "Loại thu chi": quản lý riêng (thêm/sửa/xóa), mỗi loại gắn cố định 1 chiều (Thu hoặc Chi); không xóa được nếu đã có phiếu dùng loại đó.
+
 ## 5. Success Metrics
 
 | Mục tiêu | Chỉ số | Ngưỡng |
@@ -184,4 +192,4 @@ backend/
   data.db       → file SQLite (backup định kỳ)
 ```
 
-**Bảng dữ liệu chính (draft):** `users`, `roles`, `role_permissions`, `products`, `stock_movements`, `stock_receipts` (phiếu nhập), `stock_issues` (phiếu xuất), `partners` (NCC + khách hàng), `customer_categories` (loại khách hàng, 2026-08-01), `debt_ledger`, `warranties` (bảo hành, 2026-08-01), `company_settings`, `warehouse_settings`, `schema_migrations`.
+**Bảng dữ liệu chính (draft):** `users`, `roles`, `role_permissions`, `products`, `stock_movements`, `stock_receipts` (phiếu nhập), `stock_issues` (phiếu xuất), `partners` (NCC + khách hàng), `customer_categories` (loại khách hàng, 2026-08-01), `debt_ledger`, `warranties` (bảo hành, 2026-08-01), `cash_vouchers`/`cash_categories`/`cash_book_settings` (Sổ quỹ, 2026-08-02, độc lập với `debt_ledger`), `company_settings`, `warehouse_settings`, `schema_migrations`.

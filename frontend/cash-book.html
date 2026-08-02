@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sổ quỹ - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Quỹ</p>
+      <div class="page-header">
+        <h2>Sổ quỹ</h2>
+        <div class="page-header-actions">
+          <div class="month-select-group">
+            <select id="cash-month-select" class="month-select"></select>
+            <select id="cash-year-select" class="month-select"></select>
+          </div>
+          <button type="button" id="btn-edit-opening" class="btn-secondary"></button>
+          <button type="button" id="btn-add-thu" class="btn-secondary"></button>
+          <button type="button" id="btn-add-chi" class="btn-add"></button>
+        </div>
+      </div>
+
+      <div id="cash-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="cash-error-text"></span>
+      </div>
+
+      <div class="stat-grid" id="cash-stats"></div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Mã phiếu</th>
+              <th>Thời gian</th>
+              <th>Loại thu chi</th>
+              <th>Người nộp/nhận</th>
+              <th>Giá trị</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="cash-tbody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <div id="cash-detail-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3>Chi tiết phiếu</h3>
+      <div class="detail-info-grid" id="cash-detail-info"></div>
+      <div class="modal-actions">
+        <button type="button" id="btn-close-cash-detail" class="btn-secondary">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="voucher-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3 id="voucher-modal-title">Tạo phiếu thu</h3>
+      <form id="voucher-form">
+        <div id="voucher-form-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="voucher-form-error-text"></span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <div class="form-field-label-row">
+              <label for="voucher-category" id="voucher-category-label">Loại thu</label>
+              <button type="button" id="btn-toggle-new-category" class="table-link-btn">+ Tạo loại mới</button>
+            </div>
+            <select id="voucher-category" required></select>
+          </div>
+          <div class="form-field">
+            <label for="voucher-date">Thời gian</label>
+            <input type="datetime-local" id="voucher-date" required />
+          </div>
+        </div>
+
+        <div id="new-category-fields" class="form-field" hidden>
+          <label for="new-category-name" id="new-category-label">Tên loại thu mới</label>
+          <input type="text" id="new-category-name" autocomplete="off" placeholder="vd: Thu tiền cho thuê mặt bằng" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="voucher-handler" id="voucher-handler-label">Người thu</label>
+            <select id="voucher-handler"></select>
+          </div>
+          <div class="form-field">
+            <label for="voucher-counterpart" id="voucher-counterpart-label">Tên người nộp</label>
+            <input type="text" id="voucher-counterpart" autocomplete="off" placeholder="Không bắt buộc" />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="voucher-amount">Số tiền</label>
+          <input type="number" id="voucher-amount" required min="1" step="1" />
+        </div>
+
+        <div class="form-field">
+          <label for="voucher-note">Ghi chú</label>
+          <input type="text" id="voucher-note" autocomplete="off" placeholder="Không bắt buộc" />
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-row-info">
+            <p class="setting-row-title">Hạch toán kết quả kinh doanh</p>
+            <p class="setting-row-desc">Tính khoản này vào báo cáo lãi/lỗ (tính năng báo cáo sẽ bổ sung sau).</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="voucher-business-toggle" checked />
+            <span class="switch-track"></span>
+            <span class="switch-thumb"></span>
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-voucher" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-voucher" class="btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="opening-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3>Quỹ đầu kỳ</h3>
+      <p class="modal-subtitle">Nhập số dư tiền mặt thực tế tại thời điểm bắt đầu dùng Sổ quỹ — các tháng sau tự cộng dồn, không cần nhập lại.</p>
+      <form id="opening-form">
+        <div id="opening-form-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="opening-form-error-text"></span>
+        </div>
+        <div class="form-field">
+          <label for="opening-balance">Quỹ đầu kỳ</label>
+          <input type="number" id="opening-balance" required min="0" step="1" />
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-opening" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-opening" class="btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/cash-book.js"></script>
+</body>
+</html>

@@ -195,6 +195,21 @@
 - [x] `partners.html`/`.js`, `debts.html`/`.js`, `customers.html`/`.js`, `customer-debts.html`/`.js`, `warranties.html`/`.js`: mở rộng ô tìm kiếm lọc thêm theo số điện thoại (trước chỉ lọc theo tên) — chỉ sửa hàm lọc phía frontend, không đổi API (`phone` đã có sẵn trong response)
 - [x] Test qua trình duyệt thật (CDP headless + chụp ảnh màn hình): cả 5 trang lọc đúng theo số điện thoại
 
+### Module "Sổ quỹ" (ngoài phase, theo yêu cầu người dùng 2026-08-02)
+
+> Đã hỏi và chốt 4 quyết định kiến trúc trước khi code (độc lập với Công nợ, quỹ đầu kỳ tự cộng dồn, không sửa chỉ xóa cứng, đối tượng nộp/nhận chỉ tên tự do) — chi tiết đầy đủ `docs/DECISIONS.md`.
+
+- [x] Migration `019_cash_book.sql`: `cash_book_settings` (Quỹ đầu kỳ, singleton), `cash_categories` (Loại thu chi, seed 6 mục mẫu), `cash_vouchers` (độc lập `debt_ledger`), seed quyền `so_quy` cho vai trò Kế toán
+- [x] `backend/config/modules.js`: thêm module_key `so_quy`
+- [x] `backend/services/cashVoucher.service.js`: sinh mã `PT`/`PC` riêng từng loại, `monthBoundsUtc()` (mốc UTC+7 cố định theo giờ VN — không phải UTC thô hay giờ server), `getCashBookSummary()`, `createCashVoucher()` (validate danh mục đúng chiều thu/chi)
+- [x] `backend/routes/cashVouchers.routes.js` (list+summary theo tháng bắt buộc `month`, tạo, xóa cứng, `/staff`), `cashCategories.routes.js` (CRUD, chặn xóa khi đã có phiếu dùng), `cashBookSettings.routes.js` (GET mở/PUT quyền `so_quy`) — mount vào `server.js`
+- [x] Frontend `cash-book.html`/`.js`: danh sách phiếu theo tháng, thẻ Quỹ đầu kỳ/Tổng thu/Tổng chi/Tồn quỹ, modal lập phiếu dùng chung Thu/Chi (kèm nút "+ Tạo loại mới" tạo nhanh danh mục), modal sửa Quỹ đầu kỳ, modal xem chi tiết chỉ đọc
+- [x] Frontend `cash-categories.html`/`.js`: CRUD "Loại thu chi" (rập khuôn `customer-categories.html`)
+- [x] `frontend/assets/layout.js`: nhóm nav mới "Quỹ" (sau "Khách hàng", trước "Quản trị"); `icons.js` thêm icon `wallet` (không dùng lại `ledger` vì đã dùng 2 lần ở Công nợ NCC/KH)
+- [x] `style.css`: `.text-accent`/`.text-destructive` (màu Giá trị thu/chi), `.month-select`/`.month-select-group`, `.form-field-label-row`
+- [x] Sửa theo phản hồi người dùng ngay sau khi demo: nút đầu trang lệch dòng (do `.form-field` có `margin-bottom` không hợp khi đặt trong hàng ngang) → bỏ hẳn `<input type="month">`, đổi sang 2 `<select>` "Tháng"/"Năm" tự viết nhãn tiếng Việt (input kiểu tháng hiển thị theo locale trình duyệt, không ép được tiếng Việt); bổ sung nút "+ Tạo loại mới" ngay trên modal lập phiếu thu/chi
+- [x] Test qua trình duyệt thật (Chrome headless điều khiển CDP thô + script Node gọi thẳng service để test ranh giới tháng): tạo/xóa phiếu, tính đúng 4 số liệu tổng hợp, ranh giới tháng đúng giờ VN (phiếu 23:30 vs 00:30 quanh nửa đêm cuối tháng), xóa danh mục đang dùng bị chặn đúng, phân quyền `so_quy` chặn đúng UI+API, xác nhận không ghi gì vào `debt_ledger`, tạo nhanh danh mục trên modal lập phiếu hoạt động đúng
+
 ## Open questions cần chốt trước khi code phần liên quan
 
 Xem `docs/DECISIONS.md` mục "Open questions".

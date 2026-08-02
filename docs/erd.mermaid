@@ -198,6 +198,37 @@ erDiagram
         boolean is_adjustment "1 = dong 'Dieu chinh cong no' thu cong (migration 016), khac dong tu dong/thanh toan that"
     }
 
+    CASH_BOOK_SETTINGS {
+        int id PK "luon = 1, chi 1 dong duy nhat"
+        real opening_balance "quy dau ky goc, nhap 1 lan, tu dong cong don qua cac thang"
+        datetime updated_at
+    }
+
+    CASH_CATEGORIES {
+        int id PK
+        string name "vd Thu ban hang, Chi mua hang"
+        string type "thu hoac chi"
+        datetime created_at
+    }
+
+    CASH_VOUCHERS {
+        int id PK
+        string code "PT000001... (thu) hoac PC000001... (chi), rieng tung type"
+        string type "thu hoac chi"
+        int category_id FK "NOT NULL, phai cung type voi phieu"
+        string counterpart_name "nguoi nop/nhan, ten tu do - KHONG lien ket partners"
+        int handled_by FK "nguoi thu/chi (nhan vien xu ly), nullable"
+        real amount "> 0"
+        string note
+        boolean record_business_result "1 = hach toan KQKD, chi luu co, chua co bao cao dung"
+        int created_by FK "nguoi tao ban ghi trong he thong"
+        datetime created_at "co the chinh khi lap phieu - quyet dinh thuoc thang nao"
+    }
+
+    CASH_CATEGORIES ||--o{ CASH_VOUCHERS : "phan loai"
+    USERS ||--o{ CASH_VOUCHERS : "nguoi thu/chi"
+    USERS ||--o{ CASH_VOUCHERS : "nguoi tao"
+
     SCHEMA_MIGRATIONS {
         int version PK
         datetime applied_at

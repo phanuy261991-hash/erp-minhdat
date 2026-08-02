@@ -20,6 +20,9 @@ const customerCategoriesRoutes = require('./routes/customerCategories.routes');
 const debtsRoutes = require('./routes/debts.routes');
 const warrantiesRoutes = require('./routes/warranties.routes');
 const reportsRoutes = require('./routes/reports.routes');
+const cashVouchersRoutes = require('./routes/cashVouchers.routes');
+const cashCategoriesRoutes = require('./routes/cashCategories.routes');
+const cashBookSettingsRoutes = require('./routes/cashBookSettings.routes');
 const { requireAuth } = require('./middleware/auth');
 const { requirePermission } = require('./middleware/requirePermission');
 
@@ -84,6 +87,12 @@ app.use('/api/debts', requireAuth, requirePermission('cong_no'), debtsRoutes);
 // Thuoc menu Khach hang, dung chung quyen 'cong_no' (xem warranties.routes.js).
 app.use('/api/warranties', requireAuth, requirePermission('cong_no'), warrantiesRoutes);
 app.use('/api/reports', requireAuth, requirePermission('bao_cao'), reportsRoutes);
+// Module "So quy" - doc lap hoan toan voi Cong no (khong ghi debt_ledger, xem docs/DECISIONS.md).
+// cash-book-settings: GET mo cho moi nguoi da dang nhap, PUT rieng kiem tra quyen 'so_quy' ben
+// trong file route (giong warehouse-settings.routes.js).
+app.use('/api/cash-vouchers', requireAuth, requirePermission('so_quy'), cashVouchersRoutes);
+app.use('/api/cash-categories', requireAuth, requirePermission('so_quy'), cashCategoriesRoutes);
+app.use('/api/cash-book-settings', requireAuth, cashBookSettingsRoutes);
 
 // Route kiem tra server song - dung de test nhanh khi chay demo.
 app.get('/api/health', (req, res) => {

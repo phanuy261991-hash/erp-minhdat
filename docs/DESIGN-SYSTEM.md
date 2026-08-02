@@ -161,6 +161,20 @@
 - **Icon menu biến mất khi thu gọn sidebar**: sau khi thêm `overflow-y:auto` ở trên, thanh cuộn dọc xuất hiện chiếm bớt bề ngang vốn đã rất hẹp (60px khi thu gọn) — SVG icon trong `.nav-item` (không có CSS `width` riêng, chỉ có attribute `width`/`height`) bị thuật toán flexbox shrink về `0px` khi container hết chỗ. Sửa bằng `.nav-item svg{flex-shrink:0}` — icon luôn giữ đúng kích thước dù container hẹp. **Bài học**: SVG đặt trong flex container hẹp luôn cần `flex-shrink:0` tường minh, không thể tin tưởng kích thước mặc định.
 - **`.stat-grid` dính sát `.data-table-wrap` phía sau** (vd trang Báo cáo, mục "Tồn kho hiện tại" không có `.section-heading` chen giữa 2 khối): `.stat-grid` chưa từng có `margin-bottom`, các trang khác "vô tình" không lộ bug vì luôn có `.section-heading` (đã có `margin-top`) ngay sau. Đã thêm `margin-bottom: 24px` cho `.stat-grid` — an toàn vì margin dọc giữa 2 sibling tự collapse lấy giá trị lớn hơn, không cộng dồn với margin-top của phần tử theo sau.
 
+## Chọn Tháng/Năm (cash-book.html) — không dùng `<input type="month">`
+
+> Bổ sung 2026-08-02 khi làm trang Sổ quỹ. Đây là nhu cầu lọc-theo-tháng đầu tiên trong dự án, chưa có tiền lệ.
+
+- **Không dùng `<input type="month">`**: control native của trình duyệt hiển thị theo locale hệ thống (vd "August 2026" trên máy locale Anh), không ép được sang tiếng Việt qua CSS/HTML thuần — phát hiện khi người dùng phản hồi trực tiếp qua ảnh chụp màn hình.
+- Dùng 2 `<select>` "Tháng"/"Năm" (`.month-select`, bọc trong `.month-select-group` — flex gap 6px, không dùng `.form-field` vì class đó có `margin-bottom: 14px` thiết kế cho form xếp dọc, gây lệch dòng khi đặt chung `.page-header-actions` với các nút khác), tự viết nhãn "Tháng 1".."Tháng 12"/"Năm ...". Áp dụng cho mọi nhu cầu chọn tháng/năm tương tự trong tương lai (vd nếu Báo cáo cần thêm bộ lọc tháng).
+
+## Nhãn trường kèm nút hành động (form-field-label-row)
+
+> Bổ sung 2026-08-02, modal "Tạo phiếu thu/chi" — nút "+ Tạo loại mới" cho phép tạo nhanh danh mục "Loại thu chi" ngay trên form, không bắt người dùng rời sang trang riêng.
+
+- `.form-field-label-row` (flex, `justify-content: space-between`) bọc `<label>` + 1 nút `.table-link-btn` (tái dùng nguyên class link-style đã có, dù tên gợi ý "trong bảng" nhưng style đủ chung để dùng ở đây) — đặt bên trong `.form-field` thay cho `<label>` đơn thuần. Vì label không còn là con trực tiếp của `.form-field` (mất style từ `.form-field > label`), đã lặp lại đúng font-size/weight/color trong `.form-field-label-row label` riêng.
+- Bấm nút hiện thêm 1 `.form-field` ẩn (`hidden`, giống pattern `#new-partner-fields` của `stock-receipts.html`) chứa ô nhập tên, đồng thời khóa (`disabled`) select gốc để rõ ràng đang ở chế độ tạo mới, không phải chọn có sẵn.
+
 ## Hiệu ứng & Animation
 
 - Border-radius: 8–12px cho input/button, 16–20px cho card lớn.
@@ -183,4 +197,5 @@
 
 - **2026-07-31**: `login.html`, `dashboard.html`, `users.html` (Phase 1/1.5); `products.html`, `product-detail.html`, `stock-receipts.html` (Phase 2 — pattern mới: `.btn-add`, `.search-box`/`.sortable-th`, `.stock-low`, `.method-group`, `.item-rows`/`.combobox`, `.form-row`); `stock-issues.html`, `partners.html`, `debts.html` (hoàn thiện Phase 2 + Phase 3).
 - **2026-08-01**: `roles.html`, `company-settings.html`, `warehouse-settings.html`, `sales-settings.html` (Phase 1.6); `print-issue.html` (trang in độc lập, không dùng sidebar), `reports.html` (biểu đồ SVG tự vẽ) (Phase 4); `customers.html`, `customer-debts.html`, `customer-categories.html`, `customer-detail.html` (tách Khách hàng khỏi Đối tác); `warranties.html` (module Bảo hành, modal thêm/sửa); `dashboard.html` (redesign — hero chào + card bento + truy cập nhanh), `about.html` (Thông tin phần mềm); `setup.html` (thiết lập lần đầu qua giao diện, tái dùng CSS `.login-card`).
+- **2026-08-02**: `cash-book.html` (module Sổ quỹ — pattern mới: chọn Tháng/Năm tiếng Việt thay `<input type="month">`, `.form-field-label-row` cho nút "+ Tạo loại mới" ngay trên form; thẻ số liệu tô màu theo ý nghĩa — `.stat-card-value--primary`/`--accent`/`--destructive` mới thêm cạnh `--warning` có sẵn, dùng cho Quỹ đầu kỳ (xanh dương)/Tổng thu (xanh lá)/Tổng chi (đỏ, kèm dấu "-"), Tồn quỹ giữ màu mặc định vì âm đã tự có dấu "-" qua `toLocaleString()`, không cần tô màu riêng để phân biệt), `cash-categories.html` (CRUD "Loại thu chi", rập khuôn `customer-categories.html`).
 - Mọi trang mới từ giờ trở đi phải dùng lại đúng biến màu, font, spacing, khung điều hướng, class bảng dữ liệu, các class trang cấu hình, và các pattern form/bảng động ở trên để đồng bộ toàn hệ thống — không tự tạo style riêng cho từng trang.

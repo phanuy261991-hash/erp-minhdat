@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loại thu chi - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Quỹ</p>
+      <div class="page-header">
+        <h2>Loại thu chi</h2>
+        <div class="page-header-actions">
+          <button type="button" id="btn-add-category" class="btn-add"></button>
+        </div>
+      </div>
+
+      <div id="categories-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="categories-error-text"></span>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tên loại</th>
+              <th>Loại</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="categories-tbody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <div id="category-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3 id="category-modal-title">Thêm loại thu chi</h3>
+      <form id="category-form">
+        <div id="category-form-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="category-form-error-text"></span>
+        </div>
+
+        <div class="form-field">
+          <label for="category-name">Tên loại</label>
+          <input type="text" id="category-name" required autocomplete="off" placeholder="vd: Thu bán hàng, Chi mua hàng" />
+        </div>
+
+        <div class="form-field">
+          <label for="category-type">Loại</label>
+          <select id="category-type" required>
+            <option value="thu">Thu</option>
+            <option value="chi">Chi</option>
+          </select>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-category" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-category" class="btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/cash-categories.js"></script>
+</body>
+</html>
