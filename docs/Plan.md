@@ -300,6 +300,16 @@ Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân qu
 - [x] Frontend `warehouse-settings.html`/`.js`: mục "Sao lưu dữ liệu" — ô nhập đường dẫn + nút "Backup ngay"
 - [x] `docs/DEPLOY.md` (mới): quy trình đầy đủ IP tĩnh, Windows Firewall, `SESSION_SECRET`, PM2 + `pm2-windows-startup` (Windows không hỗ trợ `pm2 startup` chính thức), Task Scheduler cho backup, checklist go-live
 - [x] Test qua trình duyệt thật: nhập đường dẫn backup, bấm "Backup ngay" → tạo đúng file trên đĩa; tài khoản không có quyền `cau_hinh` gọi thẳng API bị chặn 403
+
+> Cập nhật 2026-08-01 (đợt 2): người dùng yêu cầu thêm cách đóng gói/phân phối đơn giản hơn PM2 thủ công — tự tạo database mới, thiết lập tài khoản admin đầu tiên qua giao diện, tự khởi động cùng Windows. Chi tiết đầy đủ (bao gồm 1 lần thử thất bại với `pkg`): `docs/DECISIONS.md`, `docs/CHANGELOG.md`.
+
+- [x] `backend/server.js` tự gọi `runMigrations()` khi khởi động (không cần `npm run migrate` thủ công cho bản đóng gói)
+- [x] `backend/routes/setup.routes.js` + `frontend/setup.html`/`assets/setup.js` (mới): trang "Thiết lập lần đầu" tạo tài khoản Admin đầu tiên qua giao diện, tự khoá sau khi có ≥1 tài khoản — thay `npm run seed:admin` cho bản đóng gói
+- [x] `scripts/build-portable.js` (`npm run build:portable`): đóng gói thành thư mục `dist/` tự chứa `node.exe`, kèm `start.bat` — không cần cài Node trên máy đích (đã thử `@yao-pkg/pkg` đóng gói thành 1 file `.exe` duy nhất trước, thất bại do lỗi native-addon)
+- [x] `scripts/install-autostart.ps1`/`uninstall-autostart.ps1`: tự khởi động cùng Windows qua Task Scheduler (chọn thay `node-windows` vì không cần Node cài vĩnh viễn trên máy chủ)
+- [x] `docs/DEPLOY.md`: thêm "Cách A — Cài đặt từ bản đóng gói" (đơn giản hơn, khuyến nghị) song song quy trình PM2 thủ công cũ, kèm hướng dẫn cập nhật phiên bản không mất dữ liệu
+- [x] Test qua trình duyệt thật với bản portable (database rỗng): tự tạo DB → thiết lập lần đầu → đăng nhập → dashboard đúng
+- [ ] Chạy `install-autostart.ps1` thật trên máy chủ chính thức (chưa làm — máy đang thao tác vẫn là máy dev)
 - [ ] Đặt IP tĩnh/DHCP reservation cho máy chủ thật (chưa làm — cần đúng máy chủ, xem `docs/DEPLOY.md` mục 1)
 - [ ] Chạy `pm2 start`/`pm2-startup install`/`pm2 save` trên máy chủ thật (chưa làm — xem `docs/DEPLOY.md` mục 3–4)
 - [ ] Đặt Windows Task Scheduler chạy backup hàng ngày trên máy chủ thật (chưa làm — xem `docs/DEPLOY.md` mục 5)

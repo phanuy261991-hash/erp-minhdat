@@ -47,7 +47,7 @@ function renderWarrantiesError(message) {
 function getVisibleWarranties() {
   const keyword = searchKeyword.trim().toLowerCase();
   if (!keyword) return warrantiesCache;
-  return warrantiesCache.filter((w) => w.partner_name.toLowerCase().includes(keyword));
+  return warrantiesCache.filter((w) => w.partner_name.toLowerCase().includes(keyword) || (w.phone || '').toLowerCase().includes(keyword));
 }
 
 // Trang thai: vo hieu hoa (xam) > het han (do) > sap het han <=30 ngay (cam, dung chung

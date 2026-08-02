@@ -68,7 +68,7 @@ function renderDebtsError(message) {
 function getVisibleSummary() {
   const keyword = searchKeyword.trim().toLowerCase();
   if (!keyword) return summaryCache;
-  return summaryCache.filter((s) => s.name.toLowerCase().includes(keyword));
+  return summaryCache.filter((s) => s.name.toLowerCase().includes(keyword) || (s.phone || '').toLowerCase().includes(keyword));
 }
 
 function isOverLimit(item) {

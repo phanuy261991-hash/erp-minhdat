@@ -1,6 +1,6 @@
 # Trạng thái hiện tại
 
-**Cập nhật lần cuối**: 2026-08-01
+**Cập nhật lần cuối**: 2026-08-02
 
 ## Giai đoạn
 
@@ -16,6 +16,10 @@ Phase 1, 1.5, 1.6, 2 (Kho), 3 (Công nợ), **4 (In phiếu & Báo cáo) đã ho
 - ✅ **Phase 4 — In phiếu xuất kho** (`print-issue.html`, trang độc lập không dùng sidebar): dùng `GET /api/stock-issues/:id` có sẵn (không cần API `/print` riêng như dự tính ban đầu), hiển thị đầy đủ thông tin công ty (tên, địa chỉ, điện thoại, MST, email, website, ngân hàng) + thông tin khách hàng + bảng sản phẩm (kèm chiết khấu) + tổng tiền + chữ ký. Nút "In phiếu" (`window.print()`) trên từng dòng ở `stock-issues.html`.
 - ✅ **Ghi chú in phiếu cấu hình được** (`company_settings.print_note`, migration `014`): nội dung hiển thị dưới bảng kê trên phiếu in (điều kiện bảo hành, chính sách đổi trả...) — sửa được qua trang Thông tin công ty (textarea mới), không hardcode cứng trong code. Seed sẵn nội dung mẫu theo yêu cầu người dùng.
 - ✅ **Phase 4 — Báo cáo** (`reports.html`, quyền `bao_cao`): 3 phần — (1) Tồn kho hiện tại (bảng + tổng giá trị tồn, giá vốn luôn tính bình quân gia quyền bất kể `costing_method` đang chọn), (2) Mua hàng/Bán hàng theo tháng (biểu đồ cột SVG tự vẽ tay, không dùng thư viện ngoài, kèm % tăng trưởng so với tháng trước), (3) Công nợ tổng hợp toàn hệ thống (tổng phải thu/phải trả). `backend/routes/reports.routes.js` tính trực tiếp từ bảng gốc, không lưu số tổng hợp riêng.
+
+## Đã hoàn thành (tiếp — 2026-08-02, ngoài phase)
+
+- **Tìm kiếm theo số điện thoại**: mở rộng ô tìm kiếm (vốn chỉ lọc theo tên) để lọc thêm theo số điện thoại trên 5 trang: Nhà cung cấp (`partners.html`), Công nợ NCC (`debts.html`), Khách hàng (`customers.html`), Công nợ khách hàng (`customer-debts.html`), Bảo hành (`warranties.html`) — chỉ đổi hàm lọc phía client (`getVisiblePartners`/`getVisibleSummary`/`getVisibleCustomers`/`getVisibleWarranties`, khớp theo tên HOẶC số điện thoại), không đổi API/backend vì `phone` đã có sẵn trong response của cả 3 route (`/partners`, `/debts/summary`, `/warranties`). Cập nhật placeholder ô tìm kiếm ghi rõ "...hoặc số điện thoại...". Test qua trình duyệt thật (Chrome headless điều khiển bằng CDP, có chụp ảnh màn hình xác nhận): gõ số điện thoại/1 đoạn số trên cả 5 trang đều lọc đúng về 1 dòng khớp, không lẫn dòng khác.
 
 ## Đã hoàn thành
 

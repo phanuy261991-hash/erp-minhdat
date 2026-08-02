@@ -36,7 +36,7 @@ function renderCustomersError(message) {
 function getVisibleCustomers() {
   const keyword = searchKeyword.trim().toLowerCase();
   if (!keyword) return customersCache;
-  return customersCache.filter((c) => c.name.toLowerCase().includes(keyword));
+  return customersCache.filter((c) => c.name.toLowerCase().includes(keyword) || (c.phone || '').toLowerCase().includes(keyword));
 }
 
 function renderRow(customer) {

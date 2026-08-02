@@ -1,7 +1,7 @@
 # PRD: Hệ thống Quản lý Kho & Công nợ nội bộ
 
-**Version**: v1.1 — cập nhật 2026-08-01 (bổ sung 4.1/4.7/4.8/4.9)
-**Trạng thái**: Đang triển khai (Phase 1/1.5 xong, Phase 1.6 đang làm) — xem trạng thái chính xác tại `docs/CURRENT.md`. Các mục 4.x vẫn có thể bổ sung khi phát sinh nhu cầu mới (xem `docs/DECISIONS.md`).
+**Version**: v1.3 — cập nhật 2026-08-01 (bổ sung 4.1/4.7/4.8/4.9/4.10; mục 4 "Vận hành" + rủi ro liên quan cập nhật thêm phương án đóng gói portable/Task Scheduler song song PM2)
+**Trạng thái**: Phase 1 → 4 đã hoàn thành toàn bộ (nền tảng, kho, công nợ, in phiếu, báo cáo) + nhiều mở rộng ngoài phase (Bảo hành, tách Khách hàng, Điều chỉnh công nợ, đóng gói portable). Phase 5 (Vận hành & Go-live) đang làm — xem trạng thái chính xác tại `docs/CURRENT.md`. Các mục 4.x vẫn có thể bổ sung khi phát sinh nhu cầu mới (xem `docs/DECISIONS.md`).
 
 > Tên dự án là working title. Đổi tên theo tên công ty/thương hiệu thực tế khi cần.
 
@@ -28,7 +28,7 @@ Web app nội bộ, kiến trúc đơn giản (không microservices, không clou
 - **Frontend**: HTML/CSS/JS thuần, gọi API qua `fetch`.
 - **Backend**: Node.js + Express, chạy như một process duy nhất trên máy chủ.
 - **Database**: SQLite3 qua `better-sqlite3`, bật `PRAGMA journal_mode=WAL` để giảm lỗi khóa khi ghi đồng thời.
-- **Vận hành**: quản lý process bằng PM2, đăng ký `pm2 startup` + `pm2 save` để tự chạy lại khi máy chủ khởi động (không chỉ khi crash).
+- **Vận hành**: 2 cách triển khai (xem `docs/DEPLOY.md`) — (1) đóng gói thành thư mục portable tự chứa `node.exe`, tự khởi động cùng Windows qua Task Scheduler (đơn giản hơn, không cần cài Node/npm trên máy đích, khuyến nghị cho hầu hết trường hợp), hoặc (2) PM2 thủ công (`pm2 startup`/`pm2 save`) cho trường hợp cần công cụ theo dõi process nâng cao. Cả 2 đều đảm bảo tự chạy lại khi máy chủ khởi động, không chỉ khi crash.
 - **Truy cập**: các máy khác vào bằng `http://<IP-máy-chủ>:<port>` trong LAN. Máy chủ cần IP tĩnh hoặc DHCP reservation.
 - **Schema**: khởi tạo qua migration có đánh version (`001_init.sql`, `002_...`), lưu version đã áp dụng trong bảng `schema_migrations` — không dùng `CREATE TABLE IF NOT EXISTS` đơn thuần, vì cần xử lý thay đổi schema an toàn sau khi đã có dữ liệu thật.
 
@@ -126,7 +126,7 @@ Web app nội bộ, kiến trúc đơn giản (không microservices, không clou
 | Ngừng dùng sổ sách song song | % phiếu xuất/nhập ghi qua hệ thống | 100% sau tuần đầu go-live |
 | Độ chính xác tồn kho | Sai lệch giữa hệ thống và kiểm kê thực tế | < 1% sau 1 tháng |
 | Tốc độ lập phiếu | Thời gian lập 1 phiếu xuất | < 2 phút |
-| Ổn định hệ thống trong giờ làm việc | Uptime nhờ PM2 auto-restart | > 99% trong giờ hành chính |
+| Ổn định hệ thống trong giờ làm việc | Uptime nhờ auto-restart (Task Scheduler hoặc PM2, xem mục 4 "Vận hành") | > 99% trong giờ hành chính |
 
 ## 6. Technical Constraints
 
@@ -144,21 +144,21 @@ Web app nội bộ, kiến trúc đơn giản (không microservices, không clou
 | Phase 2 | Quản lý hàng tồn kho + xuất/nhập kho |
 | Phase 3 | Công nợ nhà cung cấp & khách hàng |
 | Phase 4 | In phiếu xuất + báo cáo |
-| Phase 5 | Deploy PM2, cấu hình IP tĩnh, backup tự động, đào tạo người dùng, go-live |
+| Phase 5 | Đóng gói/deploy (portable + Task Scheduler hoặc PM2), cấu hình IP tĩnh, backup tự động, đào tạo người dùng, go-live |
 
 *Chưa có ngày cụ thể — cần bổ sung theo nguồn lực thực tế (bao nhiêu người code, làm full-time hay part-time).*
 
 ## 8. Dependencies
 
 - Không phụ thuộc dịch vụ bên ngoài (không API thanh toán, không cloud).
-- Phụ thuộc hạ tầng nội bộ: máy chủ (chạy 24/7 hoặc bật/tắt theo giờ làm việc + PM2), mạng LAN ổn định, máy in văn phòng đã cài driver trên các máy client.
+- Phụ thuộc hạ tầng nội bộ: máy chủ (chạy 24/7 hoặc bật/tắt theo giờ làm việc, tự khởi động lại qua Task Scheduler hoặc PM2), mạng LAN ổn định, máy in văn phòng đã cài driver trên các máy client.
 
 ## 9. Risks & Mitigation
 
 | Rủi ro | Mitigation |
 |---|---|
 | SQLite khóa khi nhiều người ghi đồng thời (`SQLITE_BUSY`) | Bật WAL mode, dùng `better-sqlite3` với transaction rõ ràng cho mỗi phiếu |
-| Máy chủ tắt/crash → mất truy cập toàn bộ | PM2 + `pm2 startup`/`pm2 save` để tự chạy lại; chấp nhận gián đoạn khi máy tắt hẳn, không có failover |
+| Máy chủ tắt/crash → mất truy cập toàn bộ | Tự khởi động lại qua Task Scheduler (bản đóng gói) hoặc PM2 (`pm2 startup`/`pm2 save`); chấp nhận gián đoạn khi máy tắt hẳn, không có failover |
 | IP máy chủ đổi do DHCP → máy khác mất kết nối | Đặt IP tĩnh hoặc DHCP reservation |
 | Mất dữ liệu do không backup | Script backup tự động định kỳ (hàng ngày), lưu ngoài máy chủ |
 | Thay đổi schema sau khi đã có dữ liệu thật gây lệch/mất dữ liệu | Migration đánh version từ đầu, bảng `schema_migrations` theo dõi version đã áp dụng |

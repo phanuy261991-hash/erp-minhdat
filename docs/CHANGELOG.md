@@ -2,6 +2,26 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-02 (Tìm kiếm theo số điện thoại — Nhà cung cấp, Công nợ NCC, Khách hàng, Công nợ khách hàng, Bảo hành)
+
+> Người dùng yêu cầu bổ sung tìm kiếm theo số điện thoại (trước đó ô tìm kiếm ở 5 trang này chỉ lọc theo tên) ở các trang: Nhà cung cấp, Công nợ NCC, Khách hàng, Công nợ khách hàng, Bảo hành.
+
+- Chỉ sửa hàm lọc phía **frontend** (`getVisiblePartners` trong `partners.js`, `getVisibleSummary` trong `debts.js`/`customer-debts.js`, `getVisibleCustomers` trong `customers.js`, `getVisibleWarranties` trong `warranties.js`) — thêm điều kiện khớp theo `phone` (OR với điều kiện tên đã có). Không cần đổi API/backend vì `phone` đã có sẵn trong response của cả 3 route liên quan (`GET /api/partners`, `GET /api/debts/summary`, `GET /api/warranties`) — đã dùng để hiển thị cột "Số điện thoại" từ trước, chỉ chưa dùng để lọc.
+- Cập nhật placeholder ô tìm kiếm trên cả 5 trang (`partners.html`/`debts.html`/`customers.html`/`customer-debts.html`/`warranties.html`) từ "Tìm theo tên..." thành "Tìm theo tên hoặc số điện thoại...".
+- Test qua trình duyệt thật (Chrome headless điều khiển bằng CDP thô — dự án không có `chromium-cli`/Playwright cài sẵn, đã viết script dùng `WebSocket`/`fetch` built-in của Node để đăng nhập + điều hướng + gõ vào ô tìm kiếm + đọc lại bảng kết quả, kèm chụp ảnh màn hình xác nhận trực quan): gõ 1 đoạn số điện thoại (không trùng với tên) trên cả 5 trang đều lọc đúng về 1 dòng khớp — xác nhận lọc theo số điện thoại thật sự hoạt động, không chỉ lọc theo tên như trước. Có tạo 1 bản ghi Bảo hành tạm để test (trang Bảo hành trước đó không có bản ghi nào có số điện thoại) — đã xóa ngay sau khi test xong, không để lại dữ liệu rác.
+
+## 2026-08-01 (Đồng bộ lại tài liệu bị lệch so với thực tế — không đổi code)
+
+> Đầu phiên, đọc lại toàn bộ tài liệu bắt buộc theo `CLAUDE.md` (PRD/Plan/erd/CURRENT/TASK/CHANGELOG/DECISIONS/DEMO/DEPLOY/DESIGN-SYSTEM/handoff mới nhất) để nắm lại bối cảnh — phát hiện 4 file có nội dung cũ, không khớp trạng thái thực tế đã ghi trong `CURRENT.md`/`CHANGELOG.md`. Đã sửa cả 4, không đổi code/schema nào.
+
+- `docs/PRD.md`: dòng "Trạng thái" đầu file vẫn ghi "Phase 1/1.5 xong, Phase 1.6 đang làm" (cũ từ lúc tạo) — sửa thành "Phase 1 → 4 đã hoàn thành, Phase 5 đang làm"; bổ sung mục 4.10 (Bảo hành) vào ghi chú version (trước đó chỉ liệt kê 4.1/4.7/4.8/4.9 dù 4.10 đã có trong thân tài liệu).
+- `docs/DEMO.md`: mục 6 (mô tả menu khi đăng nhập) thiếu nhóm "Báo cáo" (Phase 4), "Bảo hành" (nhóm Khách hàng), "Thông tin phần mềm" (nhóm Cấu hình, mở cho mọi tài khoản) — cả 3 đã làm xong từ trước nhưng chưa từng được thêm vào tài liệu demo này.
+- `docs/DESIGN-SYSTEM.md`: mục "Áp dụng" cuối file dừng ở danh sách trang tính đến `stock-receipts.html` (Phase 2) — bổ sung toàn bộ trang làm sau đó (Xuất kho, Đối tác/Công nợ, Khách hàng, Bảo hành, In phiếu, Báo cáo, Tổng quan redesign, About, Setup).
+- `.claude/docs/inventory-debt-ledger.md` (tài liệu bắt buộc đọc trước khi sửa logic tồn kho/công nợ theo `CLAUDE.md`): 2 chỗ vẫn ghi "Phase 3, chưa code" cho việc ghi `debt_ledger` khi tạo phiếu — thực tế `debt.service.js#recordDebtFromDocument()` đã code và test xong từ Phase 3 (cả chiều phải trả NCC lẫn phải thu khách hàng) — đây là chỗ **rủi ro nhất** trong 4 lỗi lệch, vì tài liệu này được tham chiếu trực tiếp mỗi khi có ai sửa logic ledger, thông tin sai có thể khiến phiên sau tưởng nhầm tính năng chưa tồn tại.
+- **Không sửa (ở đợt này)**: `docs/erd.mermaid` (đã khớp thực tế, có đủ `ROLES`/`CUSTOMER_CATEGORIES`/`WARRANTIES`/`backup_path`); file handoff cũ trong `docs/handoff/` (theo quy ước dự án, handoff là snapshot 1 phiên, chỉ tạo mới khi người dùng yêu cầu, không tự động cập nhật lại bản cũ).
+
+> Đợt 2 (sau khi làm xong đóng gói portable, người dùng yêu cầu kiểm tra lại đồng bộ tài liệu lần nữa): phát hiện `docs/Plan.md`/`docs/PRD.md` bị lệch tiếp — 2 file này đã đúng ở đợt 1 nhưng chưa được cập nhật theo phần đóng gói portable làm ngay sau đó (đã commit riêng ở `docs/CURRENT.md`/`TASK.md`/`DECISIONS.md`/`DEPLOY.md`/`CHANGELOG.md` nhưng quên `Plan.md`/`PRD.md`). Đã sửa: `docs/Plan.md` mục "Phase 5" bổ sung đầy đủ checklist đóng gói portable (đối xứng nội dung đã có ở `docs/TASK.md`); `docs/PRD.md` mục 4 "Vận hành" + bảng rủi ro/success metrics/dependencies (mục 5/8/9) đổi từ "chỉ có PM2" thành "2 phương án: portable+Task Scheduler (khuyến nghị) hoặc PM2" — nâng version PRD lên v1.3. Đã kiểm tra lại `docs/erd.mermaid` (đủ 18 bảng theo migration 001-018, không thiếu) và `docs/CURRENT.md`/`TASK.md`/`DECISIONS.md`/`DEPLOY.md` (đã khớp, không cần sửa thêm).
+
 ## 2026-08-01 (Đóng gói bản portable + thiết lập lần đầu qua giao diện + tự khởi động cùng Windows)
 
 > Người dùng hỏi có cách đóng gói/phân phối đơn giản hơn cách chạy PM2 thủ công không, sau đó xác nhận muốn đóng gói thành bản chạy độc lập: tự tạo database mới, cho thiết lập tài khoản admin đầu tiên qua giao diện (không cần biến môi trường/terminal), và tự động khởi động cùng Windows. Chi tiết đầy đủ quá trình quyết định (bao gồm 1 lần thử thất bại với `pkg`) xem `docs/DECISIONS.md`.

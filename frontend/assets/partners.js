@@ -35,7 +35,7 @@ function renderPartnersError(message) {
 function getVisiblePartners() {
   const keyword = searchKeyword.trim().toLowerCase();
   if (!keyword) return partnersCache;
-  return partnersCache.filter((p) => p.name.toLowerCase().includes(keyword));
+  return partnersCache.filter((p) => p.name.toLowerCase().includes(keyword) || (p.phone || '').toLowerCase().includes(keyword));
 }
 
 function renderRow(partner) {

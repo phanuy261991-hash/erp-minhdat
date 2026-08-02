@@ -65,7 +65,7 @@ function renderDebtsError(message) {
 function getVisibleSummary() {
   const keyword = searchKeyword.trim().toLowerCase();
   if (!keyword) return summaryCache;
-  return summaryCache.filter((s) => s.name.toLowerCase().includes(keyword));
+  return summaryCache.filter((s) => s.name.toLowerCase().includes(keyword) || (s.phone || '').toLowerCase().includes(keyword));
 }
 
 // So du > 0 nghia la con no (voi NCC: minh con phai tra ho; voi khach hang: ho con phai tra

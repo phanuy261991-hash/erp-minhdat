@@ -39,13 +39,13 @@ Khi tạo phiếu nhập hoặc phiếu xuất, các bước sau **bắt buộc 
 1. Insert vào `stock_receipts`/`stock_issues`.
 2. Insert từng dòng vào `stock_receipt_items`/`stock_issue_items`.
 3. Insert dòng tương ứng vào `stock_movements` cho mỗi sản phẩm trong phiếu (kèm `unit_cost` snapshot). Với phiếu nhập, tạo thêm 1 dòng `stock_lots` cho mỗi sản phẩm; với phiếu xuất, trừ dần `quantity_remaining` của các lô liên quan theo FIFO (xem `costing.service.js`).
-4. Nếu phiếu phát sinh công nợ (ví dụ xuất hàng nhưng khách chưa trả tiền), insert dòng vào `debt_ledger` (**Phase 3, chưa code** — cột `stock_issues.payment_status` đã có sẵn từ Phase 2 để chuẩn bị cho việc này).
+4. Nếu phiếu phát sinh công nợ (`payment_status = 'cong_no'` — phiếu xuất là khách chưa trả tiền, phiếu nhập là mình chưa trả NCC), gọi `debt.service.js#recordDebtFromDocument()` để insert dòng vào `debt_ledger` **trong cùng transaction** (không mở transaction riêng) — **đã code từ Phase 3**.
 
 Nếu bất kỳ bước nào lỗi, toàn bộ transaction phải rollback — không được để phiếu tồn tại mà thiếu movement, hoặc ngược lại. Đã test qua curl: sản phẩm không tồn tại giữa transaction → rollback đúng, không tạo phiếu.
 
 ## Các quy tắc nghiệp vụ đã chốt (trước đây ghi "edge case chưa chốt" — đã cập nhật 2026-07-31 cho khớp thực tế)
 
 - **Tồn kho không đủ khi xuất**: mặc định chặn cứng; có cấu hình `warehouse_settings.allow_negative_stock` cho phép xuất trước nhập bù sau (đã code + test trong `stockIssue.service.js`).
-- **Công nợ từ phiếu xuất**: chỉ phát sinh khi `stock_issues.payment_status = 'cong_no'` (cột đã có từ migration Phase 2) — việc thực sự ghi `debt_ledger` là **Phase 3, chưa code**.
+- **Công nợ từ phiếu nhập/xuất**: chỉ phát sinh khi `payment_status = 'cong_no'` (`stock_receipts.payment_status` đối xứng `stock_issues.payment_status`, migration `011`) và bắt buộc có `partner_id`. **Đã code từ Phase 3** (`debt.service.js#recordDebtFromDocument()`, gọi trong transaction có sẵn của `stockReceipt.service.js`/`stockIssue.service.js`).
 - **Sửa/hủy phiếu đã tạo**: không cho sửa/xóa trực tiếp — chỉ tạo phiếu điều chỉnh bù trừ (phiếu mới ghi ngược dấu) để giữ lịch sử. **Đã code** (migration `010_receipt_issue_adjustment.sql`): phiếu nhập/xuất mới có thể đánh dấu `adjusts_type`/`adjusts_id` trỏ về phiếu gốc (không giới hạn hướng — nhập có thể bù bằng nhập hoặc xuất, và ngược lại), không sửa/xóa phiếu gốc, chỉ ghi liên kết để truy vết cả 2 chiều.
 - **Sửa số dư `debt_ledger` sai** (vd nhập nhầm giá vốn phiếu nhập → công nợ NCC sai theo): cơ chế "phiếu điều chỉnh bù trừ" ở trên **KHÔNG dùng được cho công nợ** — `recordDebtFromDocument()` luôn ghi `type='no'` (tăng nợ) bất kể phiếu nhập hay xuất, nên 1 phiếu bù trừ sẽ cộng thêm nợ chứ không trừ. **Đã code** (migration `016_debt_adjustment.sql`, `docs/DECISIONS.md` mục cùng ngày): `debt.service.js#recordDebtAdjustment()` ghi thêm 1 dòng `debt_ledger` riêng (`is_adjustment=1`), tự chọn chiều tăng/giảm (`type`), bắt buộc ghi lý do, tùy chọn liên kết về đúng phiếu gốc (validate đúng đối tác) — không sửa/xóa dòng ledger gốc, đúng nguyên tắc append-only của toàn bộ pattern này.

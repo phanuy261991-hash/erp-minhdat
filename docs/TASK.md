@@ -190,6 +190,11 @@
 - [ ] Test toàn bộ luồng với dữ liệu thật, đào tạo người dùng
 - [ ] Go-live, theo dõi 1 tuần đầu
 
+### Tìm kiếm theo số điện thoại (ngoài phase, theo yêu cầu người dùng 2026-08-02)
+
+- [x] `partners.html`/`.js`, `debts.html`/`.js`, `customers.html`/`.js`, `customer-debts.html`/`.js`, `warranties.html`/`.js`: mở rộng ô tìm kiếm lọc thêm theo số điện thoại (trước chỉ lọc theo tên) — chỉ sửa hàm lọc phía frontend, không đổi API (`phone` đã có sẵn trong response)
+- [x] Test qua trình duyệt thật (CDP headless + chụp ảnh màn hình): cả 5 trang lọc đúng theo số điện thoại
+
 ## Open questions cần chốt trước khi code phần liên quan
 
 Xem `docs/DECISIONS.md` mục "Open questions".
