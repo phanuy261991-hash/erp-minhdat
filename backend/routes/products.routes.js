@@ -3,11 +3,25 @@
 // chon san pham luc lap phieu nhap/xuat), POST/PUT rieng kiem tra quyen module 'kho'.
 
 const express = require('express');
+const multer = require('multer');
+const ExcelJS = require('exceljs');
 const db = require('../db/database');
 const { requirePermission } = require('../middleware/requirePermission');
 const { getCostingMethod, getWeightedAverageCost } = require('../services/costing.service');
 
 const router = express.Router();
+
+// Import/export Excel (2026-08-02): dung memoryStorage (khong ghi file tam ra dia) vi file
+// danh muc san pham nho, xu ly xong la vut ngay. Gioi han 5MB + chi nhan .xlsx (ExcelJS khong
+// doc duoc dinh dang .xls cu).
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
+
+const IMPORT_TEMPLATE_HEADERS = [
+  'Mã sản phẩm*', 'Tên sản phẩm*', 'Đơn vị tính*', 'Giá bán*', 'Giá vốn', 'Ngưỡng cảnh báo tồn kho thấp',
+];
 
 // Cac truong duoc theo doi lich su chinh sua (product_change_log) - so sanh gia tri cu/moi
 // moi lan PUT thanh cong, chi ghi dong nao thuc su thay doi.
@@ -73,6 +87,187 @@ router.post('/', requirePermission('kho'), (req, res) => {
 
   const product = db.prepare(`${SELECT_PRODUCTS_WITH_STOCK} HAVING p.id = ?`).get(result.lastInsertRowid);
   res.status(201).json({ product: withBooleanActive(product) });
+});
+
+// Cac route Excel dat TRUOC "GET /:id" o duoi - Express khop "/:id" voi bat ky doan duong dan
+// nao (vd "import-template" se bi hieu la id) neu dang ky sau, nen phai khai bao truoc.
+
+// Tai file mau de dien du lieu import - cung 6 cot dung thu tu voi form them/sua san pham.
+router.get('/import-template', requirePermission('kho'), async (req, res) => {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('San pham');
+  sheet.columns = IMPORT_TEMPLATE_HEADERS.map((header) => ({ header, width: 24 }));
+  sheet.getRow(1).font = { bold: true };
+  sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDCEAFE' } };
+  sheet.views = [{ state: 'frozen', ySplit: 1 }];
+
+  const guideSheet = workbook.addWorksheet('Hướng dẫn');
+  guideSheet.columns = [{ width: 90 }];
+  [
+    'Hướng dẫn nhập file:',
+    '- Không xóa/đổi dòng tiêu đề (dòng 1) ở sheet "San pham".',
+    '- Cột có dấu * là bắt buộc: Mã sản phẩm, Tên sản phẩm, Đơn vị tính, Giá bán.',
+    '- Mã sản phẩm không được trùng với sản phẩm đã có trong hệ thống, và không trùng nhau trong file.',
+    '- Giá bán, Giá vốn, Ngưỡng cảnh báo tồn kho thấp phải là số (để trống Giá vốn/Ngưỡng nếu không có, hệ thống tự hiểu là 0).',
+    '- Nếu file có bất kỳ dòng nào lỗi, toàn bộ file sẽ không được nhập - sửa hết lỗi rồi tải lên lại.',
+  ].forEach((line, i) => {
+    guideSheet.getCell(i + 1, 1).value = line;
+  });
+  guideSheet.getRow(1).font = { bold: true };
+
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename="mau-import-san-pham.xlsx"');
+  await workbook.xlsx.write(res);
+  res.end();
+});
+
+function cellString(cell) {
+  const v = cell.value;
+  if (v === null || v === undefined) return '';
+  if (typeof v === 'object') {
+    if ('text' in v) return String(v.text).trim();
+    if ('result' in v) return String(v.result).trim();
+    return '';
+  }
+  return String(v).trim();
+}
+
+// Tra ve { value, invalid }: value = so (null neu de trong), invalid = true neu co noi dung
+// nhung khong phai so hop le - dung de bao loi ro rang thay vi am tham quy ve 0 nhu form thuong.
+function cellNumberOrNull(cell) {
+  const text = cellString(cell);
+  if (text === '') return { value: null, invalid: false };
+  const n = Number(text.replace(/,/g, '').trim());
+  return { value: Number.isNaN(n) ? null : n, invalid: Number.isNaN(n) };
+}
+
+// Import hang loat tu file Excel: chi nhan khi TOAN BO file hop le (theo yeu cau nguoi dung,
+// khong import mot phan roi bao loi phan con lai) - tranh tinh trang du lieu import do dang kho
+// kiem soat. Ma san pham trung (voi DB hoac trong chinh file) bi bao loi, khong ghi de (upsert).
+router.post('/import', requirePermission('kho'), upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'Chưa chọn file để nhập' });
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  try {
+    await workbook.xlsx.load(req.file.buffer);
+  } catch (err) {
+    return res.status(400).json({ error: 'File không đúng định dạng Excel (.xlsx)' });
+  }
+
+  const sheet = workbook.worksheets[0];
+  if (!sheet) {
+    return res.status(400).json({ error: 'File không có dữ liệu' });
+  }
+
+  const existingCodes = new Set(db.prepare('SELECT code FROM products').all().map((p) => p.code));
+  const codesInFile = new Set();
+  const errors = [];
+  const validRows = [];
+
+  sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+    if (rowNumber === 1) return; // dong tieu de
+
+    const code = cellString(row.getCell(1));
+    const name = cellString(row.getCell(2));
+    const unit = cellString(row.getCell(3));
+    const salePrice = cellNumberOrNull(row.getCell(4));
+    const costPrice = cellNumberOrNull(row.getCell(5));
+    const lowStockThreshold = cellNumberOrNull(row.getCell(6));
+
+    // Dong hoan toan trong (vd dong trang o cuoi file) - bo qua, khong tinh la loi.
+    if (!code && !name && !unit && salePrice.value === null) return;
+
+    const rowErrors = [];
+    if (!code) rowErrors.push('Thiếu Mã sản phẩm');
+    if (!name) rowErrors.push('Thiếu Tên sản phẩm');
+    if (!unit) rowErrors.push('Thiếu Đơn vị tính');
+    if (salePrice.invalid) rowErrors.push('Giá bán không phải là số');
+    else if (salePrice.value === null) rowErrors.push('Thiếu Giá bán');
+    if (costPrice.invalid) rowErrors.push('Giá vốn không phải là số');
+    if (lowStockThreshold.invalid) rowErrors.push('Ngưỡng cảnh báo tồn kho thấp không phải là số');
+
+    if (code) {
+      if (existingCodes.has(code)) rowErrors.push('Mã sản phẩm đã tồn tại trong hệ thống');
+      else if (codesInFile.has(code)) rowErrors.push('Mã sản phẩm bị trùng trong file');
+    }
+
+    if (rowErrors.length > 0) {
+      errors.push({ row: rowNumber, message: rowErrors.join('; ') });
+      return;
+    }
+
+    codesInFile.add(code);
+    validRows.push({
+      code,
+      name,
+      unit,
+      costPrice: costPrice.value === null ? 0 : costPrice.value,
+      salePrice: salePrice.value,
+      lowStockThreshold: lowStockThreshold.value === null ? 0 : lowStockThreshold.value,
+    });
+  });
+
+  if (errors.length > 0) {
+    return res.status(422).json({ error: 'File có dòng dữ liệu bị lỗi, chưa nhập gì cả', errors });
+  }
+
+  if (validRows.length === 0) {
+    return res.status(400).json({ error: 'File không có dữ liệu nào để nhập' });
+  }
+
+  const insertProduct = db.prepare(
+    'INSERT INTO products (code, name, unit, cost_price, sale_price, low_stock_threshold) VALUES (?, ?, ?, ?, ?, ?)'
+  );
+  const insertAll = db.transaction((rows) => {
+    rows.forEach((r) => insertProduct.run(r.code, r.name, r.unit, r.costPrice, r.salePrice, r.lowStockThreshold));
+  });
+  insertAll(validRows);
+
+  res.json({ imported: validRows.length });
+});
+
+// Xuat Excel danh sach san pham dang hien thi tren giao dien (nhan dung id tu frontend, khong
+// tu suy doan bo loc/sap xep - de dam bao khop dung nhung gi nguoi dung dang thay tren man hinh).
+router.post('/export', async (req, res) => {
+  const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(Number).filter((n) => Number.isInteger(n)) : [];
+  if (ids.length === 0) {
+    return res.status(400).json({ error: 'Không có sản phẩm nào để xuất' });
+  }
+
+  const placeholders = ids.map(() => '?').join(',');
+  const rows = db.prepare(`${SELECT_PRODUCTS_WITH_STOCK} HAVING p.id IN (${placeholders})`).all(...ids);
+  const rowsById = new Map(rows.map((r) => [r.id, r]));
+  const orderedRows = ids.map((id) => rowsById.get(id)).filter(Boolean);
+
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('San pham');
+  sheet.columns = [
+    { header: 'Mã sản phẩm', width: 18 },
+    { header: 'Tên sản phẩm', width: 30 },
+    { header: 'Đơn vị tính', width: 14 },
+    { header: 'Giá vốn', width: 16 },
+    { header: 'Giá bán', width: 16 },
+    { header: 'Tồn kho', width: 12 },
+    { header: 'Trạng thái', width: 18 },
+  ];
+  sheet.getRow(1).font = { bold: true };
+  sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDCEAFE' } };
+  sheet.views = [{ state: 'frozen', ySplit: 1 }];
+
+  orderedRows.forEach((p) => {
+    sheet.addRow([
+      p.code, p.name, p.unit, p.cost_price, p.sale_price, p.stock,
+      p.is_active ? 'Đang kinh doanh' : 'Ngừng kinh doanh',
+    ]);
+  });
+
+  const filename = `san-pham-${new Date().toISOString().slice(0, 10)}.xlsx`;
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  await workbook.xlsx.write(res);
+  res.end();
 });
 
 router.put('/:id', requirePermission('kho'), (req, res) => {
@@ -217,6 +412,16 @@ router.delete('/:id', (req, res) => {
 
   db.prepare('DELETE FROM products WHERE id = ?').run(id);
   res.json({ ok: true });
+});
+
+// Loi rieng cua multer (vd file qua 5MB) - tra JSON thay vi de Express roi ve trang loi HTML
+// mac dinh, dong bo voi cach moi API khac trong du an luon tra { error: '...' }.
+router.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    const message = err.code === 'LIMIT_FILE_SIZE' ? 'File vượt quá dung lượng cho phép (5MB)' : 'Lỗi khi tải file lên';
+    return res.status(400).json({ error: message });
+  }
+  next(err);
 });
 
 module.exports = router;

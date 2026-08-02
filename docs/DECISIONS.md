@@ -2,6 +2,26 @@
 
 > Ghi lại các quyết định đã chốt để không thảo luận lại trừ khi có lý do mới. Mỗi mục ghi ngày chốt.
 
+## 2026-08-02 — Import/Export Excel cho Sản phẩm: all-or-nothing, không upsert, export theo danh sách hiển thị
+
+**Bối cảnh**: người dùng yêu cầu import/export Excel tại trang Sản phẩm — import cho tải file mẫu, báo lỗi rõ dòng nào/lỗi gì. Trước khi code đã hỏi 3 câu hỏi qua AskUserQuestion:
+
+1. **Mã sản phẩm trùng khi import → báo lỗi, bỏ qua dòng đó** (không tự động cập nhật/upsert sản phẩm hiện có). Lý do người dùng chọn: đơn giản, tránh rủi ro ghi đè nhầm dữ liệu nếu file cũ hoặc sai.
+2. **File có cả dòng hợp lệ và dòng lỗi → không nhập gì cả** cho tới khi sửa hết lỗi (khác với "nhập dòng đúng, báo lỗi dòng sai") — an toàn hơn, tránh tình trạng import dở dang khó kiểm soát và khó biết dòng nào đã vào hệ thống dòng nào chưa.
+3. **Export xuất đúng theo danh sách đang hiển thị trên giao diện** (tôn trọng ô tìm kiếm hiện tại), không phải toàn bộ danh mục không điều kiện — người dùng muốn xuất đúng cái đang xem.
+
+**Quyết định kỹ thuật khi hiện thực hóa**:
+
+- **Thư viện Excel: `exceljs`, không dùng `xlsx` (SheetJS)** — bản `xlsx` trên npm registry có các lỗ hổng bảo mật đã công khai (prototype pollution/ReDoS) mà maintainer không còn vá qua npm (chỉ vá ở bản host trực tiếp trên site riêng, ngoài luồng cài đặt `npm install` bình thường của dự án). `exceljs` được bảo trì tích cực, đọc/ghi `.xlsx` tốt, MIT license.
+- **`multer` để nhận file upload** — chuẩn de-facto cho Express, dùng `memoryStorage()` (không ghi file tạm ra đĩa vì file danh mục sản phẩm nhỏ, xử lý xong là vứt luôn, tránh phải dọn file tạm).
+- **`npm audit` báo 2 lỗ hổng mức trung bình** (`uuid@8.3.2`, dependency gián tiếp của `exceljs`, liên quan tới trường hợp caller tự truyền `buf` cho hàm `v3/v5/v6` — `exceljs` không dùng theo cách đó nội bộ nên rủi ro thực tế thấp) — **chấp nhận, không chạy `npm audit fix --force`** vì sẽ ép hạ `exceljs` xuống bản rất cũ (`3.4.0`), mất nhiều năm bugfix chỉ để né 1 advisory ít liên quan tới cách dự án dùng thư viện.
+- **Chỉ hỗ trợ `.xlsx`, không hỗ trợ `.xls` cũ** — `exceljs` không đọc được định dạng binary `.xls` cũ, và Excel hiện đại mặc định lưu `.xlsx` nên không phải hạn chế thực tế.
+- **3 route mới đặt TRƯỚC `router.get('/:id', ...)`** trong `products.routes.js` — Express khớp `/:id` với bất kỳ đoạn đường dẫn 1 từ nào (kể cả `import-template`), nếu đăng ký các route Excel sau `GET /:id` thì request `GET /api/products/import-template` sẽ bị hiểu nhầm thành `GET /api/products/:id` với `id="import-template"`.
+- **Validate import mirror đúng rule của `POST /` hiện có** (mã/tên/đơn vị/giá bán bắt buộc) — **nhưng nghiêm ngặt hơn với 2 trường tùy chọn** (Giá vốn, Ngưỡng cảnh báo tồn kho thấp): form thêm/sửa hiện tại âm thầm quy giá trị không phải số về `0` (`Number(x) || 0`), còn với import từ file thì báo lỗi rõ ràng nếu ô đó có nội dung nhưng không phải số hợp lệ — vì lỗi gõ nhầm trong Excel (vd dán nhầm text vào ô số) dễ xảy ra hơn khi nhập tay qua form, và người dùng đã yêu cầu rõ "báo lỗi dòng nào lỗi gì" nên im lặng quy về 0 sẽ phản tác dụng.
+- **`POST /export` mở cho mọi tài khoản đã đăng nhập, không giới hạn quyền `kho`** — giống mức mở của `GET /products` hiện có (dùng cho dropdown chọn sản phẩm ở nhiều nơi khác), vì export chỉ là xem/tải lại dữ liệu đã xem được, không phải hành động ghi. `GET /import-template` và `POST /import` vẫn giữ quyền `kho` như `POST/PUT /products` vì đây là hành động ghi dữ liệu.
+- **Export nhận `ids` từ frontend, không tự suy luận bộ lọc ở backend** — frontend gửi đúng danh sách id đang hiển thị (`getVisibleProducts()`, hàm lọc/sắp xếp theo ô tìm kiếm đã có sẵn), backend chỉ query đúng các id đó và giữ đúng thứ tự đã gửi lên — tránh có 2 nơi tự định nghĩa "danh sách đang hiển thị" theo 2 cách khác nhau (giống lý do đã áp dụng cho `month` ở module Sổ quỹ).
+- Test qua API (curl) + trình duyệt thật (Chrome headless điều khiển CDP thô, kèm `DOM.setFileInputFiles` giả lập chọn file qua input thật và `Browser.setDownloadBehavior` bắt file tải về) — chi tiết đầy đủ `docs/CHANGELOG.md`.
+
 ## 2026-08-02 — Module "Sổ quỹ": độc lập với Công nợ, quỹ đầu kỳ tự cộng dồn, không sửa chỉ xóa cứng
 
 **Bối cảnh**: người dùng yêu cầu module mới quản lý dòng tiền quỹ (phiếu thu/chi, quỹ đầu kỳ, thanh tổng hợp theo tháng), kèm ảnh mẫu tham khảo từ phần mềm khác. Trước khi code đã hỏi lại 4 câu hỏi kiến trúc quan trọng (qua AskUserQuestion):

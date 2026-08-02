@@ -31,6 +31,20 @@ const salePriceInput = document.getElementById('product-sale-price');
 const costPriceInput = document.getElementById('product-cost-price');
 const lowStockInput = document.getElementById('product-low-stock-threshold');
 
+const btnExportProducts = document.getElementById('btn-export-products');
+const btnImportProducts = document.getElementById('btn-import-products');
+const importModal = document.getElementById('import-modal');
+const btnCancelImport = document.getElementById('btn-cancel-import');
+const btnSubmitImport = document.getElementById('btn-submit-import');
+const importFileInput = document.getElementById('import-file-input');
+const importGeneralErrorBox = document.getElementById('import-general-error');
+const importGeneralErrorText = document.getElementById('import-general-error-text');
+const importSuccessBox = document.getElementById('import-success');
+const importSuccessText = document.getElementById('import-success-text');
+const importErrorsSection = document.getElementById('import-errors-section');
+const importErrorsCount = document.getElementById('import-errors-count');
+const importErrorsTbody = document.getElementById('import-errors-tbody');
+
 function formatMoney(value) {
   return Number(value).toLocaleString('vi-VN');
 }
@@ -222,11 +236,133 @@ productForm.addEventListener('submit', async (event) => {
   }
 });
 
+// Xuat Excel: luon xuat DUNG danh sach dang hien thi (co ap dung o tim kiem), khong phai toan
+// bo danh muc - theo yeu cau nguoi dung. Dung fetch rieng (khong qua apiFetch) vi phan hoi la
+// file nhi phan (blob), khong phai JSON.
+btnExportProducts.addEventListener('click', async () => {
+  const ids = getVisibleProducts().map((p) => p.id);
+  if (ids.length === 0) {
+    renderProductsError('Không có sản phẩm nào để xuất');
+    return;
+  }
+
+  btnExportProducts.disabled = true;
+  try {
+    const response = await fetch('/api/products/export', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ ids }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || 'Xuất file thất bại');
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `san-pham-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    renderProductsError(err.message);
+  } finally {
+    btnExportProducts.disabled = false;
+  }
+});
+
+function resetImportModal() {
+  importFileInput.value = '';
+  importGeneralErrorBox.hidden = true;
+  importSuccessBox.hidden = true;
+  importErrorsSection.hidden = true;
+  importErrorsTbody.innerHTML = '';
+  btnSubmitImport.disabled = false;
+  btnSubmitImport.textContent = 'Nhập dữ liệu';
+}
+
+function openImportModal() {
+  resetImportModal();
+  importModal.hidden = false;
+}
+
+function closeImportModal() {
+  importModal.hidden = true;
+}
+
+btnImportProducts.addEventListener('click', openImportModal);
+btnCancelImport.addEventListener('click', closeImportModal);
+importModal.addEventListener('click', (event) => {
+  if (event.target === importModal) closeImportModal();
+});
+
+btnSubmitImport.addEventListener('click', async () => {
+  importGeneralErrorBox.hidden = true;
+  importSuccessBox.hidden = true;
+  importErrorsSection.hidden = true;
+
+  const file = importFileInput.files[0];
+  if (!file) {
+    importGeneralErrorText.textContent = 'Chưa chọn file để nhập';
+    importGeneralErrorBox.hidden = false;
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  btnSubmitImport.disabled = true;
+  btnSubmitImport.textContent = 'Đang nhập...';
+
+  try {
+    // Khong dung apiFetch: no luon gan Content-Type: application/json, se pha hong boundary
+    // cua multipart/form-data ma trinh duyet tu sinh khi gui FormData.
+    const response = await fetch('/api/products/import', {
+      method: 'POST',
+      credentials: 'same-origin',
+      body: formData,
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      if (Array.isArray(data.errors) && data.errors.length > 0) {
+        importErrorsCount.textContent = data.errors.length;
+        importErrorsTbody.innerHTML = '';
+        data.errors.forEach((e) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${e.row}</td><td>${e.message}</td>`;
+          importErrorsTbody.appendChild(tr);
+        });
+        importErrorsSection.hidden = false;
+      }
+      throw new Error(data.error || 'Nhập dữ liệu thất bại');
+    }
+
+    importSuccessText.textContent = `Đã nhập thành công ${data.imported} sản phẩm`;
+    importSuccessBox.hidden = false;
+    importFileInput.value = '';
+    await loadProducts();
+  } catch (err) {
+    importGeneralErrorText.textContent = err.message;
+    importGeneralErrorBox.hidden = false;
+  } finally {
+    btnSubmitImport.disabled = false;
+    btnSubmitImport.textContent = 'Nhập dữ liệu';
+  }
+});
+
 (async function init() {
   currentUser = await initLayout('products');
   if (!currentUser) return;
 
   btnAddProduct.innerHTML = `${icon('plus', 16)} Thêm sản phẩm`;
+  btnImportProducts.innerHTML = `${icon('arrowUpTray', 16)} Nhập Excel`;
+  btnExportProducts.innerHTML = `${icon('arrowDownTray', 16)} Xuất Excel`;
   document.querySelector('.search-box .input-icon').innerHTML = icon('search', 16);
   updateSortIconUi();
   document.querySelectorAll('.alert-icon-slot').forEach((slot) => {

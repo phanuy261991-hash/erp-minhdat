@@ -210,6 +210,17 @@
 - [x] Sửa theo phản hồi người dùng ngay sau khi demo: nút đầu trang lệch dòng (do `.form-field` có `margin-bottom` không hợp khi đặt trong hàng ngang) → bỏ hẳn `<input type="month">`, đổi sang 2 `<select>` "Tháng"/"Năm" tự viết nhãn tiếng Việt (input kiểu tháng hiển thị theo locale trình duyệt, không ép được tiếng Việt); bổ sung nút "+ Tạo loại mới" ngay trên modal lập phiếu thu/chi
 - [x] Test qua trình duyệt thật (Chrome headless điều khiển CDP thô + script Node gọi thẳng service để test ranh giới tháng): tạo/xóa phiếu, tính đúng 4 số liệu tổng hợp, ranh giới tháng đúng giờ VN (phiếu 23:30 vs 00:30 quanh nửa đêm cuối tháng), xóa danh mục đang dùng bị chặn đúng, phân quyền `so_quy` chặn đúng UI+API, xác nhận không ghi gì vào `debt_ledger`, tạo nhanh danh mục trên modal lập phiếu hoạt động đúng
 
+### Import/Export Excel cho Sản phẩm (ngoài phase, theo yêu cầu người dùng 2026-08-02)
+
+> Đã hỏi và chốt 3 quyết định nghiệp vụ trước khi code (mã trùng báo lỗi không upsert, còn lỗi thì không nhập gì cả, export theo đúng danh sách đang hiển thị) — chi tiết đầy đủ `docs/DECISIONS.md`.
+
+- [x] Thêm dependency `exceljs` (đọc/ghi `.xlsx`) và `multer` (nhận file upload, memory storage, giới hạn 5MB)
+- [x] `backend/routes/products.routes.js`: `GET /import-template` (tải file mẫu kèm sheet "Hướng dẫn"), `POST /import` (validate toàn bộ file, all-or-nothing, báo lỗi theo từng dòng), `POST /export` (nhận danh sách `ids` từ frontend, xuất đúng theo thứ tự/danh sách đó)
+- [x] `frontend/products.html`/`.js`: nút "Nhập Excel" (modal: link tải file mẫu, chọn file, bảng lỗi "Dòng"/"Lỗi" nếu có, thông báo thành công) + nút "Xuất Excel" (xuất đúng danh sách đang hiển thị qua `getVisibleProducts()`, tải file qua blob)
+- [x] `style.css`: CSS scoped cho anchor "Tải file mẫu" hiển thị như nút (`#import-template-link.btn-secondary`)
+- [x] Test qua API (curl): file lỗi bị chặn đúng + báo đúng dòng/lỗi, file hợp lệ nhập đúng, mã trùng DB/trong file bị chặn, sai định dạng/thiếu file bị chặn, phân quyền `kho` chặn đúng cho import/template nhưng export vẫn mở cho mọi tài khoản đã đăng nhập (giống `GET /products`)
+- [x] Test qua trình duyệt thật (Chrome headless điều khiển CDP thô, chụp ảnh màn hình): mở modal, upload file lỗi → bảng lỗi đúng, upload file hợp lệ → thành công + danh sách tự làm mới, bấm "Xuất Excel" tải file thật đúng nội dung, không lỗi console. Dữ liệu test đã xóa sạch sau khi test xong.
+
 ## Open questions cần chốt trước khi code phần liên quan
 
 Xem `docs/DECISIONS.md` mục "Open questions".

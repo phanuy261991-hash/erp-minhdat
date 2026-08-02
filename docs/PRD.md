@@ -1,7 +1,7 @@
 # PRD: Hệ thống Quản lý Kho & Công nợ nội bộ
 
-**Version**: v1.4 — cập nhật 2026-08-02 (bổ sung 4.11 Sổ quỹ)
-**Trạng thái**: Phase 1 → 4 đã hoàn thành toàn bộ (nền tảng, kho, công nợ, in phiếu, báo cáo) + nhiều mở rộng ngoài phase (Bảo hành, tách Khách hàng, Điều chỉnh công nợ, đóng gói portable, Sổ quỹ). Phase 5 (Vận hành & Go-live) đang làm — xem trạng thái chính xác tại `docs/CURRENT.md`. Các mục 4.x vẫn có thể bổ sung khi phát sinh nhu cầu mới (xem `docs/DECISIONS.md`).
+**Version**: v1.5 — cập nhật 2026-08-02 (bổ sung 4.2 mục Import/Export Excel)
+**Trạng thái**: Phase 1 → 4 đã hoàn thành toàn bộ (nền tảng, kho, công nợ, in phiếu, báo cáo) + nhiều mở rộng ngoài phase (Bảo hành, tách Khách hàng, Điều chỉnh công nợ, đóng gói portable, Sổ quỹ, Import/Export Excel sản phẩm). Phase 5 (Vận hành & Go-live) đang làm — xem trạng thái chính xác tại `docs/CURRENT.md`. Các mục 4.x vẫn có thể bổ sung khi phát sinh nhu cầu mới (xem `docs/DECISIONS.md`).
 
 > Tên dự án là working title. Đổi tên theo tên công ty/thương hiệu thực tế khi cần.
 
@@ -60,6 +60,9 @@ Web app nội bộ, kiến trúc đơn giản (không microservices, không clou
   - Mỗi lần xuất/nhập đều lưu lại giá vốn tại đúng thời điểm đó (không tính lại theo cấu hình hiện tại nếu sau này đổi phương pháp).
 - **Vô hiệu hóa sản phẩm**: người dùng có quyền module Kho có thể ngừng kinh doanh 1 sản phẩm (vẫn hiển thị trong danh mục kèm nhãn rõ ràng, chỉ không chọn được khi lập phiếu mới). **Xóa cứng** chỉ dành cho Admin, và chỉ khi sản phẩm chưa từng có trong phiếu nhập/xuất nào — nếu đã có lịch sử, chỉ được vô hiệu hóa.
 - **Trang chi tiết sản phẩm**: xem lịch sử nhập/xuất kho (kèm mã phiếu, giá vốn từng lần) và lịch sử chỉnh sửa thông tin sản phẩm (ai sửa, lúc nào, giá trị cũ/mới).
+- **Import/Export Excel (bổ sung 2026-08-02, theo yêu cầu người dùng)**: trang Sản phẩm cho phép nhập hàng loạt qua file `.xlsx` (có file mẫu tải sẵn, kèm hướng dẫn) và xuất dữ liệu ra `.xlsx`.
+  - **Import**: toàn bộ file phải hợp lệ mới được nhập (nếu có bất kỳ dòng lỗi nào, không nhập gì cả) — báo lỗi rõ ràng theo từng dòng (số dòng + nội dung lỗi cụ thể). Mã sản phẩm trùng với hệ thống hoặc trùng nhau trong file bị báo lỗi, không tự động cập nhật (không ghi đè sản phẩm đã có).
+  - **Export**: xuất đúng theo danh sách đang hiển thị trên giao diện (tôn trọng ô tìm kiếm đang áp dụng), không phải toàn bộ danh mục không điều kiện.
 
 ### 4.3 Quản lý xuất/nhập kho (bổ sung 2026-07-31 — chiết khấu, thời gian nhập, mã đơn hàng)
 - Lập phiếu nhập kho (theo nhà cung cấp) và phiếu xuất kho (theo khách hàng). Có thể chọn đối tác có sẵn hoặc thêm nhanh đối tác mới ngay tại form (chưa cần vào trang quản lý đối tác riêng).

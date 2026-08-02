@@ -18,6 +18,8 @@
             <span class="input-icon"></span>
             <input type="text" id="product-search" class="search-input" placeholder="Tìm theo mã hoặc tên..." autocomplete="off" />
           </div>
+          <button type="button" id="btn-import-products" class="btn-secondary"></button>
+          <button type="button" id="btn-export-products" class="btn-secondary"></button>
           <button type="button" id="btn-add-product" class="btn-add"></button>
         </div>
       </div>
@@ -91,6 +93,50 @@
           <button type="submit" id="btn-submit-product" class="btn-primary">Lưu</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div id="import-modal" class="modal-overlay" hidden>
+    <div class="modal-card modal-card-lg">
+      <h3>Nhập sản phẩm từ Excel</h3>
+      <p class="modal-subtitle">Tải file mẫu, điền dữ liệu theo đúng cột rồi tải lên. Nếu file có bất kỳ dòng nào lỗi, toàn bộ file sẽ không được nhập.</p>
+
+      <a id="import-template-link" href="/api/products/import-template" class="btn-secondary" download>Tải file mẫu</a>
+
+      <div id="import-general-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="import-general-error-text"></span>
+      </div>
+
+      <div id="import-success" class="alert alert-success" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="import-success-text"></span>
+      </div>
+
+      <div class="form-field">
+        <label for="import-file-input">Chọn file Excel (.xlsx)</label>
+        <input type="file" id="import-file-input" accept=".xlsx" />
+      </div>
+
+      <div id="import-errors-section" hidden>
+        <h4 class="section-heading">Danh sách lỗi (<span id="import-errors-count">0</span> dòng)</h4>
+        <div class="data-table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Dòng</th>
+                <th>Lỗi</th>
+              </tr>
+            </thead>
+            <tbody id="import-errors-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" id="btn-cancel-import" class="btn-secondary">Đóng</button>
+        <button type="button" id="btn-submit-import" class="btn-primary">Nhập dữ liệu</button>
+      </div>
     </div>
   </div>
 

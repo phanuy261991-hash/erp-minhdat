@@ -1746,6 +1746,17 @@ input:focus-visible {
   text-decoration: none;
 }
 
+/* Nut "Tai file mau" trong modal Nhap Excel (san pham) la <a>, khong phai <button> - can lap
+   lai kieu inline-flex/khong gach chan nhu .print-toolbar a.btn-secondary o tren. */
+#import-template-link.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  width: auto;
+  margin-bottom: 14px;
+}
+
 .print-sheet {
   max-width: 800px;
   margin: 0 auto;

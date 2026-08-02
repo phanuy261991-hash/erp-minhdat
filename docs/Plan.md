@@ -1,7 +1,7 @@
 # Plan chi tiết: Hệ thống Quản lý Kho & Công nợ nội bộ
 
-**Dựa trên**: PRD v1.4 — cập nhật 2026-08-02
-**Version**: v1.2 — cập nhật 2026-08-02 (module Sổ quỹ, ngoài phase)
+**Dựa trên**: PRD v1.5 — cập nhật 2026-08-02
+**Version**: v1.3 — cập nhật 2026-08-02 (Import/Export Excel sản phẩm, ngoài phase)
 
 ---
 
@@ -199,6 +199,9 @@ Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân qu
 | GET | `/api/products/:id` | Đã đăng nhập | Chi tiết + giá vốn tính theo `costing_method` đang chọn |
 | GET | `/api/products/:id/movements` | Đã đăng nhập | Lịch sử nhập/xuất kho của sản phẩm |
 | GET | `/api/products/:id/history` | Đã đăng nhập | Lịch sử chỉnh sửa thông tin sản phẩm |
+| GET | `/api/products/import-template` | `kho` | Tải file Excel mẫu để nhập hàng loạt sản phẩm (2026-08-02) |
+| POST | `/api/products/import` | `kho` | Nhập hàng loạt từ file `.xlsx` — toàn bộ file phải hợp lệ mới ghi vào DB, báo lỗi theo từng dòng nếu có (2026-08-02) |
+| POST | `/api/products/export` | Đã đăng nhập | Xuất `.xlsx` đúng theo danh sách `ids` gửi lên (khớp danh sách đang hiển thị trên giao diện, 2026-08-02) |
 | GET | `/api/partners?type=` | Đã đăng nhập | Danh sách NCC/khách hàng (đủ dùng cho dropdown chọn/thêm nhanh), kèm `category_name`/`category_debt_limit` (LEFT JOIN, 2026-08-01) |
 | POST | `/api/partners` | `kho` **hoặc** `cong_no` | Thêm đối tác nhanh — đổi từ chỉ `cong_no` ban đầu, vì thủ kho cũng cần thêm NCC khi lập phiếu nhập (xem `docs/DECISIONS.md`, dùng `requireAnyPermission`); nhận thêm `category_id` (chỉ áp dụng type='khach_hang', 2026-08-01) |
 | PUT | `/api/partners/:id` | `cong_no` | Sửa tên/SĐT/địa chỉ/`category_id` — không đổi được `type` sau khi tạo (Phase 3) |
@@ -345,6 +348,13 @@ Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân qu
 - [x] `frontend/assets/layout.js`: nhóm nav mới "Quỹ" (sau "Khách hàng", trước "Quản trị"); `icons.js` thêm icon `wallet`
 - [x] `style.css`: `.text-accent`/`.text-destructive` (màu cột Giá trị), `.month-select`/`.month-select-group` (chọn Tháng/Năm), `.form-field-label-row` (nhãn kèm nút "+ Tạo loại mới")
 - [x] Test qua trình duyệt thật (Chrome headless điều khiển CDP thô): tạo/xóa phiếu thu/chi, tính đúng Quỹ đầu kỳ/Tổng thu/Tổng chi/Tồn quỹ, ranh giới tháng đúng theo giờ VN (test phiếu 23:30 và 00:30 giờ VN quanh nửa đêm cuối tháng), xóa danh mục đang dùng bị chặn đúng, phân quyền `so_quy` chặn đúng UI+API (trừ `GET /api/cash-book-settings` mở cho mọi tài khoản), xác nhận không ghi gì vào `debt_ledger`, tạo nhanh "Loại thu chi" ngay trên modal lập phiếu hoạt động đúng
+
+### Import/Export Excel cho Sản phẩm (ngoài phase, theo yêu cầu người dùng 2026-08-02)
+
+- [x] Dependency mới: `exceljs` (đọc/ghi `.xlsx`), `multer` (nhận file upload, memory storage) — xem `docs/DECISIONS.md` (lý do không dùng `xlsx`/SheetJS)
+- [x] `backend/routes/products.routes.js`: `GET /import-template`, `POST /import` (all-or-nothing, báo lỗi theo dòng), `POST /export` (theo danh sách `ids` từ frontend)
+- [x] Frontend `products.html`/`.js`: nút "Nhập Excel" (modal, bảng lỗi "Dòng"/"Lỗi") + "Xuất Excel" (theo đúng danh sách đang hiển thị)
+- [x] Test qua API (curl) + trình duyệt thật (CDP thô, `DOM.setFileInputFiles` + `Browser.setDownloadBehavior`) — chi tiết `docs/CHANGELOG.md`
 
 ## 5. Kiểm thử cơ bản mỗi phase
 
