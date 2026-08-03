@@ -5,6 +5,7 @@ erDiagram
     USERS ||--o{ STOCK_ISSUES : "tao"
     PARTNERS ||--o{ STOCK_RECEIPTS : "la NCC"
     PARTNERS ||--o{ STOCK_ISSUES : "la khach hang"
+    USERS ||--o{ PARTNERS : "phu trach (nullable)"
     PARTNERS ||--o{ DEBT_LEDGER : "co cong no"
     USERS ||--o{ DEBT_LEDGER : "ghi nhan"
     CUSTOMER_CATEGORIES ||--o{ PARTNERS : "phan loai (chi khach hang)"
@@ -105,6 +106,7 @@ erDiagram
         string phone
         string address
         int category_id FK "nullable, chi ap dung type=khach_hang (migration 015)"
+        int assigned_user_id FK "nullable, 'Nguoi phu trach' - hien tai chi hien tren customers.html (migration 020)"
         datetime created_at
     }
 

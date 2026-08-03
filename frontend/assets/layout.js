@@ -103,8 +103,8 @@ function renderSidebar(user, activeKey) {
   sidebar.innerHTML = `
     <div class="sidebar-header">
       <div class="sidebar-brand">
-        ${icon('box', 20)}
-        <span class="label">Kho &amp; Công nợ</span>
+        <img src="assets/images/nexa-one-icon.png" alt="NEXA One" class="sidebar-brand-icon" />
+        <img src="assets/images/nexa-one-wordmark.png" alt="" class="label sidebar-brand-wordmark" />
       </div>
       <button type="button" id="sidebar-toggle" class="sidebar-toggle" aria-label="Thu gọn menu">
         ${icon('sidebarCollapse', 18)}

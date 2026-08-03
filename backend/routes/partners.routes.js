@@ -36,9 +36,11 @@ router.get('/', (req, res) => {
   }
 
   const baseQuery = `
-    SELECT p.*, c.name AS category_name, c.debt_limit AS category_debt_limit
+    SELECT p.*, c.name AS category_name, c.debt_limit AS category_debt_limit,
+           u.full_name AS assigned_user_name
     FROM partners p
     LEFT JOIN customer_categories c ON c.id = p.category_id
+    LEFT JOIN users u ON u.id = p.assigned_user_id
   `;
 
   const partners = type
@@ -48,8 +50,28 @@ router.get('/', (req, res) => {
   res.json({ partners });
 });
 
+// Danh sach tai khoan dang hoat dong cho combobox "Nguoi phu trach" - khong dung lai GET
+// /api/users vi route do khoa quyen 'nguoi_dung' (chi Admin), trong khi trang Khach hang chi
+// doi hoi 'cong_no' - cung huong giai quyet da dung cho GET /api/cash-vouchers/staff.
+router.get('/staff', (req, res) => {
+  const staff = db.prepare('SELECT id, full_name FROM users WHERE is_active = 1 ORDER BY full_name ASC').all();
+  res.json({ staff });
+});
+
+// Validate assigned_user_id (khong bat buoc): neu co gui len, phai la tai khoan dang hoat dong.
+function resolveAssignedUserId(assignedUserId) {
+  if (assignedUserId === undefined || assignedUserId === null || assignedUserId === '') {
+    return null;
+  }
+  const user = db.prepare('SELECT id FROM users WHERE id = ? AND is_active = 1').get(Number(assignedUserId));
+  if (!user) {
+    throw new Error('Nguoi phu trach khong hop le');
+  }
+  return Number(assignedUserId);
+}
+
 router.post('/', requireAnyPermission(['kho', 'cong_no']), (req, res) => {
-  const { type, name, phone, address, category_id: categoryId } = req.body || {};
+  const { type, name, phone, address, category_id: categoryId, assigned_user_id: assignedUserId } = req.body || {};
 
   if (!PARTNER_TYPES.includes(type)) {
     return res.status(400).json({ error: 'Loai doi tac khong hop le' });
@@ -59,15 +81,24 @@ router.post('/', requireAnyPermission(['kho', 'cong_no']), (req, res) => {
   }
 
   let resolvedCategoryId;
+  let resolvedAssignedUserId;
   try {
     resolvedCategoryId = resolveCategoryId(type, categoryId);
+    resolvedAssignedUserId = resolveAssignedUserId(assignedUserId);
   } catch (err) {
     return res.status(400).json({ error: err.message });
   }
 
   const result = db
-    .prepare('INSERT INTO partners (type, name, phone, address, category_id) VALUES (?, ?, ?, ?, ?)')
-    .run(type, String(name).trim(), phone ? String(phone).trim() : '', address ? String(address).trim() : '', resolvedCategoryId);
+    .prepare('INSERT INTO partners (type, name, phone, address, category_id, assigned_user_id) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(
+      type,
+      String(name).trim(),
+      phone ? String(phone).trim() : '',
+      address ? String(address).trim() : '',
+      resolvedCategoryId,
+      resolvedAssignedUserId
+    );
 
   const partner = db.prepare('SELECT * FROM partners WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json({ partner });
@@ -82,23 +113,26 @@ router.put('/:id', requirePermission('cong_no'), (req, res) => {
     return res.status(404).json({ error: 'Khong tim thay doi tac' });
   }
 
-  const { name, phone, address, category_id: categoryId } = req.body || {};
+  const { name, phone, address, category_id: categoryId, assigned_user_id: assignedUserId } = req.body || {};
   if (!name || !String(name).trim()) {
     return res.status(400).json({ error: 'Thieu ten doi tac' });
   }
 
   let resolvedCategoryId;
+  let resolvedAssignedUserId;
   try {
     resolvedCategoryId = resolveCategoryId(existing.type, categoryId);
+    resolvedAssignedUserId = resolveAssignedUserId(assignedUserId);
   } catch (err) {
     return res.status(400).json({ error: err.message });
   }
 
-  db.prepare('UPDATE partners SET name = ?, phone = ?, address = ?, category_id = ? WHERE id = ?').run(
+  db.prepare('UPDATE partners SET name = ?, phone = ?, address = ?, category_id = ?, assigned_user_id = ? WHERE id = ?').run(
     String(name).trim(),
     phone ? String(phone).trim() : '',
     address ? String(address).trim() : '',
     resolvedCategoryId,
+    resolvedAssignedUserId,
     id
   );
 

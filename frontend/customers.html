@@ -75,6 +75,15 @@
           <input type="text" id="customer-address" autocomplete="off" />
         </div>
 
+        <div class="form-field">
+          <label for="customer-assigned-search">Người phụ trách (không bắt buộc)</label>
+          <div class="combobox">
+            <input type="text" id="customer-assigned-search" placeholder="Tìm theo tên người dùng..." autocomplete="off" />
+            <input type="hidden" id="customer-assigned-id" />
+            <div class="combobox-suggestions" id="customer-assigned-suggestions"></div>
+          </div>
+        </div>
+
         <div class="modal-actions">
           <button type="button" id="btn-cancel-customer" class="btn-secondary">Hủy</button>
           <button type="submit" id="btn-submit-customer" class="btn-primary">Lưu</button>

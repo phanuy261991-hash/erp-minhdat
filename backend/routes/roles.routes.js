@@ -4,7 +4,7 @@
 
 const express = require('express');
 const db = require('../db/database');
-const { MODULE_KEYS } = require('../config/modules');
+const { MODULE_KEYS, MODULE_LABELS } = require('../config/modules');
 
 const router = express.Router();
 
@@ -37,6 +37,14 @@ function validatePermissions(permissions) {
 router.get('/', (req, res) => {
   const roles = db.prepare('SELECT * FROM roles ORDER BY is_protected DESC, name ASC').all();
   res.json({ roles: roles.map(serializeRole) });
+});
+
+// Danh sach module hop le kem nhan tieng Viet, dung de dung luoi chon quyen o giao dien "Vai
+// tro" - nguon duy nhat la MODULE_KEYS/MODULE_LABELS (backend/config/modules.js), tranh tinh
+// trang frontend tu hardcode rieng 1 ban roi bi lech khi them module moi (xem ghi chu trong
+// modules.js). Dat truoc "/:id" khong can thiet o day vi router nay khong co GET '/:id'.
+router.get('/modules', (req, res) => {
+  res.json({ modules: MODULE_KEYS.map((key) => ({ key, label: MODULE_LABELS[key] || key })) });
 });
 
 router.post('/', (req, res) => {

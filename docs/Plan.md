@@ -38,7 +38,8 @@ project-root/
 │  │     ├─ 016_debt_adjustment.sql (đã có, 2026-08-01) debt_ledger.is_adjustment ("Điều chỉnh công nợ")
 │  │     ├─ 017_warranties.sql (đã có, 2026-08-01) bảng warranties (Bảo hành, gắn khách hàng)
 │  │     ├─ 018_backup_path.sql (đã có, 2026-08-01) warehouse_settings.backup_path (Phase 5)
-│  │     └─ 019_cash_book.sql (đã có, 2026-08-02) module So quy: cash_book_settings, cash_categories, cash_vouchers (doc lap voi debt_ledger)
+│  │     ├─ 019_cash_book.sql (đã có, 2026-08-02) module So quy: cash_book_settings, cash_categories, cash_vouchers (doc lap voi debt_ledger)
+│  │     └─ 020_partner_assigned_user.sql (đã có, 2026-08-03) partners.assigned_user_id (Nguoi phu trach, nullable, hien tai chi dung o customers.html)
 │  ├─ middleware/
 │  │  ├─ auth.js                       (đã có) requireAuth (kiểm tra session)
 │  │  └─ requirePermission.js          (đã có) requirePermission(module) + requireAnyPermission([module,...])
@@ -138,7 +139,7 @@ project-root/
 | `company_settings` | id PK (CHECK id=1), company_name, address, tax_code, email, website, phones, bank_name, bank_branch, bank_account_number, bank_account_holder, print_note, updated_at | chỉ 1 dòng duy nhất; `phones` lưu mảng JSON dạng text (cho nhập từ 2 số trở lên) — không tách bảng riêng vì luôn gắn 1-1 với dòng duy nhất này; `print_note` (migration 014, Phase 4) — ghi chú hiển thị dưới bảng kê khi in phiếu xuất kho |
 | `warehouse_settings` | key PK, value, updated_at | dạng key-value, mở rộng dần; key: `allow_negative_stock`, `costing_method` (`binh_quan_gia_quyen` mặc định hoặc `fifo`), `backup_path` (đường dẫn lưu backup `data.db`, Phase 5, 2026-08-01 — để trống nếu chưa cấu hình) |
 | `products` | id PK, code, name, unit, cost_price, sale_price, low_stock_threshold, is_active, created_at | tồn kho không lưu ở đây; `cost_price` là giá tham chiếu nhập tay, giá vốn thực tế tính từ `stock_lots` (xem `costing.service.js`); `is_active=0` = vô hiệu hóa (vẫn hiện, không chọn được khi lập phiếu mới) |
-| `partners` | id PK, type, name, phone, address, category_id, created_at | type ∈ {nha_cung_cap, khach_hang}; `category_id` FK(customer_categories) nullable — chỉ có ý nghĩa khi type='khach_hang' (validate ở API, không CHECK ở DB), 2026-08-01 |
+| `partners` | id PK, type, name, phone, address, category_id, assigned_user_id, created_at | type ∈ {nha_cung_cap, khach_hang}; `category_id` FK(customer_categories) nullable — chỉ có ý nghĩa khi type='khach_hang' (validate ở API, không CHECK ở DB), 2026-08-01; `assigned_user_id` FK(users) nullable ("Người phụ trách", migration 020, 2026-08-03) — hiện chỉ hiển thị/sửa được qua `customers.html`, cột dùng chung cả 2 loại đối tác |
 | `customer_categories` | id PK, name, debt_limit, created_at | migration `015`, 2026-08-01 — danh mục "Loại khách hàng" (name UNIQUE), `debt_limit` nullable = không giới hạn, chỉ dùng để CẢNH BÁO trên trang Công nợ khách hàng (không chặn cứng) |
 | `warranties` | id PK, partner_id FK, phone, address, acceptance_date, expiry_date, duration_value, duration_unit, note, is_active, created_by FK, created_at, updated_at | migration `017`, 2026-08-01 — Bảo hành, `partner_id` chỉ áp dụng `type='khach_hang'` (validate ở API); `phone`/`address` là snapshot fill từ đối tác lúc tạo, sửa được, không tự đổi theo nếu sau này sửa hồ sơ khách hàng; `expiry_date` là nguồn tính "còn lại bao nhiêu ngày" (tính lại mỗi lần xem, không lưu số ngày cố định) |
 | `stock_receipts` | id PK, code, order_code, partner_id FK, created_by FK(users), note, payment_status, adjusts_type, adjusts_id, created_at | phiếu nhập; `code` tự sinh nội bộ (PN000001...), `order_code` là số hóa đơn/đơn hàng của NCC (tự do, không bắt buộc); `created_at` có thể chỉnh khi lập phiếu — ảnh hưởng thứ tự FIFO/bình quân gia quyền; `payment_status` ∈ {da_thanh_toan, cong_no} (Phase 3, đối xứng `stock_issues`); `adjusts_type`/`adjusts_id` (Phase 2) đánh dấu phiếu điều chỉnh bù trừ cho phiếu nào |
@@ -203,8 +204,9 @@ Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân qu
 | POST | `/api/products/import` | `kho` | Nhập hàng loạt từ file `.xlsx` — toàn bộ file phải hợp lệ mới ghi vào DB, báo lỗi theo từng dòng nếu có (2026-08-02) |
 | POST | `/api/products/export` | Đã đăng nhập | Xuất `.xlsx` đúng theo danh sách `ids` gửi lên (khớp danh sách đang hiển thị trên giao diện, 2026-08-02) |
 | GET | `/api/partners?type=` | Đã đăng nhập | Danh sách NCC/khách hàng (đủ dùng cho dropdown chọn/thêm nhanh), kèm `category_name`/`category_debt_limit` (LEFT JOIN, 2026-08-01) |
-| POST | `/api/partners` | `kho` **hoặc** `cong_no` | Thêm đối tác nhanh — đổi từ chỉ `cong_no` ban đầu, vì thủ kho cũng cần thêm NCC khi lập phiếu nhập (xem `docs/DECISIONS.md`, dùng `requireAnyPermission`); nhận thêm `category_id` (chỉ áp dụng type='khach_hang', 2026-08-01) |
-| PUT | `/api/partners/:id` | `cong_no` | Sửa tên/SĐT/địa chỉ/`category_id` — không đổi được `type` sau khi tạo (Phase 3) |
+| GET | `/api/partners/staff` | Đã đăng nhập | Danh sách tài khoản đang hoạt động cho combobox "Người phụ trách" (2026-08-03) — không đòi quyền `nguoi_dung` như `GET /api/users`, cùng cách giải quyết đã dùng cho `GET /api/cash-vouchers/staff` |
+| POST | `/api/partners` | `kho` **hoặc** `cong_no` | Thêm đối tác nhanh — đổi từ chỉ `cong_no` ban đầu, vì thủ kho cũng cần thêm NCC khi lập phiếu nhập (xem `docs/DECISIONS.md`, dùng `requireAnyPermission`); nhận thêm `category_id` (chỉ áp dụng type='khach_hang', 2026-08-01), `assigned_user_id` (nullable, 2026-08-03) |
+| PUT | `/api/partners/:id` | `cong_no` | Sửa tên/SĐT/địa chỉ/`category_id`/`assigned_user_id` — không đổi được `type` sau khi tạo (Phase 3) |
 | DELETE | `/api/partners/:id` | `cong_no` | Xóa cứng — chặn nếu đã có lịch sử `stock_receipts`/`stock_issues`/`debt_ledger` (Phase 3) |
 | GET | `/api/customer-categories` | Đã đăng nhập | Danh sách "Loại khách hàng" (2026-08-01) |
 | POST/PUT/DELETE | `/api/customer-categories(/:id)` | `cau_hinh` | CRUD "Loại khách hàng" — xóa chặn nếu đang có khách hàng thuộc loại đó (2026-08-01) |

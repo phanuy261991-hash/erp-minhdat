@@ -210,6 +210,29 @@
 - [x] Sửa theo phản hồi người dùng ngay sau khi demo: nút đầu trang lệch dòng (do `.form-field` có `margin-bottom` không hợp khi đặt trong hàng ngang) → bỏ hẳn `<input type="month">`, đổi sang 2 `<select>` "Tháng"/"Năm" tự viết nhãn tiếng Việt (input kiểu tháng hiển thị theo locale trình duyệt, không ép được tiếng Việt); bổ sung nút "+ Tạo loại mới" ngay trên modal lập phiếu thu/chi
 - [x] Test qua trình duyệt thật (Chrome headless điều khiển CDP thô + script Node gọi thẳng service để test ranh giới tháng): tạo/xóa phiếu, tính đúng 4 số liệu tổng hợp, ranh giới tháng đúng giờ VN (phiếu 23:30 vs 00:30 quanh nửa đêm cuối tháng), xóa danh mục đang dùng bị chặn đúng, phân quyền `so_quy` chặn đúng UI+API, xác nhận không ghi gì vào `debt_ledger`, tạo nhanh danh mục trên modal lập phiếu hoạt động đúng
 
+### Trường "Người phụ trách" cho Khách hàng (ngoài phase, theo yêu cầu người dùng 2026-08-03)
+
+- [x] Migration `020_partner_assigned_user.sql`: `partners.assigned_user_id` (nullable, FK `users`)
+- [x] `backend/routes/partners.routes.js`: `GET /` trả kèm `assigned_user_name`, `POST`/`PUT` validate + lưu `assigned_user_id`, route mới `GET /staff` (không giới hạn quyền `nguoi_dung`, dùng cho combobox)
+- [x] `frontend/customers.html`/`assets/customers.js`: ô "Người phụ trách" dạng combobox gõ gợi ý (tái dùng pattern `.combobox` có sẵn), áp dụng cho cả thêm mới lẫn sửa
+- [x] Test qua API (curl) + trình duyệt thật (CDP thô, gõ ký tự thật qua `Input.dispatchKeyEvent`): gợi ý đúng, chọn đúng, lưu đúng, mở sửa lại tự điền đúng
+
+### Sửa lỗi trang "Vai trò" thiếu module "Sổ quỹ" (ngoài phase, theo phản hồi người dùng 2026-08-03)
+
+- [x] `backend/config/modules.js`: thêm `MODULE_LABELS` (nhãn tiếng Việt), export cùng `MODULE_KEYS`
+- [x] `backend/routes/roles.routes.js`: thêm `GET /roles/modules` trả danh sách `{key, label}` theo đúng thứ tự `MODULE_KEYS`
+- [x] `frontend/assets/roles.js`: bỏ `MODULE_LABELS`/`MODULE_ORDER` hardcode, gọi API mới lúc `init()`, dùng chung cho lưới checkbox modal lẫn nhãn chip trong bảng
+- [x] Test qua API (curl) + trình duyệt thật (CDP thô, tái hiện đúng thao tác cũ gây mất quyền): xác nhận đủ 6 module hiện ra, lưu vai trò Kế toán không còn mất quyền "Sổ quỹ"
+
+### Đổi logo thương hiệu "NEXA One" (ngoài phase, theo yêu cầu người dùng 2026-08-03)
+
+- [x] Tìm đúng file logo nguồn người dùng cung cấp trên máy (`Downloads/LOGO ANH UY/`), dùng Pillow cắt gọn khoảng trắng thừa + tách icon/chữ riêng, lưu tại `frontend/assets/images/` (thư mục mới)
+- [x] `frontend/login.html`/`style.css`: thay icon SVG bằng logo (`.login-brand-logo`), giữ nguyên `<h1>` theo phản hồi người dùng
+- [x] `frontend/assets/layout.js`/`style.css`: thay icon+chữ "Kho & Công nợ" trong sidebar bằng logo (tách icon/wordmark 2 file, chữ dùng chung class `.label` để tự ẩn khi thu gọn)
+- [x] Sửa lỗi phát sinh: icon sidebar biến mất khi thu gọn (flexbox ép về 0 do `.sidebar-brand` có `overflow:hidden`) — xếp dọc icon/nút thu gọn khi collapsed
+- [x] `frontend/about.html`/`.js`/`style.css`: thay khung icon gradient bằng logo đầy đủ (`.about-logo`)
+- [x] Test qua trình duyệt thật (Chrome headless CDP thô, chụp ảnh xác nhận): cả 4 điểm (đăng nhập, sidebar mở rộng, sidebar thu gọn, Thông tin phần mềm) hiển thị đúng, không lỗi console
+
 ### Import/Export Excel cho Sản phẩm (ngoài phase, theo yêu cầu người dùng 2026-08-02)
 
 > Đã hỏi và chốt 3 quyết định nghiệp vụ trước khi code (mã trùng báo lỗi không upsert, còn lỗi thì không nhập gì cả, export theo đúng danh sách đang hiển thị) — chi tiết đầy đủ `docs/DECISIONS.md`.

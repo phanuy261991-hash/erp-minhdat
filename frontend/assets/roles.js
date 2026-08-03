@@ -2,15 +2,11 @@
 // Vai tro is_protected (Admin) khong cho sua/xoa qua giao dien nay - khop voi chan o backend
 // (backend/routes/roles.routes.js), day chi la an nut de tranh nguoi dung bam roi bi loi.
 
-// Danh sach module hien thi tren giao diet - phai dong bo voi backend/config/modules.js.
-const MODULE_LABELS = {
-  kho: 'Kho',
-  cong_no: 'Công nợ',
-  bao_cao: 'Báo cáo',
-  nguoi_dung: 'Người dùng',
-  cau_hinh: 'Cấu hình',
-};
-const MODULE_ORDER = ['kho', 'cong_no', 'bao_cao', 'nguoi_dung', 'cau_hinh'];
+// Danh sach module + nhan tieng Viet lay dong tu GET /api/roles/modules (2026-08-03) - truoc day
+// hardcode rieng 1 ban o day, bi quen cap nhat khi them module 'so_quy' (Sổ quỹ) nen checkbox
+// khong hien duoc, dan toi mat quyen 'so_quy' khoi vai tro khi luu. Nguon duy nhat gio la
+// backend/config/modules.js, frontend luon hien DU moi module hien co, khong con lech.
+let moduleList = []; // [{key, label}], nap 1 lan luc init()
 
 let currentUser = null;
 let editingRoleId = null; // null = dang tao moi, khac null = dang sua vai tro co id nay
@@ -36,9 +32,14 @@ function renderRolesError(message) {
   rolesErrorBox.hidden = false;
 }
 
+function moduleLabel(key) {
+  const found = moduleList.find((m) => m.key === key);
+  return found ? found.label : key;
+}
+
 function renderRow(role) {
   const permissionsHtml = role.permissions.length
-    ? `<div class="chip-row">${role.permissions.map((key) => `<span class="chip">${MODULE_LABELS[key] || key}</span>`).join('')}</div>`
+    ? `<div class="chip-row">${role.permissions.map((key) => `<span class="chip">${moduleLabel(key)}</span>`).join('')}</div>`
     : '<span class="chip-empty">Chưa cấp quyền</span>';
 
   const typeHtml = role.is_protected
@@ -77,11 +78,11 @@ async function loadRoles() {
 
 function buildModuleGrid(checkedKeys) {
   const checked = new Set(checkedKeys || []);
-  roleModuleGrid.innerHTML = MODULE_ORDER.map((key) => `
+  roleModuleGrid.innerHTML = moduleList.map(({ key, label }) => `
     <label class="module-option">
       <input type="checkbox" class="module-option-input" value="${key}" ${checked.has(key) ? 'checked' : ''} />
       <span class="module-option-box">${icon('check', 13)}</span>
-      <span class="module-option-label">${MODULE_LABELS[key]}</span>
+      <span class="module-option-label">${label}</span>
     </label>
   `).join('');
 }
@@ -182,6 +183,14 @@ roleForm.addEventListener('submit', async (event) => {
   document.querySelectorAll('.alert-icon-slot').forEach((slot) => {
     slot.innerHTML = icon('alertCircle', 16);
   });
+
+  try {
+    const { modules } = await apiFetch('/roles/modules');
+    moduleList = modules;
+  } catch (err) {
+    renderRolesError(err.message);
+    return;
+  }
 
   await loadRoles();
 })();

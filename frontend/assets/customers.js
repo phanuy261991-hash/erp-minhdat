@@ -6,6 +6,7 @@
 let currentUser = null;
 let customersCache = [];
 let categoriesCache = [];
+let staffCache = []; // [{id, full_name}] - dung cho combobox "Nguoi phu trach"
 let editingCustomerId = null;
 let searchKeyword = '';
 
@@ -27,6 +28,10 @@ const categorySelect = document.getElementById('customer-category');
 const nameInput = document.getElementById('customer-name');
 const phoneInput = document.getElementById('customer-phone');
 const addressInput = document.getElementById('customer-address');
+
+const assignedSearchInput = document.getElementById('customer-assigned-search');
+const assignedIdInput = document.getElementById('customer-assigned-id');
+const assignedSuggestionsBox = document.getElementById('customer-assigned-suggestions');
 
 function renderCustomersError(message) {
   customersErrorText.textContent = message;
@@ -81,6 +86,66 @@ async function loadCategories() {
   }
 }
 
+async function loadStaff() {
+  try {
+    const { staff } = await apiFetch('/partners/staff');
+    staffCache = staff;
+  } catch (err) {
+    renderCustomersError(err.message);
+  }
+}
+
+// Combobox "Nguoi phu trach" - tim theo ten, chon 1 tai khoan (giong cach lam cua
+// assets/adjustment.js: input go chu -> loc goi y -> bam chon moi ghi vao o hidden).
+function renderAssignedSuggestions(keyword) {
+  const kw = keyword.trim().toLowerCase();
+
+  if (!kw) {
+    assignedSuggestionsBox.innerHTML = '';
+    return;
+  }
+
+  const matches = staffCache.filter((u) => u.full_name.toLowerCase().includes(kw)).slice(0, 8);
+
+  if (matches.length === 0) {
+    assignedSuggestionsBox.innerHTML = '<div class="combobox-empty">Không tìm thấy người dùng</div>';
+    return;
+  }
+
+  assignedSuggestionsBox.innerHTML = matches
+    .map((u) => `<div class="combobox-option" data-id="${u.id}" data-name="${u.full_name}">${u.full_name}</div>`)
+    .join('');
+}
+
+function selectAssignedUser(id, name) {
+  assignedIdInput.value = id;
+  assignedSearchInput.value = name;
+  assignedSuggestionsBox.innerHTML = '';
+}
+
+function resetAssignedField() {
+  assignedSearchInput.value = '';
+  assignedIdInput.value = '';
+  assignedSuggestionsBox.innerHTML = '';
+}
+
+assignedSearchInput.addEventListener('input', (event) => {
+  assignedIdInput.value = '';
+  renderAssignedSuggestions(event.target.value);
+});
+
+assignedSuggestionsBox.addEventListener('click', (event) => {
+  const option = event.target.closest('.combobox-option');
+  if (!option) return;
+  selectAssignedUser(option.dataset.id, option.dataset.name);
+});
+
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('#customer-assigned-search') && !event.target.closest('#customer-assigned-suggestions')) {
+    assignedSuggestionsBox.innerHTML = '';
+  }
+});
+
 searchInput.addEventListener('input', (event) => {
   searchKeyword = event.target.value;
   renderCustomers();
@@ -90,6 +155,7 @@ function openCreateModal() {
   editingCustomerId = null;
   customerModalTitle.textContent = 'Thêm khách hàng mới';
   customerForm.reset();
+  resetAssignedField();
   customerFormErrorBox.hidden = true;
   customerModal.hidden = false;
   nameInput.focus();
@@ -102,6 +168,11 @@ function openEditModal(customer) {
   categorySelect.value = customer.category_id || '';
   phoneInput.value = customer.phone || '';
   addressInput.value = customer.address || '';
+  if (customer.assigned_user_id) {
+    selectAssignedUser(customer.assigned_user_id, customer.assigned_user_name || '');
+  } else {
+    resetAssignedField();
+  }
   customerFormErrorBox.hidden = true;
   customerModal.hidden = false;
   nameInput.focus();
@@ -156,6 +227,7 @@ customerForm.addEventListener('submit', async (event) => {
     category_id: categorySelect.value ? Number(categorySelect.value) : null,
     phone: phoneInput.value.trim(),
     address: addressInput.value.trim(),
+    assigned_user_id: assignedIdInput.value ? Number(assignedIdInput.value) : null,
   };
 
   try {
@@ -185,5 +257,5 @@ customerForm.addEventListener('submit', async (event) => {
     slot.innerHTML = icon('alertCircle', 16);
   });
 
-  await Promise.all([loadCustomers(), loadCategories()]);
+  await Promise.all([loadCustomers(), loadCategories(), loadStaff()]);
 })();

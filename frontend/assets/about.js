@@ -5,6 +5,4 @@
 (async function init() {
   const currentUser = await initLayout('about');
   if (!currentUser) return;
-
-  document.getElementById('about-icon').innerHTML = icon('box', 32);
 })();
