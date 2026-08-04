@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dự án - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Dự án</p>
+      <div class="page-header">
+        <h2>Dự án</h2>
+        <div class="page-header-actions">
+          <div class="search-box">
+            <span class="input-icon"></span>
+            <input type="text" id="project-search" class="search-input" placeholder="Tìm theo tên, mã dự án hoặc khách hàng..." autocomplete="off" />
+          </div>
+          <select id="project-status-filter" class="filter-select">
+            <option value="">Tất cả trạng thái</option>
+            <option value="chuan_bi">Chuẩn bị</option>
+            <option value="dang_thuc_hien">Đang thực hiện</option>
+            <option value="tam_dung">Tạm dừng</option>
+            <option value="hoan_thanh">Hoàn thành</option>
+            <option value="huy">Hủy</option>
+          </select>
+          <button type="button" id="btn-add-project" class="btn-add"></button>
+        </div>
+      </div>
+
+      <div id="projects-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="projects-error-text"></span>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Mã dự án</th>
+              <th>Tên dự án</th>
+              <th>Khách hàng</th>
+              <th>Người phụ trách</th>
+              <th>Ngày hoàn thành dự kiến</th>
+              <th>Tiến độ</th>
+              <th>Trạng thái</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="projects-tbody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <div id="project-modal" class="modal-overlay" hidden>
+    <div class="modal-card modal-card-lg">
+      <h3 id="project-modal-title">Thêm dự án mới</h3>
+      <form id="project-form">
+        <div id="project-form-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="project-form-error-text"></span>
+        </div>
+
+        <div class="form-field">
+          <label for="project-name">Tên dự án</label>
+          <input type="text" id="project-name" required autocomplete="off" placeholder="vd: Nhà xưởng ABC, Cải tạo văn phòng XYZ..." />
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="project-partner">Khách hàng</label>
+            <select id="project-partner" required></select>
+          </div>
+          <div class="form-field">
+            <label for="project-contract-no">Số hợp đồng</label>
+            <input type="text" id="project-contract-no" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="project-contract-date">Ngày ký hợp đồng</label>
+            <input type="date" id="project-contract-date" />
+          </div>
+          <div class="form-field">
+            <label for="project-contract-value">Giá trị hợp đồng</label>
+            <input type="number" id="project-contract-value" min="0" step="1" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="project-start-date">Ngày bắt đầu</label>
+            <input type="date" id="project-start-date" />
+          </div>
+          <div class="form-field">
+            <label for="project-planned-end-date">Ngày hoàn thành dự kiến</label>
+            <input type="date" id="project-planned-end-date" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="project-manager">Người phụ trách</label>
+            <select id="project-manager">
+              <option value="">-- Không chọn --</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="project-status">Trạng thái</label>
+            <select id="project-status">
+              <option value="chuan_bi">Chuẩn bị</option>
+              <option value="dang_thuc_hien">Đang thực hiện</option>
+              <option value="tam_dung">Tạm dừng</option>
+              <option value="hoan_thanh">Hoàn thành</option>
+              <option value="huy">Hủy</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="project-site-address">Địa chỉ công trình</label>
+          <input type="text" id="project-site-address" autocomplete="off" />
+        </div>
+
+        <div class="form-field">
+          <label for="project-note">Ghi chú</label>
+          <input type="text" id="project-note" autocomplete="off" />
+        </div>
+
+        <div class="form-field">
+          <label>Người tham gia dự án</label>
+          <div class="member-picker-row">
+            <select id="member-picker-user"></select>
+            <input type="text" id="member-picker-role" placeholder="Vai trò (vd: Giám sát, Kỹ thuật...)" autocomplete="off" />
+            <button type="button" id="btn-add-member" class="btn-secondary btn-add-row">+ Thêm</button>
+          </div>
+          <div id="member-list" class="member-list"></div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-project" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-project" class="btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/projects.js"></script>
+</body>
+</html>

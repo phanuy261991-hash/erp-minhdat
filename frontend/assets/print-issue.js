@@ -72,6 +72,16 @@ function renderIssue(issue) {
   document.getElementById('print-customer-address').textContent = issue.partner_address || '-';
   document.getElementById('print-customer-phone').textContent = issue.partner_phone || '-';
 
+  // Dong "Cong trinh: ..." (Dot 3, migration 024) - tu an neu phieu khong gan du an, theo dung
+  // yeu cau PRD 4.12 (khong de trong khung gay khoang trang thua khi in giay that).
+  const projectRow = document.getElementById('print-project-row');
+  if (issue.project_name) {
+    document.getElementById('print-project-name').textContent = issue.project_name;
+    projectRow.hidden = false;
+  } else {
+    projectRow.hidden = true;
+  }
+
   const noteRow = document.getElementById('print-note-row');
   if (issue.note) {
     document.getElementById('print-note').textContent = issue.note;

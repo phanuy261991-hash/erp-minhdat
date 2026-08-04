@@ -2,6 +2,71 @@
 
 > Ghi lại các quyết định đã chốt để không thảo luận lại trừ khi có lý do mới. Mỗi mục ghi ngày chốt.
 
+## 2026-08-04 — Module "Quản lý dự án": bỏ tab "Công việc" riêng, gộp vào tab "Giai đoạn"; công việc dùng ngày thực tế nhập tay thay `completed_at` tự động
+
+**Bối cảnh**: người dùng muốn bấm vào 1 dòng giai đoạn thì xổ ra danh sách công việc của giai đoạn đó ngay tại chỗ (mỗi công việc 1 dòng, có ô ngày thực tế nhập tay + chọn Trạng thái + nút Lưu cập nhật ngay không cần mở modal), đồng bộ với biểu đồ Gantt (bấm giai đoạn cũng xổ ra danh sách công việc), và "nếu được" bỏ hẳn tab "Công việc" riêng. Đã hỏi 3 câu qua `AskUserQuestion` trước khi code (theo đúng quy trình bắt buộc — đây là thay đổi phạm vi tính năng/schema):
+
+1. **`project_tasks.completed_at` (tự động, Đợt 2) → thay thế hoàn toàn bằng `actual_start_date`/`actual_end_date` nhập tay** — người dùng chọn phương án nhất quán với `project_phases` (vốn đã có `actual_start`/`actual_end` nhập tay từ Đợt 1), thay vì giữ song song 2 cơ chế. Cảnh báo "Trễ tiến độ" của công việc nay so `due_date` với `actual_end_date` (nhập tay) thay vì `completed_at` (mốc hệ thống) — **hệ quả cần nhớ**: công việc đánh dấu "Hoàn thành" nhưng chưa điền `actual_end_date` sẽ vẫn báo trễ nếu quá hạn (dùng "hôm nay" làm mốc so sánh tạm, giống hệt cách đã sửa cho giai đoạn ngày 2026-08-04 — xem mục "Sửa lỗi cảnh báo Trễ tiến độ" bên dưới), không phải lỗi.
+2. **Bỏ hẳn tab "Công việc"** — toàn bộ CRUD công việc (xem/thêm/sửa/xóa/cập nhật trạng thái) chuyển vào tab "Giai đoạn": bấm 1 dòng giai đoạn xổ ra bảng công việc con ngay dưới.
+3. **Gantt hiển thị danh sách công việc dạng text ngắn gọn khi mở rộng** (không vẽ thêm thanh SVG riêng cho từng công việc) — người dùng chọn phương án đơn giản hơn, giữ Gantt không bị rối.
+
+**Quyết định kỹ thuật khi hiện thực hóa**:
+- Migration `023_project_task_actual_dates.sql`: `ADD COLUMN actual_start_date`/`actual_end_date` (nullable) cho `project_tasks` — **không xóa cột `completed_at` cũ** (giữ nguyên dữ liệu lịch sử các dòng đã tạo trước đó, chỉ không còn đọc/ghi từ code mới, đúng nguyên tắc tránh `ALTER TABLE` rủi ro trên bảng đang có dữ liệu thật). Migration `023` này ngoài kế hoạch ban đầu (dự tính dành cho `project_material_plan`, Đợt 3) — đã **lùi số các migration kế hoạch còn lại**: `project_material_plan` chuyển từ `023` sang `024`, `project_payment_milestones`/`project_variations` từ `024` sang `025` (xem `docs/Plan.md`).
+- Trạng thái "giai đoạn nào đang mở rộng" (`expandedPhaseIds`, biến JS cấp module ở `project-detail.js`) dùng **chung** cho cả bảng "Danh sách giai đoạn" lẫn biểu đồ Gantt — bấm mở/đóng ở 1 trong 2 nơi luôn đồng bộ cả 2, không cần đồng bộ thủ công 2 trạng thái riêng.
+- Nút "Thêm công việc" đặt ngay trong panel mở rộng của từng giai đoạn (không còn nút cấp trang) — mở modal có sẵn với giai đoạn được chọn trước (`presetPhaseId`), người dùng vẫn đổi được sang giai đoạn khác trong modal nếu cần (không khóa cứng).
+- Modal Thêm/Sửa công việc (vẫn giữ nguyên, chỉ đổi điểm kích hoạt) bổ sung thêm 2 trường "Bắt đầu thực tế"/"Kết thúc thực tế" — cho phép chỉnh đầy đủ ở cả 2 nơi (modal lẫn dòng bảng nhanh), giống hệt cách `project_phases` đã có cả modal lẫn... (giai đoạn chỉ có modal, không có dòng nhanh vì giai đoạn không lồng bên trong gì khác cần mở rộng).
+- Test qua API (curl, file UTF-8 + `--data-binary`, không gõ tiếng Việt trực tiếp vào `-d`) + trình duyệt thật (Chrome headless CDP thô, 3 script test riêng): mở/đóng đồng bộ đúng cả bảng lẫn Gantt, lưu nhanh qua UI thật cập nhật đúng (xác nhận lại qua API sau khi bấm nút trên trình duyệt), nút Thêm/Sửa mở đúng modal với dữ liệu đúng, giai đoạn chưa có việc hiện đúng thông báo rỗng ở cả 2 nơi, không lỗi console, chỉ còn 2 tab (Tổng quan/Giai đoạn). **Dữ liệu thật của dự án "Villa Kỳ Duyên" bị đổi tạm thời trong lúc test qua trình duyệt (1 công việc) đã khôi phục đúng nguyên trạng ngay sau đó.**
+
+## 2026-08-04 — Module "Quản lý dự án": sổ cái công nợ vẫn thuộc khách hàng, dự án chỉ gắn nhãn
+
+**Bối cảnh**: người dùng yêu cầu module mới quản lý toàn bộ quá trình dự án — theo giai đoạn, thời gian, khách hàng và công trình cụ thể; quản lý số lượng hàng và công nợ theo dự án; timeline tiến độ; nhập công việc; ghi nhận phát sinh; cập nhật giai đoạn thanh toán. Đây là module lớn nhất kể từ Phase 2 và đụng trực tiếp vào 2 module đang chạy (Kho, Công nợ), nên đã hỏi và chốt **14 quyết định** qua 3 vòng `AskUserQuestion` trước khi lên kế hoạch, **chưa viết dòng code nào ở phiên chốt kế hoạch**.
+
+### Quyết định nghiệp vụ (người dùng chốt)
+
+1. **Cấu trúc 1 cấp: Dự án = Công trình** — mỗi bản ghi dự án gắn trực tiếp 1 khách hàng, địa chỉ công trình là 1 trường thông tin. Không tách bảng "Công trình" riêng chứa nhiều dự án con (đã cân nhắc và loại bỏ vì phức tạp hơn đáng kể, chưa cần ở quy mô hiện tại).
+2. **Vật tư và công nợ theo dự án = gắn trường "Dự án" vào phiếu nhập/xuất kho hiện có**, không tạo sổ vật tư/công nợ riêng cho dự án. Chỉ nhập 1 lần tại phiếu, số liệu dự án là kết quả lọc cộng dồn — đúng nguyên tắc ledger xuyên suốt dự án, không rủi ro double-booking.
+3. **Giai đoạn: danh mục mẫu + sửa riêng từng dự án** — có danh mục "Giai đoạn mẫu" ở menu Cấu hình, tạo dự án mới thì copy toàn bộ mẫu vào dự án, sau đó mỗi dự án tự thêm/sửa/xóa/đổi ngày độc lập (bản copy **tách rời hoàn toàn** khỏi mẫu, sửa mẫu về sau không ảnh hưởng dự án đã tạo).
+4. **Đợt thanh toán = kế hoạch thu tiền**; bấm "Ghi nhận đã thu" trên đợt sẽ mở **đúng form thanh toán công nợ khách hàng** đang có, đồng thời gắn nhãn đợt để biết đợt nào đã thu/thu một phần/quá hạn. Không có luồng nhập tiền thứ hai.
+5. **Công việc thuộc 1 giai đoạn cụ thể** (không phẳng theo dự án, không có công việc con): tên việc, người phụ trách, ngày bắt đầu, hạn hoàn thành, trạng thái (Chưa làm/Đang làm/Hoàn thành), ghi chú.
+6. **% tiến độ tự tính từ tỷ lệ công việc hoàn thành**, không nhập tay, không lưu số cố định — đúng nguyên tắc "không lưu giá trị suy ra được".
+7. **Phát sinh dùng 1 bảng chung, phân biệt bằng trường "Loại phát sinh"**: loại `chi_phi` (có tiền, khi được duyệt thì cộng vào giá trị hợp đồng) và loại `van_de` (nhật ký sự cố, không gắn tiền).
+8. **Vật tư có bảng dự toán** cho từng dự án, trang dự án so sánh Dự toán / Đã xuất / Còn lại / Vượt dự toán.
+9. **Công nợ tính theo phiếu xuất** (không theo giá trị hợp đồng). **Toàn bộ công nợ quản lý qua khách hàng** — dự án chỉ đọc và hiển thị, không có sổ công nợ riêng.
+10. **Dòng công nợ có nhãn dự án** (`project_id`, không bắt buộc) — nhờ vậy tính được "Còn phải thu của dự án" chính xác kể cả khi 1 khách hàng có nhiều dự án. Sổ cái vẫn thuộc về khách hàng đúng như yêu cầu, `project_id` chỉ là chiều phân tích thêm.
+11. **Người tham gia dự án kèm vai trò nhập tự do** (ô chữ, vd "Giám sát", "Kỹ thuật") — không tạo danh mục "Vai trò trong dự án" riêng ở giai đoạn này.
+12. **Giao việc chỉ chọn được người trong danh sách tham gia dự án** — tránh giao nhầm, đồng thời làm danh sách tham gia có ý nghĩa thực sự chứ không chỉ để xem.
+13. **Ô "Dự án" có ở cả form Ghi nhận thanh toán lẫn form Điều chỉnh công nợ** (không bắt buộc, chỉ hiện ở trang Công nợ khách hàng vì dự án chỉ gắn khách hàng). Mở từ trang dự án thì tự chọn sẵn và **khóa không cho đổi**. Điều chỉnh công nợ cũng cần ô này, nếu không mỗi lần sửa sai số liệu sẽ làm lệch "Còn phải thu của dự án".
+14. **Phiếu xuất kho khi in có hiện tên dự án/công trình** — thêm 1 dòng "Công trình: …", tự ẩn nếu phiếu không gắn dự án.
+
+### Quyết định kỹ thuật (lý do chọn, cần giữ khi hiện thực hóa)
+
+- **Tuyệt đối không dựng lại bảng `debt_ledger`.** Cột `reference_type` có `CHECK (reference_type IN ('receipt','issue','payment'))`; SQLite không sửa được CHECK bằng `ALTER TABLE`, muốn thêm giá trị `'project_milestone'` sẽ phải tạo bảng mới → copy → xóa → đổi tên, **trên bảng sổ cái đang chứa dữ liệu công nợ thật** — thao tác rủi ro cao nhất có thể làm trong dự án này. Thay vào đó: thu tiền theo đợt bản chất vẫn là thanh toán (`type='tra'`, `reference_type='payment'`), chỉ thêm 2 cột phụ `project_id`/`milestone_id` bằng `ALTER TABLE ADD COLUMN` (an toàn tuyệt đối). Đây đúng cách đã dùng thành công ở migration `016` khi thêm `is_adjustment`.
+- **`ALTER TABLE ... ADD COLUMN ... REFERENCES`**: dự án bắt buộc `PRAGMA foreign_keys=ON`, SQLite chỉ cho phép thêm cột có khóa ngoại khi cột đó **mặc định NULL** — nên mọi cột `project_id`/`milestone_id` thêm vào bảng cũ đều phải nullable, không `NOT NULL`, không `DEFAULT` khác NULL.
+- **Công nợ dự án dùng cột riêng, không suy ra bằng JOIN**: nếu suy ra thì dòng "nợ" phải JOIN qua `stock_issues`, dòng "trả" JOIN qua đợt thanh toán, còn dòng **điều chỉnh công nợ thủ công thì không cách nào gắn được** vào dự án. Có cột `debt_ledger.project_id` thì chỉ cần 1 truy vấn `SUM` duy nhất và điều chỉnh được công nợ dự án. Không sợ dữ liệu lệch vì phiếu đã tạo không sửa được (nguyên tắc ledger sẵn có).
+- **`project_tasks` chỉ lưu `phase_id`, không lưu thêm `project_id`** — lấy dự án qua JOIN giai đoạn. Lưu cả 2 sẽ nhanh hơn 1 chút nhưng tạo nguy cơ lệch dữ liệu khi chuyển công việc sang giai đoạn khác.
+- **"Đã xuất cho dự án" phải trừ đi phiếu nhập có gắn cùng dự án** — nếu chỉ cộng phiếu xuất sẽ báo sai khi trả vật tư thừa về kho qua phiếu nhập bù trừ. Đây là lý do gắn `project_id` cho **cả** `stock_receipts` chứ không riêng `stock_issues`.
+- **Không lưu trạng thái đợt thanh toán** — suy ra từ số tiền đã thu (`SUM debt_ledger WHERE milestone_id`) so với số tiền của đợt: Chưa thu / Thu một phần / Đã thu đủ / Quá hạn (quá `due_date` mà chưa thu đủ).
+- **Giai đoạn chưa có công việc nào hiển thị `—` chứ không phải `0%`** — 0% gây hiểu nhầm là đã bắt đầu nhưng chưa làm được gì.
+- **Xóa dự án**: chặn cứng nếu đã có phiếu nhập/xuất hoặc dòng công nợ gắn vào — chỉ cho chuyển trạng thái "Hủy". Nhất quán với nguyên tắc đang áp dụng cho đối tác/sản phẩm.
+- **Biểu đồ timeline Gantt tự vẽ bằng SVG tay**, không dùng thư viện ngoài — nhất quán với quyết định đã chốt ở trang Báo cáo (2026-08-01) và nguyên tắc không phụ thuộc CDN/build step của dự án.
+- **Trang chi tiết dự án dạng tab là pattern giao diện mới**, chưa từng có trong dự án (mọi trang chi tiết hiện tại đều cuộn dọc 1 mạch) — bắt buộc dùng skill `ui-ux-pro-max` và bổ sung vào `docs/DESIGN-SYSTEM.md` trước khi viết CSS.
+- **Thứ tự đợt có chủ đích**: cột `debt_ledger.project_id` đặt ở Đợt 3 (cùng lúc phiếu xuất bắt đầu gắn dự án) để dòng công nợ tự có nhãn ngay từ đầu, **không phải vá dữ liệu ngược về sau**. Nhưng tab "Thanh toán & Công nợ" trên trang dự án chỉ bật ở Đợt 4 — vì trong khoảng giữa 2 đợt, nợ đã gắn dự án còn tiền thu thì chưa, hiển thị lúc đó sẽ ra số sai lệch.
+
+## 2026-08-04 — Cảnh báo "Trễ tiến độ" cho giai đoạn/công việc: tính cả đang trễ lẫn xong trễ, chỉ hiện nhãn (không đổi màu Gantt)
+
+**Bối cảnh**: người dùng yêu cầu thêm cảnh báo màu sắc khi ngày thực tế trễ hơn ngày dự kiến, cho cả giai đoạn (`project_phases`) và công việc (`project_tasks`). Đã hỏi 2 câu qua `AskUserQuestion` trước khi code:
+
+1. **"Trễ" tính cho cả 2 trường hợp** (người dùng chọn phương án đầy đủ hơn): (a) chưa xong mà đã qua ngày dự kiến (so với hôm nay) → **đang trễ**; (b) đã xong nhưng ngày thực tế xong trễ hơn ngày dự kiến → **xong trễ**. Không chỉ dừng ở trường hợp (b) sát nghĩa câu yêu cầu gốc — vì (a) mới là cái giúp phát hiện vấn đề sớm, đúng mục đích thực tế của cảnh báo tiến độ.
+2. **Chỉ hiện nhãn cảnh báo kèm icon** (badge đỏ dưới badge Trạng thái) — **không** đổi màu thanh trên biểu đồ Gantt (người dùng không chọn phương án này khi được hỏi).
+
+**Quyết định kỹ thuật khi hiện thực hóa**:
+- Tính ở **backend** (`computeDelay()` trong `project.service.js`, dùng chung cho cả giai đoạn lẫn công việc qua tham số `plannedEnd`/`actualEnd`/`isDone`), không tính ở frontend — nhất quán với cách `progress_percent` đã tính backend từ Đợt 2, tránh 2 nơi tự suy luận cùng 1 logic ngày tháng theo 2 cách khác nhau.
+- **Mốc "hôm nay" theo giờ Việt Nam (UTC+7 cố định)**, tái dùng đúng nguyên tắc đã chốt ở `cashVoucher.service.js` (`VN_OFFSET_MS`) — không dùng giờ server hay UTC thô, vì người dùng luôn ở VN. Áp dụng cho `todayVN()` mới thêm trong `project.service.js`.
+- Không lưu `is_late`/`late_days` — luôn tính lại mỗi lần trả API (`getPhases()` trong `projects.routes.js`, `withDelay()` trong `projectTasks.routes.js`), đúng nguyên tắc "không lưu giá trị suy ra được" xuyên suốt dự án.
+- Không có `planned_end`/`due_date` thì không tính được, luôn trả `is_late: false` — không suy đoán.
+
+**Sự cố phát sinh khi test (đã xử lý ngay)**: trong lúc điều tra 1 báo cáo lỗi liên quan (giai đoạn cập nhật ngày thực tế nhưng trạng thái không lưu), gõ trực tiếp tiếng Việt có dấu vào tham số `curl -d` qua Git Bash **lần thứ 2** trong dự án, lần này ghi đè lên dữ liệu thật của người dùng (dự án "Villa Kỳ Duyên") — đã khôi phục đúng nguyên trạng ngay bằng file JSON UTF-8 thật. Ghi nhận lại rõ ràng để không tái phạm lần 3: **tuyệt đối không gõ tiếng Việt có dấu trực tiếp vào lệnh `curl -d` qua Git Bash trên Windows**, luôn dùng file UTF-8 (Write tool) + `--data-binary`.
+
 ## 2026-08-02 — Import/Export Excel cho Sản phẩm: all-or-nothing, không upsert, export theo danh sách hiển thị
 
 **Bối cảnh**: người dùng yêu cầu import/export Excel tại trang Sản phẩm — import cho tải file mẫu, báo lỗi rõ dòng nào/lỗi gì. Trước khi code đã hỏi 3 câu hỏi qua AskUserQuestion:

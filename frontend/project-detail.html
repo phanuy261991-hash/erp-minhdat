@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chi tiết dự án - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Dự án</p>
+      <div class="page-header">
+        <div class="page-title-group">
+          <a href="projects.html" id="btn-back" class="icon-btn" title="Quay lại danh sách dự án"></a>
+          <h2 id="project-name">Chi tiết dự án</h2>
+          <span id="project-status-badge" class="project-status-badge"></span>
+        </div>
+        <div class="page-header-actions">
+          <a href="#" id="btn-edit-project" class="btn-secondary">Sửa dự án</a>
+        </div>
+      </div>
+
+      <div id="detail-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="detail-error-text"></span>
+      </div>
+
+      <div class="detail-tabs" id="detail-tabs">
+        <button type="button" class="detail-tab active" data-tab="overview">Tổng quan</button>
+        <button type="button" class="detail-tab" data-tab="phases">Giai đoạn</button>
+        <button type="button" class="detail-tab" data-tab="materials">Vật tư</button>
+        <button type="button" class="detail-tab" data-tab="payments">Thanh toán &amp; Công nợ</button>
+        <button type="button" class="detail-tab" data-tab="variations">Phát sinh</button>
+      </div>
+
+      <div id="tab-overview" class="tab-panel">
+        <div class="stat-grid" id="overview-stats"></div>
+        <div class="detail-info-grid" id="overview-info"></div>
+
+        <h3 class="section-heading">Người tham gia dự án</h3>
+        <div id="overview-members-empty" class="empty-state" hidden>
+          <p>Dự án chưa có người tham gia nào.</p>
+        </div>
+        <div id="overview-members" class="member-list"></div>
+      </div>
+
+      <div id="tab-phases" class="tab-panel" hidden>
+        <div class="gantt-card">
+          <div id="gantt-empty" class="gantt-empty" hidden>Chưa có giai đoạn nào để hiển thị.</div>
+          <svg id="gantt-svg" class="gantt-svg"></svg>
+        </div>
+
+        <div class="page-header">
+          <h3 class="section-heading">Danh sách giai đoạn</h3>
+          <button type="button" id="btn-add-phase" class="btn-add"></button>
+        </div>
+
+        <div class="data-table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Thứ tự</th>
+                <th>Tên giai đoạn</th>
+                <th>Bắt đầu KH</th>
+                <th>Kết thúc KH</th>
+                <th>Bắt đầu TT</th>
+                <th>Kết thúc TT</th>
+                <th>Trạng thái</th>
+                <th>Tiến độ</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="phases-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-materials" class="tab-panel" hidden>
+        <div class="page-header">
+          <h3 class="section-heading">Dự toán vật tư</h3>
+          <button type="button" id="btn-add-material" class="btn-add"></button>
+        </div>
+
+        <div id="materials-empty" class="empty-state" hidden>
+          <p>Dự án chưa có dự toán vật tư nào.</p>
+        </div>
+        <div class="data-table-wrap" id="materials-table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Sản phẩm</th>
+                <th>ĐVT</th>
+                <th>Dự toán</th>
+                <th>Đã xuất</th>
+                <th>Còn lại</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="materials-tbody"></tbody>
+          </table>
+        </div>
+
+        <h3 class="section-heading">Phiếu nhập/xuất đã gắn dự án</h3>
+        <div id="documents-empty" class="empty-state" hidden>
+          <p>Chưa có phiếu nhập/xuất nào gắn với dự án này.</p>
+        </div>
+        <div class="data-table-wrap" id="documents-table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Loại</th>
+                <th>Mã phiếu</th>
+                <th>Đối tác</th>
+                <th>Thanh toán</th>
+                <th>Ngày lập</th>
+              </tr>
+            </thead>
+            <tbody id="documents-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-payments" class="tab-panel" hidden>
+        <div class="stat-grid" id="payments-stats"></div>
+
+        <div class="page-header">
+          <h3 class="section-heading">Đợt thanh toán theo hợp đồng</h3>
+          <button type="button" id="btn-add-milestone" class="btn-add"></button>
+        </div>
+        <div id="milestones-empty" class="empty-state" hidden>
+          <p>Dự án chưa có đợt thanh toán nào.</p>
+        </div>
+        <div class="data-table-wrap" id="milestones-table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Tên đợt</th>
+                <th>Số tiền</th>
+                <th>Hạn dự kiến</th>
+                <th>Đã thu</th>
+                <th>Còn lại</th>
+                <th>Trạng thái</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="milestones-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-variations" class="tab-panel" hidden>
+        <div class="page-header">
+          <h3 class="section-heading">Phát sinh dự án</h3>
+          <button type="button" id="btn-add-variation" class="btn-add"></button>
+        </div>
+        <div id="variations-empty" class="empty-state" hidden>
+          <p>Dự án chưa có phát sinh nào.</p>
+        </div>
+        <div class="data-table-wrap" id="variations-table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Loại</th>
+                <th>Tiêu đề</th>
+                <th>Số tiền</th>
+                <th>Ngày</th>
+                <th>Trạng thái</th>
+                <th>Người tạo</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="variations-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <div id="task-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3 id="task-modal-title">Thêm công việc</h3>
+      <form id="task-form">
+        <div id="task-form-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="task-form-error-text"></span>
+        </div>
+
+        <div class="form-field">
+          <label for="task-name">Tên công việc</label>
+          <input type="text" id="task-name" required autocomplete="off" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="task-phase">Giai đoạn</label>
+            <select id="task-phase" required></select>
+          </div>
+          <div class="form-field">
+            <label for="task-assigned-user">Người phụ trách</label>
+            <select id="task-assigned-user">
+              <option value="">-- Không chọn --</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="task-start-date">Bắt đầu kế hoạch</label>
+            <input type="date" id="task-start-date" />
+          </div>
+          <div class="form-field">
+            <label for="task-due-date">Hạn hoàn thành kế hoạch</label>
+            <input type="date" id="task-due-date" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="task-actual-start">Bắt đầu thực tế</label>
+            <input type="date" id="task-actual-start" />
+          </div>
+          <div class="form-field">
+            <label for="task-actual-end">Kết thúc thực tế</label>
+            <input type="date" id="task-actual-end" />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="task-status">Trạng thái</label>
+          <select id="task-status">
+            <option value="chua_lam">Chưa làm</option>
+            <option value="dang_lam">Đang làm</option>
+            <option value="hoan_thanh">Hoàn thành</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="task-note">Ghi chú</label>
+          <input type="text" id="task-note" autocomplete="off" />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-task" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-task" class="btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="phase-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3 id="phase-modal-title">Thêm giai đoạn</h3>
+      <form id="phase-form">
+        <div id="phase-form-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="phase-form-error-text"></span>
+        </div>
+
+        <div class="form-field">
+          <label for="phase-name">Tên giai đoạn</label>
+          <input type="text" id="phase-name" required autocomplete="off" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="phase-sort-order">Thứ tự</label>
+            <input type="number" id="phase-sort-order" min="0" step="1" autocomplete="off" />
+          </div>
+          <div class="form-field">
+            <label for="phase-status">Trạng thái</label>
+            <select id="phase-status">
+              <option value="chua_bat_dau">Chưa bắt đầu</option>
+              <option value="dang_lam">Đang làm</option>
+              <option value="hoan_thanh">Hoàn thành</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="phase-planned-start">Bắt đầu kế hoạch</label>
+            <input type="date" id="phase-planned-start" />
+          </div>
+          <div class="form-field">
+            <label for="phase-planned-end">Kết thúc kế hoạch</label>
+            <input type="date" id="phase-planned-end" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="phase-actual-start">Bắt đầu thực tế</label>
+            <input type="date" id="phase-actual-start" />
+          </div>
+          <div class="form-field">
+            <label for="phase-actual-end">Kết thúc thực tế</label>
+            <input type="date" id="phase-actual-end" />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="phase-note">Ghi chú</label>
+          <input type="text" id="phase-note" autocomplete="off" />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-phase" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-phase" class="btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="material-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3 id="material-modal-title">Thêm dự toán vật tư</h3>
+      <form id="material-form">
+        <div id="material-form-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="material-form-error-text"></span>
+        </div>
+
+        <div class="form-field">
+          <label for="material-product">Sản phẩm</label>
+          <select id="material-product" required></select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="material-quantity">Số lượng dự toán</label>
+            <input type="number" id="material-quantity" min="0" step="1" required />
+          </div>
+          <div class="form-field">
+            <label for="material-note">Ghi chú</label>
+            <input type="text" id="material-note" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-material" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-material" class="btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="milestone-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3 id="milestone-modal-title">Thêm đợt thanh toán</h3>
+      <form id="milestone-form">
+        <div id="milestone-form-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="milestone-form-error-text"></span>
+        </div>
+
+        <div class="form-field">
+          <label for="milestone-name">Tên đợt</label>
+          <input type="text" id="milestone-name" required autocomplete="off" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="milestone-amount">Số tiền</label>
+            <input type="number" id="milestone-amount" min="1" step="1" required />
+          </div>
+          <div class="form-field">
+            <label for="milestone-percent">% giá trị hợp đồng (không bắt buộc)</label>
+            <input type="number" id="milestone-percent" min="0" max="100" step="0.1" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="milestone-sort-order">Thứ tự</label>
+            <input type="number" id="milestone-sort-order" min="0" step="1" autocomplete="off" />
+          </div>
+          <div class="form-field">
+            <label for="milestone-due-date">Ngày dự kiến thu</label>
+            <input type="date" id="milestone-due-date" />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="milestone-note">Ghi chú</label>
+          <input type="text" id="milestone-note" autocomplete="off" />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-milestone" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-milestone" class="btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="variation-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3 id="variation-modal-title">Thêm phát sinh</h3>
+      <form id="variation-form">
+        <div id="variation-form-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="variation-form-error-text"></span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="variation-type">Loại phát sinh</label>
+            <select id="variation-type">
+              <option value="chi_phi">Chi phí (có tiền)</option>
+              <option value="van_de">Vấn đề (không tiền)</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="variation-status">Trạng thái</label>
+            <select id="variation-status">
+              <option value="cho_duyet">Chờ duyệt</option>
+              <option value="da_duyet">Đã duyệt</option>
+              <option value="tu_choi">Từ chối</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="variation-title">Tiêu đề</label>
+          <input type="text" id="variation-title" required autocomplete="off" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-field" id="variation-amount-field">
+            <label for="variation-amount">Số tiền</label>
+            <input type="number" id="variation-amount" min="1" step="1" />
+          </div>
+          <div class="form-field">
+            <label for="variation-occurred-date">Ngày xảy ra</label>
+            <input type="date" id="variation-occurred-date" />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="variation-description">Mô tả</label>
+          <input type="text" id="variation-description" autocomplete="off" />
+        </div>
+
+        <div class="form-field">
+          <label for="variation-resolution">Cách xử lý (không bắt buộc)</label>
+          <input type="text" id="variation-resolution" autocomplete="off" />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-variation" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-variation" class="btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/project-detail.js"></script>
+</body>
+</html>

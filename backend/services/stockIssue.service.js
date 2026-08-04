@@ -35,8 +35,9 @@ function isNegativeStockAllowed() {
 // (no phai thu khach hang) trong CUNG transaction - bat buoc phai co partnerId. issueDate (tuy
 // chon, dang 'YYYY-MM-DD HH:MM:SS') dung lam created_at that cho phieu + movement lien quan,
 // giong het co che receipt_date o stockReceipt.service.js - khong truyen thi dung thoi diem
-// hien tai.
-function createStockIssue({ partnerId, createdBy, note, paymentStatus, items, adjustsType, adjustsId, issueDate }) {
+// hien tai. projectId (tuy chon, migration 024): xem chu thich tuong ung trong
+// stockReceipt.service.js - gan phieu xuat voi du an, tinh "da xuat" cho tab Vat tu.
+function createStockIssue({ partnerId, createdBy, note, paymentStatus, items, adjustsType, adjustsId, issueDate, projectId }) {
   if (!Array.isArray(items) || items.length === 0) {
     throw new ServiceError('Phieu xuat phai co it nhat 1 dong san pham');
   }
@@ -48,6 +49,13 @@ function createStockIssue({ partnerId, createdBy, note, paymentStatus, items, ad
   const costingMethod = getCostingMethod();
 
   const run = db.transaction(() => {
+    if (projectId) {
+      const project = db.prepare('SELECT id FROM projects WHERE id = ?').get(projectId);
+      if (!project) {
+        throw new ServiceError('Khong tim thay du an');
+      }
+    }
+
     items.forEach((item) => {
       const product = db.prepare('SELECT id, is_active FROM products WHERE id = ?').get(item.productId);
       if (!product) {
@@ -72,9 +80,9 @@ function createStockIssue({ partnerId, createdBy, note, paymentStatus, items, ad
     const code = generateIssueCode();
     const issueResult = db
       .prepare(
-        'INSERT INTO stock_issues (code, partner_id, created_by, note, payment_status, adjusts_type, adjusts_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO stock_issues (code, partner_id, created_by, note, payment_status, adjusts_type, adjusts_id, created_at, project_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
       )
-      .run(code, partnerId || null, createdBy, note || '', paymentStatus, adjustsType || null, adjustsId || null, timestamp);
+      .run(code, partnerId || null, createdBy, note || '', paymentStatus, adjustsType || null, adjustsId || null, timestamp, projectId || null);
     const issueId = issueResult.lastInsertRowid;
 
     const insertItem = db.prepare(
@@ -105,6 +113,7 @@ function createStockIssue({ partnerId, createdBy, note, paymentStatus, items, ad
         referenceType: 'issue',
         referenceId: issueId,
         createdBy,
+        projectId,
       });
     }
 

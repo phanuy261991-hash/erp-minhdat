@@ -1,7 +1,7 @@
 # PRD: Hệ thống Quản lý Kho & Công nợ nội bộ
 
-**Version**: v1.5 — cập nhật 2026-08-02 (bổ sung 4.2 mục Import/Export Excel)
-**Trạng thái**: Phase 1 → 4 đã hoàn thành toàn bộ (nền tảng, kho, công nợ, in phiếu, báo cáo) + nhiều mở rộng ngoài phase (Bảo hành, tách Khách hàng, Điều chỉnh công nợ, đóng gói portable, Sổ quỹ, Import/Export Excel sản phẩm). Phase 5 (Vận hành & Go-live) đang làm — xem trạng thái chính xác tại `docs/CURRENT.md`. Các mục 4.x vẫn có thể bổ sung khi phát sinh nhu cầu mới (xem `docs/DECISIONS.md`).
+**Version**: v1.6 — cập nhật 2026-08-04 (bổ sung 4.12 Quản lý dự án)
+**Trạng thái**: Phase 1 → 4 đã hoàn thành toàn bộ (nền tảng, kho, công nợ, in phiếu, báo cáo) + nhiều mở rộng ngoài phase (Bảo hành, tách Khách hàng, Điều chỉnh công nợ, đóng gói portable, Sổ quỹ, Import/Export Excel sản phẩm). Phase 5 (Vận hành & Go-live) đang làm; **module Quản lý dự án (4.12) đã chốt kế hoạch 2026-08-04, chưa bắt đầu code** — xem trạng thái chính xác tại `docs/CURRENT.md`. Các mục 4.x vẫn có thể bổ sung khi phát sinh nhu cầu mới (xem `docs/DECISIONS.md`).
 
 > Tên dự án là working title. Đổi tên theo tên công ty/thương hiệu thực tế khi cần.
 
@@ -131,6 +131,52 @@ Web app nội bộ, kiến trúc đơn giản (không microservices, không clou
 - **Phiếu thu/chi không sửa được sau khi tạo, chỉ xóa cứng** (khác nguyên tắc "chỉ tạo phiếu điều chỉnh bù trừ" của Kho/Công nợ — vì module này không có gì tham chiếu ngược, không cần giữ vết như ledger). Quyền tạo/xóa chỉ cần quyền module `so_quy`, không phân biệt theo hành động (đúng triết lý phân quyền theo module, mục 4.1).
 - Danh mục "Loại thu chi": quản lý riêng (thêm/sửa/xóa), mỗi loại gắn cố định 1 chiều (Thu hoặc Chi); không xóa được nếu đã có phiếu dùng loại đó.
 
+### 4.12 Quản lý dự án (bổ sung 2026-08-04, theo yêu cầu người dùng — đã chốt kế hoạch, chưa code)
+
+Quản trị toàn bộ quá trình một dự án/công trình: theo giai đoạn, theo thời gian, theo từng khách hàng và công trình cụ thể; theo dõi vật tư và công nợ phát sinh; timeline tiến độ; công việc; phát sinh; đợt thanh toán theo hợp đồng.
+
+**Hồ sơ dự án**
+- Mỗi bản ghi dự án **chính là 1 công trình**, gắn trực tiếp **1 khách hàng** (không áp dụng cho nhà cung cấp). 1 khách hàng có thể có nhiều dự án.
+- Thông tin: mã dự án tự sinh, tên dự án, khách hàng, **số hợp đồng**, **ngày ký hợp đồng**, địa chỉ công trình, giá trị hợp đồng, ngày bắt đầu, **ngày hoàn thành dự kiến**, ngày hoàn thành thực tế, trạng thái (Chuẩn bị / Đang thực hiện / Tạm dừng / Hoàn thành / Hủy), **người phụ trách**, ghi chú.
+- **Danh sách người tham gia dự án**: chọn nhiều tài khoản người dùng, mỗi người kèm **vai trò trong dự án** (ô chữ tự do, vd "Giám sát", "Kỹ thuật").
+- Không xóa được dự án đã có phiếu nhập/xuất hoặc công nợ gắn vào — chỉ chuyển trạng thái "Hủy".
+
+**Giai đoạn & tiến độ**
+- Có danh mục **"Giai đoạn mẫu"** (thuộc menu Cấu hình) do Admin định nghĩa, vd Khảo sát → Thiết kế → Chuẩn bị vật tư → Thi công → Nghiệm thu → Bàn giao & Bảo hành.
+- Tạo dự án mới sẽ **copy toàn bộ danh mục mẫu** vào dự án; sau đó mỗi dự án tự thêm/sửa/xóa/đổi ngày giai đoạn **độc lập hoàn toàn** — sửa danh mục mẫu về sau không ảnh hưởng các dự án đã tạo.
+- Mỗi giai đoạn có: tên, thứ tự, ngày bắt đầu/kết thúc kế hoạch, ngày thực tế, trạng thái, ghi chú.
+- **Timeline tiến độ**: biểu đồ dạng thanh ngang theo trục thời gian cho các giai đoạn của dự án.
+- **% hoàn thành luôn được tính lại** từ tỷ lệ công việc đã hoàn thành (không nhập tay, không lưu số cố định — đúng nguyên tắc không lưu giá trị suy ra được). Giai đoạn chưa có công việc nào hiển thị `—`, không hiển thị `0%`.
+- **Cảnh báo "Trễ tiến độ"** (bổ sung 2026-08-04, theo yêu cầu người dùng): áp dụng cho cả giai đoạn và công việc, so sánh ngày kết thúc dự kiến (`planned_end`/`due_date`) với ngày kết thúc thực tế (`actual_end`/`completed_at`) nếu đã hoàn thành, hoặc với ngày hiện tại nếu chưa hoàn thành — cả 2 trường hợp đều tính là trễ nếu vượt mốc dự kiến. Hiển thị bằng nhãn cảnh báo kèm icon (không dùng màu đơn thuần), đặt ngay dưới trạng thái trong bảng danh sách giai đoạn và bảng công việc. Không lưu cố định, luôn tính lại theo thời điểm xem.
+
+**Công việc**
+- Mỗi công việc thuộc **1 giai đoạn cụ thể** của dự án, gồm: tên việc, người phụ trách, ngày bắt đầu, hạn hoàn thành, trạng thái (Chưa làm / Đang làm / Hoàn thành), ghi chú.
+- Ô "Người phụ trách" **chỉ chọn được người có trong danh sách tham gia dự án** — tránh giao việc nhầm cho người ngoài dự án.
+
+**Vật tư theo dự án**
+- Mỗi dự án có **bảng dự toán vật tư** (sản phẩm + số lượng dự kiến).
+- Phiếu nhập kho và phiếu xuất kho có thêm trường **"Dự án"** (không bắt buộc) — chọn khi lập phiếu. Không nhập lại số liệu ở đâu khác.
+- Trang dự án hiển thị bảng đối chiếu **Dự toán / Đã xuất / Còn lại**, cảnh báo rõ khi **vượt dự toán**. "Đã xuất" tính bằng phiếu xuất gắn dự án **trừ đi** phiếu nhập gắn dự án (trường hợp trả vật tư thừa về kho).
+- Phiếu xuất kho khi in ra có hiện dòng "Công trình: …" (tự ẩn nếu phiếu không gắn dự án).
+
+**Công nợ theo dự án**
+- **Toàn bộ công nợ vẫn quản lý qua khách hàng** (mục 4.4) — dự án **không có sổ công nợ riêng**, chỉ đọc và hiển thị lại. Công nợ tính theo phiếu xuất như hiện tại, không tính theo giá trị hợp đồng.
+- Trang dự án hiển thị: danh sách phiếu xuất đã gắn dự án, công nợ phát sinh, đã thu, còn phải thu của riêng dự án.
+- Nút "Ghi nhận thanh toán" trên trang dự án **mở đúng form thanh toán công nợ khách hàng** đang dùng, tự chọn sẵn dự án đang xem và khóa lại không cho đổi.
+- Form **Ghi nhận thanh toán** và **Điều chỉnh công nợ** ở trang Công nợ khách hàng có thêm ô **"Dự án"** (không bắt buộc), chỉ liệt kê dự án của đúng khách hàng đó; ẩn hẳn ô này nếu khách hàng chưa có dự án nào. Không áp dụng cho Công nợ NCC.
+
+**Đợt thanh toán theo hợp đồng**
+- Mỗi dự án có danh sách đợt thanh toán: tên đợt, số tiền (hoặc % giá trị hợp đồng), ngày dự kiến, thứ tự.
+- Bấm **"Ghi nhận đã thu"** trên 1 đợt sẽ mở đúng form thanh toán công nợ khách hàng, đồng thời gắn nhãn đợt đó.
+- **Trạng thái đợt luôn được suy ra** từ số tiền đã thu so với số tiền của đợt: Chưa thu / Thu một phần / Đã thu đủ / **Quá hạn** — không lưu trạng thái cố định.
+
+**Phát sinh dự án**
+- Dùng chung 1 danh sách, phân biệt bằng trường **"Loại phát sinh"**:
+  - **Chi phí** (có tiền): nội dung, số tiền, ngày, lý do, trạng thái duyệt. Khi được duyệt thì **cộng vào giá trị hợp đồng** của dự án (Giá trị hợp đồng thực tế = giá trị gốc + phát sinh đã duyệt).
+  - **Vấn đề** (không tiền): nhật ký sự cố phát sinh trong quá trình (chậm tiến độ, thiếu vật tư, khách đổi yêu cầu...) kèm cách xử lý.
+
+**Phân quyền**: module mới `du_an` (mục 4.1) — vai trò nào được cấp module này thì thao tác được mọi chức năng thuộc dự án, đúng triết lý phân quyền theo module.
+
 ## 5. Success Metrics
 
 | Mục tiêu | Chỉ số | Ngưỡng |
@@ -196,4 +242,4 @@ backend/
   data.db       → file SQLite (backup định kỳ)
 ```
 
-**Bảng dữ liệu chính (draft):** `users`, `roles`, `role_permissions`, `products`, `stock_movements`, `stock_receipts` (phiếu nhập), `stock_issues` (phiếu xuất), `partners` (NCC + khách hàng), `customer_categories` (loại khách hàng, 2026-08-01), `debt_ledger`, `warranties` (bảo hành, 2026-08-01), `cash_vouchers`/`cash_categories`/`cash_book_settings` (Sổ quỹ, 2026-08-02, độc lập với `debt_ledger`), `company_settings`, `warehouse_settings`, `schema_migrations`.
+**Bảng dữ liệu chính (draft):** `users`, `roles`, `role_permissions`, `products`, `stock_movements`, `stock_receipts` (phiếu nhập), `stock_issues` (phiếu xuất), `partners` (NCC + khách hàng), `customer_categories` (loại khách hàng, 2026-08-01), `debt_ledger`, `warranties` (bảo hành, 2026-08-01), `cash_vouchers`/`cash_categories`/`cash_book_settings` (Sổ quỹ, 2026-08-02, độc lập với `debt_ledger`), `projects`/`project_members`/`project_phases`/`project_tasks`/`project_material_plan`/`project_payment_milestones`/`project_variations`/`project_phase_templates` (Quản lý dự án, 2026-08-04, chưa tạo), `company_settings`, `warehouse_settings`, `schema_migrations`.

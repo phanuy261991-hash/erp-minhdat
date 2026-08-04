@@ -143,6 +143,7 @@ erDiagram
         string payment_status "da_thanh_toan hoac cong_no - doi xung stock_issues (Phase 3)"
         string adjusts_type "nullable: 'receipt' hoac 'issue' - phieu nay dieu chinh bu tru cho phieu nao"
         int adjusts_id "nullable, ket hop adjusts_type de tro toi phieu goc"
+        int project_id "nullable (ke hoach migration 023) - can co de 'da xuat cho du an' tru duoc vat tu tra ve kho"
         datetime created_at "co the chinh khi lap phieu - anh huong thu tu FIFO/binh quan gia quyen"
     }
 
@@ -164,6 +165,7 @@ erDiagram
         string payment_status "da_thu_tien hoac cong_no"
         string adjusts_type "nullable: 'receipt' hoac 'issue' - phieu nay dieu chinh bu tru cho phieu nao"
         int adjusts_id "nullable, ket hop adjusts_type de tro toi phieu goc"
+        int project_id "nullable (ke hoach migration 023) - nguon tinh vat tu da xuat + cong no cua du an"
         datetime created_at
     }
 
@@ -198,6 +200,8 @@ erDiagram
         int created_by FK
         datetime created_at
         boolean is_adjustment "1 = dong 'Dieu chinh cong no' thu cong (migration 016), khac dong tu dong/thanh toan that"
+        int project_id "nullable (ke hoach migration 023) - NHAN phan loai du an, so cai VAN thuoc khach hang"
+        int milestone_id "nullable (ke hoach migration 024) - dot thanh toan duoc thu. CO Y khong them 'project_milestone' vao CHECK cua reference_type (SQLite khong ALTER duoc CHECK)"
     }
 
     CASH_BOOK_SETTINGS {
@@ -234,4 +238,124 @@ erDiagram
     SCHEMA_MIGRATIONS {
         int version PK
         datetime applied_at
+    }
+
+    %% ===== Module "Quan ly du an" (ke hoach 2026-08-04, CHUA TAO) =====
+    %% Xem docs/PRD.md muc 4.12, docs/Plan.md muc 2/4, docs/DECISIONS.md muc 2026-08-04.
+    %% Nguyen tac: so cai cong no VAN thuoc khach hang - du an chi gan them nhan project_id
+    %% len dong debt_ledger de loc, KHONG co so cong no rieng.
+
+    PARTNERS ||--o{ PROJECTS : "la khach hang (chi khach_hang)"
+    USERS ||--o{ PROJECTS : "nguoi phu trach"
+    PROJECTS ||--o{ PROJECT_MEMBERS : "co nguoi tham gia"
+    USERS ||--o{ PROJECT_MEMBERS : "tham gia"
+    PROJECTS ||--o{ PROJECT_PHASES : "gom giai doan"
+    PROJECT_PHASES ||--o{ PROJECT_TASKS : "gom cong viec"
+    USERS ||--o{ PROJECT_TASKS : "duoc giao (phai thuoc project_members)"
+    PROJECTS ||--o{ PROJECT_MATERIAL_PLAN : "co du toan vat tu"
+    PRODUCTS ||--o{ PROJECT_MATERIAL_PLAN : "duoc du toan"
+    PROJECTS ||--o{ PROJECT_PAYMENT_MILESTONES : "co dot thanh toan"
+    PROJECTS ||--o{ PROJECT_VARIATIONS : "co phat sinh"
+    PROJECTS ||--o{ STOCK_ISSUES : "duoc xuat vat tu (project_id nullable)"
+    PROJECTS ||--o{ STOCK_RECEIPTS : "duoc tra vat tu ve kho (project_id nullable)"
+    PROJECTS ||--o{ DEBT_LEDGER : "nhan phan loai (project_id nullable)"
+    PROJECT_PAYMENT_MILESTONES ||--o{ DEBT_LEDGER : "duoc thu qua (milestone_id nullable)"
+
+    PROJECT_PHASE_TEMPLATES {
+        int id PK
+        string name "danh muc Giai doan mau, menu Cau hinh"
+        int sort_order
+        datetime created_at
+    }
+
+    PROJECTS {
+        int id PK
+        string code "tu sinh DA000001..."
+        string name "ten du an = ten cong trinh (cau truc 1 cap)"
+        int partner_id FK "BAT BUOC, phai la type=khach_hang"
+        string contract_no "so hop dong"
+        string contract_date "YYYY-MM-DD, ngay ky hop dong"
+        string site_address "dia chi cong trinh"
+        real contract_value "gia tri hop dong GOC - gia tri thuc te = gia tri nay + phat sinh da duyet"
+        string start_date
+        string planned_end_date "ngay hoan thanh du kien"
+        string actual_end_date "nullable"
+        string status "chuan_bi, dang_thuc_hien, tam_dung, hoan_thanh, huy"
+        int manager_id FK "nguoi phu trach du an, nullable"
+        string note
+        int created_by FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    PROJECT_MEMBERS {
+        int id PK
+        int project_id FK
+        int user_id FK
+        string role_in_project "vai tro trong du an - o chu TU DO, khong co danh muc rieng"
+    }
+
+    PROJECT_PHASES {
+        int id PK
+        int project_id FK
+        string name "copy tu PROJECT_PHASE_TEMPLATES luc tao du an roi TACH ROI hoan toan"
+        int sort_order
+        string planned_start
+        string planned_end
+        string actual_start
+        string actual_end
+        string status "chua_bat_dau, dang_lam, hoan_thanh"
+        string note
+    }
+
+    PROJECT_TASKS {
+        int id PK
+        int phase_id FK "CHI luu phase_id - lay du an qua JOIN, khong luu project_id trung lap"
+        string name
+        int assigned_user_id FK "nullable, chi chon duoc nguoi trong project_members"
+        string start_date
+        string due_date
+        string actual_start_date "nhap tay (migration 023, 2026-08-04) - giong actual_start cua PROJECT_PHASES"
+        string actual_end_date "nhap tay (migration 023) - nguon tinh tre tien do, thay the hoan toan completed_at"
+        string status "chua_lam, dang_lam, hoan_thanh - nguon DUY NHAT tinh % tien do"
+        datetime completed_at "KHONG con dung tu migration 023 - giu lai cot cu, chi con du lieu lich su"
+        string note
+        int created_by FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    PROJECT_MATERIAL_PLAN {
+        int id PK
+        int project_id FK
+        int product_id FK
+        real quantity "so luong DU TOAN - 'da xuat' khong luu, tinh tu phieu xuat TRU phieu nhap gan du an"
+        string note
+    }
+
+    PROJECT_PAYMENT_MILESTONES {
+        int id PK
+        int project_id FK
+        string name "ten dot, vd Tam ung / Sau nghiem thu / Giu bao hanh"
+        int sort_order
+        real amount "so tien cua dot"
+        real percent "nullable, neu nhap theo % gia tri hop dong"
+        string due_date
+        string note
+        datetime created_at
+    }
+
+    PROJECT_VARIATIONS {
+        int id PK
+        int project_id FK
+        string type "chi_phi (co tien, duyet thi cong vao gia tri HD) hoac van_de (nhat ky, amount=0)"
+        string title
+        real amount
+        string occurred_date
+        string description
+        string status "chi_phi: cho_duyet/da_duyet/tu_choi - van_de: dang_xu_ly/da_xu_ly"
+        string resolution "cach xu ly, dung cho loai van_de"
+        int created_by FK
+        datetime created_at
+        datetime updated_at
     }

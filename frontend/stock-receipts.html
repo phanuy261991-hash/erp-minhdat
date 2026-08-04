@@ -117,13 +117,20 @@
 
         <div class="form-row">
           <div class="form-field">
+            <label for="receipt-project">Dự án (không bắt buộc)</label>
+            <select id="receipt-project">
+              <option value="">-- Không gắn dự án --</option>
+            </select>
+          </div>
+          <div class="form-field">
             <label for="receipt-order-code">Mã đơn hàng</label>
             <input type="text" id="receipt-order-code" placeholder="Số hóa đơn/đơn hàng của NCC (không bắt buộc)" autocomplete="off" />
           </div>
-          <div class="form-field">
-            <label for="receipt-note">Ghi chú</label>
-            <input type="text" id="receipt-note" placeholder="vd: Nhập tồn đầu kỳ" autocomplete="off" />
-          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="receipt-note">Ghi chú</label>
+          <input type="text" id="receipt-note" placeholder="vd: Nhập tồn đầu kỳ" autocomplete="off" />
         </div>
 
         <div class="form-field">

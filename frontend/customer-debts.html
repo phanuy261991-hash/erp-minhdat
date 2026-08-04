@@ -90,6 +90,21 @@
           <select id="payment-partner" required></select>
         </div>
 
+        <div class="form-row">
+          <div class="form-field" id="payment-project-field" hidden>
+            <label for="payment-project">Dự án (không bắt buộc)</label>
+            <select id="payment-project">
+              <option value="">-- Không gắn dự án --</option>
+            </select>
+          </div>
+          <div class="form-field" id="payment-milestone-field" hidden>
+            <label for="payment-milestone">Đợt thanh toán (không bắt buộc)</label>
+            <select id="payment-milestone">
+              <option value="">-- Không gắn đợt --</option>
+            </select>
+          </div>
+        </div>
+
         <div class="form-field">
           <label for="payment-amount">Số tiền</label>
           <input type="number" id="payment-amount" required min="1" step="1" />
@@ -121,6 +136,13 @@
         <div class="form-field">
           <label for="adjustment-partner">Khách hàng</label>
           <select id="adjustment-partner" required></select>
+        </div>
+
+        <div class="form-field" id="adjustment-project-field" hidden>
+          <label for="adjustment-project">Dự án (không bắt buộc)</label>
+          <select id="adjustment-project">
+            <option value="">-- Không gắn dự án --</option>
+          </select>
         </div>
 
         <div class="form-row">

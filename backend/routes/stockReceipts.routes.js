@@ -9,16 +9,18 @@ const router = express.Router();
 
 // adjusts_code: ma phieu goc (nhap hoac xuat) ma phieu nay dang dieu chinh bu tru cho - resolve
 // qua 2 LEFT JOIN dieu kien theo adjusts_type (giong pattern document_code o products.routes.js).
+// project_name (migration 024, Dot 3): LEFT JOIN vi project_id khong bat buoc.
 const SELECT_RECEIPT = `
   SELECT r.id, r.code, r.order_code, r.partner_id, pa.name AS partner_name, r.created_by,
          u.full_name AS created_by_name, r.note, r.payment_status, r.created_at,
-         r.adjusts_type, r.adjusts_id,
+         r.adjusts_type, r.adjusts_id, r.project_id, pr.name AS project_name,
          CASE r.adjusts_type WHEN 'receipt' THEN ar.code WHEN 'issue' THEN ai.code ELSE NULL END AS adjusts_code
   FROM stock_receipts r
   LEFT JOIN partners pa ON pa.id = r.partner_id
   JOIN users u ON u.id = r.created_by
   LEFT JOIN stock_receipts ar ON r.adjusts_type = 'receipt' AND ar.id = r.adjusts_id
   LEFT JOIN stock_issues ai ON r.adjusts_type = 'issue' AND ai.id = r.adjusts_id
+  LEFT JOIN projects pr ON pr.id = r.project_id
 `;
 
 const ADJUSTS_TYPES = ['receipt', 'issue'];
@@ -133,6 +135,7 @@ router.post('/', (req, res) => {
     receipt_date: rawReceiptDate,
     order_code: orderCode,
     payment_status: paymentStatus,
+    project_id: rawProjectId,
   } = req.body || {};
   const { items, error } = readItems((req.body || {}).items);
 
@@ -166,6 +169,7 @@ router.post('/', (req, res) => {
       adjustsType,
       adjustsId,
       paymentStatus: resolvedPaymentStatus,
+      projectId: rawProjectId ? Number(rawProjectId) : null,
     });
     res.status(201).json({ receipt });
   } catch (err) {

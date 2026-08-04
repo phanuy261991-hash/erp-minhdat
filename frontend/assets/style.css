@@ -786,6 +786,29 @@ input:focus-visible {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
+/* ---- Select dung lam bo loc trong page-header (ngoai ngu canh form, khac .form-field select) -
+   vd loc theo trang thai/giai doan tren cac trang danh sach. Bug phat hien 2026-08-04: 2 select
+   nay truoc do la <select> tran, khong co class nao ap dung nen hien theo style mac dinh cua
+   trinh duyet (vien mong, khong dong bo voi .search-box/.btn-add dat chung 1 hang) - dung chung
+   style voi .month-select (cung 1 nhu cau: select doc lap ngoai form). ---- */
+.filter-select {
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-foreground);
+  outline: none;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.filter-select:focus {
+  border-color: var(--color-ring);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
 /* ---- Cot bang bam duoc de sap xep (vd cot Ton kho) ---- */
 
 .sortable-th {
@@ -2359,4 +2382,329 @@ input:focus-visible {
 .about-copyright strong {
   color: var(--color-foreground);
   font-weight: 600;
+}
+
+/* ============================================================
+   Module "Quan ly du an" (2026-08-04) - Dot 1
+   ============================================================ */
+
+/* Dong mo ta ngan duoi page-header (vd giai thich pham vi anh huong cua 1 danh muc) - chua co
+   tien le truoc do (cac trang danh muc khac khong can dong giai thich them). */
+.section-desc {
+  margin: -8px 0 20px;
+  font-size: 13px;
+  color: var(--color-muted-foreground);
+}
+
+/* ---- Trang chi tiet du an (project-detail.html) - pattern MOI chua tung co: chi tiet dang
+   TAB (khac moi trang chi tiet khac trong du an von cuon doc 1 mach). Thanh tab ngang duoi
+   page-header, JS toggle thuoc tinh [hidden] tren .tab-panel tuong ung - khong dung thu vien
+   ngoai (dung nguyen tac chung: khong CDN, khong build step). ---- */
+
+.detail-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+
+.detail-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.detail-tab:hover {
+  color: var(--color-foreground);
+}
+
+.detail-tab.active {
+  color: var(--color-primary);
+  font-weight: 600;
+  border-bottom-color: var(--color-primary);
+}
+
+.tab-panel[hidden] {
+  display: none;
+}
+
+/* Trang thai du an - badge rieng ngoai .badge-active/.badge-inactive (o day co 5 gia tri,
+   khong chi 2 trang thai bat/tat don gian). */
+.project-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.project-status-badge--chuan_bi {
+  background: #f1f5f9;
+  color: var(--color-muted-foreground);
+}
+
+.project-status-badge--dang_thuc_hien {
+  background: #eff6ff;
+  color: var(--color-primary);
+}
+
+.project-status-badge--tam_dung {
+  background: #fffbeb;
+  color: var(--color-warning);
+}
+
+.project-status-badge--hoan_thanh {
+  background: #ecfdf5;
+  color: var(--color-accent);
+}
+
+.project-status-badge--huy {
+  background: #fef2f2;
+  color: var(--color-destructive);
+}
+
+/* ---- Danh sach nguoi tham gia du an (modal Them/Sua du an + tab Tong quan) - moi dong chon
+   1 tai khoan (select) + vai tro tu do (text) + nut Them, ket qua hien thanh danh sach xoa
+   duoc tung dong. KHONG dung lai .repeatable-row (input flex:1 chia deu sai ty le giua ten
+   tai khoan va vai tro - can ty le rieng 1.4/1). ---- */
+
+.member-picker-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.member-picker-row select {
+  flex: 1.4;
+  min-width: 0;
+}
+
+.member-picker-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.member-list-empty {
+  padding: 8px 0;
+  font-size: 13px;
+  color: var(--color-muted-foreground);
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-muted);
+}
+
+.member-row-name {
+  font-weight: 600;
+  color: var(--color-foreground);
+  white-space: nowrap;
+}
+
+.member-row-role {
+  flex: 1;
+  font-size: 13px;
+  color: var(--color-muted-foreground);
+}
+
+/* ---- Bieu do Gantt (tab "Giai doan") - tu ve bang SVG tay, khong dung thu vien ngoai (nhat
+   quan voi cach reports.js da tu ve bieu do cot SVG, xem docs/DESIGN-SYSTEM.md). Moi giai doan
+   1 dong ngang: nhan ten ben trai, thanh the hien khoang thoi gian ke hoach, mau theo trang thai,
+   phan da to dam trong thanh la % hoan thanh (tu tinh tu cong viec, Dot 2). ---- */
+
+.gantt-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  overflow-x: auto;
+}
+
+.gantt-svg {
+  display: block;
+  min-width: 640px;
+  cursor: default;
+}
+
+.gantt-empty {
+  padding: 24px 0;
+  text-align: center;
+  color: var(--color-muted-foreground);
+  font-size: 14px;
+}
+
+/* ---- Danh sach giai doan dang bang (tab "Giai doan", duoi bieu do Gantt) - tai dung .data-table
+   nhung can 1 o nhap % hoan thanh chi doc va nut hanh dong rieng cho tung dong. ---- */
+
+.phase-progress-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.phase-progress-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-muted);
+  overflow: hidden;
+}
+
+.phase-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--color-primary);
+}
+
+/* ---- Nhan canh bao "Tre tien do" (giai doan/cong viec, 2026-08-04, theo yeu cau nguoi dung) -
+   luon kem icon + chu (khong dua vao mau don thuan, dung nguyen tac accessibility da chot),
+   dat duoi badge Trang thai trong cung 1 o (display:flex rieng dong, khong de chung 1 hang voi
+   badge de tranh chat choi o cot hep). ---- */
+.delay-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-destructive);
+}
+
+/* ---- Dong giai doan bam duoc de xo/thu danh sach cong viec (2026-08-04, theo yeu cau nguoi
+   dung - bo han tab "Cong viec" rieng, gop vao ngay tab "Giai doan"). Chevron dat truoc so thu
+   tu bao hieu co the bam mo rong; dong ngay duoi (.phase-tasks-row) chua bang cong viec con,
+   nen mau --color-muted de phan biet ro voi cac dong giai doan binh thuong. ---- */
+
+.phase-row {
+  cursor: pointer;
+}
+
+.row-toggle-icon {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-right: 6px;
+  color: var(--color-muted-foreground);
+}
+
+/* ">" (con truc tiep) - KHONG dung selector hau due thuong (space) o day: td cua bang
+   .subtask-table long ben trong cung la "descendant" cua .phase-tasks-row, se bi an nham nen
+   muted nay de len tren nen trang rieng cua .subtask-table neu dung selector rong hon (bug thuc
+   te phat hien 2026-08-04 khi ra soat lai). Chi ap dung dung cho o <td colspan> bao ngoai cung. */
+.phase-tasks-row > td {
+  padding: 0;
+  background: var(--color-muted);
+  white-space: normal;
+  cursor: default;
+}
+
+.subtask-panel {
+  padding: 16px 20px;
+}
+
+.subtask-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.subtask-panel-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-foreground);
+}
+
+.subtask-table {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.subtask-table th,
+.subtask-table td {
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.subtask-name {
+  font-weight: 600;
+  color: var(--color-foreground);
+}
+
+.subtask-meta {
+  font-size: 12px;
+  color: var(--color-muted-foreground);
+  white-space: normal;
+}
+
+.subtask-empty {
+  text-align: center;
+  color: var(--color-muted-foreground);
+  padding: 16px 0 !important;
+}
+
+/* Input/select trong bang cong viec con dung lai dung style .filter-select (them class truc tiep
+   trong JS) thay vi de trang trui kieu mac dinh trinh duyet - dong bo voi phan con lai cua he
+   thong (bug cung dang da gap va sua o .task-phase-filter/.project-status-filter 2026-08-04). */
+.subtask-table input[type="date"].filter-select {
+  min-width: 150px;
+}
+
+.subtask-table select.filter-select {
+  min-width: 130px;
+}
+
+/* Gop nut "Luu" + icon Sua/Xoa vao chung 1 o cuoi (thay vi tach rieng cot, gay khoang trang thua
+   do .data-table td:last-child{width:1%} chi ap dung dung cot cuoi cung).
+   QUAN TRONG (bug thuc te 2026-08-04, sua 2 lan moi dung): KHONG dat class .subtask-actions +
+   display:flex truc tiep tren chinh the <td> - lam trinh duyet tinh sai do rong tu nhien cua cot
+   trong bang table-layout:auto (ket hop width:1% cua .data-table td:last-child), cap phat chi
+   ~24px cho o thay vi ~150px can cho ca 3 nut, khien nut TRAN ra ngoai o de len nen trang ben
+   canh. Bo han display:flex tren <td> (lan sua dau) lai lam 3 nut roi xuong 3 dong doc vi khong
+   con gi ep chung nam ngang trong o qua hep.
+   Cach dung: giu <td> o dang the-cell mac dinh (khong doi display, de bang tinh dung do rong tu
+   dong) - boc 3 nut trong 1 <div class="subtask-actions"> RIENG BEN TRONG td, chi div nay moi
+   dung display:flex. Div con khong anh huong toi thuat toan tinh cot cua bang cha. */
+.subtask-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+/* Bien the nho gon cua .btn-add/.btn-secondary dung trong khong gian chat hep (dong bang cong
+   viec con) - giu nguyen mau/kieu, chi giam padding/font-size va bo margin-top mac dinh cua
+   .btn-secondary (von thiet ke cho dung don le trong form/modal). */
+.btn-sm {
+  margin-top: 0;
+  padding: 5px 10px;
+  font-size: 12px;
 }

@@ -7,6 +7,7 @@
 let currentUser = null;
 let productsCache = [];
 let partnersCache = [];
+let projectsCache = [];
 let rowCounter = 0;
 
 const issuesTbody = document.getElementById('issues-tbody');
@@ -22,6 +23,7 @@ const btnCancelIssue = document.getElementById('btn-cancel-issue');
 const btnSubmitIssue = document.getElementById('btn-submit-issue');
 
 const partnerSelect = document.getElementById('issue-partner');
+const projectSelect = document.getElementById('issue-project');
 const newPartnerFields = document.getElementById('new-partner-fields');
 const newPartnerNameInput = document.getElementById('new-partner-name');
 const newPartnerPhoneInput = document.getElementById('new-partner-phone');
@@ -120,6 +122,18 @@ async function loadPartners() {
 function renderPartnerOptions() {
   const options = partnersCache.map((p) => `<option value="${p.id}">${p.name}</option>`).join('');
   partnerSelect.innerHTML = `<option value="">-- Không chọn --</option>${options}<option value="__new__">+ Thêm khách hàng mới</option>`;
+}
+
+// Du an (khong bat buoc, migration 024, Dot 3 module "Quan ly du an") - giong het pattern
+// stock-receipts.js, loai bo du an da 'huy' khoi danh sach chon.
+async function loadProjects() {
+  const { projects } = await apiFetch('/projects');
+  projectsCache = projects.filter((p) => p.status !== 'huy');
+}
+
+function renderProjectOptions() {
+  const options = projectsCache.map((p) => `<option value="${p.id}">${p.code} - ${p.name}</option>`).join('');
+  projectSelect.innerHTML = `<option value="">-- Không gắn dự án --</option>${options}`;
 }
 
 // Chon khach hang co san -> dien thong tin lien he ra 2 o chi-doc de nguoi lap phieu tien
@@ -389,6 +403,7 @@ issueForm.addEventListener('submit', async (event) => {
         note: noteInput.value.trim(),
         payment_status: paymentToggle.checked ? 'cong_no' : 'da_thu_tien',
         issue_date: issueDateInput.value ? toSqliteDatetime(issueDateInput.value) : null,
+        project_id: projectSelect.value || null,
         items,
         ...getAdjustmentPayload(),
       }),
@@ -417,7 +432,8 @@ issueForm.addEventListener('submit', async (event) => {
   initAdjustmentField();
   initIssueDetailModal();
 
-  await Promise.all([loadProducts(), loadPartners(), loadIssues(), loadAdjustableDocs()]);
+  await Promise.all([loadProducts(), loadPartners(), loadProjects(), loadIssues(), loadAdjustableDocs()]);
   renderPartnerOptions();
+  renderProjectOptions();
   resetIssueForm();
 })();

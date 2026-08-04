@@ -7,6 +7,7 @@
 let currentUser = null;
 let productsCache = [];
 let partnersCache = [];
+let projectsCache = [];
 let rowCounter = 0;
 
 const receiptsTbody = document.getElementById('receipts-tbody');
@@ -22,6 +23,7 @@ const btnCancelReceipt = document.getElementById('btn-cancel-receipt');
 const btnSubmitReceipt = document.getElementById('btn-submit-receipt');
 
 const partnerSelect = document.getElementById('receipt-partner');
+const projectSelect = document.getElementById('receipt-project');
 const newPartnerFields = document.getElementById('new-partner-fields');
 const newPartnerNameInput = document.getElementById('new-partner-name');
 const newPartnerPhoneInput = document.getElementById('new-partner-phone');
@@ -118,6 +120,18 @@ async function loadPartners() {
 function renderPartnerOptions() {
   const options = partnersCache.map((p) => `<option value="${p.id}">${p.name}</option>`).join('');
   partnerSelect.innerHTML = `<option value="">-- Không chọn --</option>${options}<option value="__new__">+ Thêm nhà cung cấp mới</option>`;
+}
+
+// Du an (khong bat buoc, migration 024, Dot 3 module "Quan ly du an") - loai bo du an da 'huy'
+// khoi danh sach chon, khong hop ly gan phieu moi vao du an da huy.
+async function loadProjects() {
+  const { projects } = await apiFetch('/projects');
+  projectsCache = projects.filter((p) => p.status !== 'huy');
+}
+
+function renderProjectOptions() {
+  const options = projectsCache.map((p) => `<option value="${p.id}">${p.code} - ${p.name}</option>`).join('');
+  projectSelect.innerHTML = `<option value="">-- Không gắn dự án --</option>${options}`;
 }
 
 partnerSelect.addEventListener('change', () => {
@@ -363,6 +377,7 @@ receiptForm.addEventListener('submit', async (event) => {
         order_code: orderCodeInput.value.trim(),
         receipt_date: receiptDateInput.value ? toSqliteDatetime(receiptDateInput.value) : null,
         payment_status: paymentToggle.checked ? 'cong_no' : 'da_thanh_toan',
+        project_id: projectSelect.value || null,
         items,
         ...getAdjustmentPayload(),
       }),
@@ -391,7 +406,8 @@ receiptForm.addEventListener('submit', async (event) => {
   initReceiptDetailModal();
   initAdjustmentField();
 
-  await Promise.all([loadProducts(), loadPartners(), loadReceipts(), loadAdjustableDocs()]);
+  await Promise.all([loadProducts(), loadPartners(), loadProjects(), loadReceipts(), loadAdjustableDocs()]);
   renderPartnerOptions();
+  renderProjectOptions();
   resetReceiptForm();
 })();

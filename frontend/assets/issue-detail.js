@@ -39,6 +39,7 @@ function renderIssueDetail(issue) {
     issueDetailInfoItem('Khách hàng', issue.partner_name || '-'),
     issueDetailInfoItem('Người lập', issue.created_by_name),
     issueDetailInfoItem('Thanh toán', paymentBadge),
+    issueDetailInfoItem('Dự án', issue.project_name || '-'),
     issueDetailInfoItem('Ghi chú', issue.note || '-', true),
   ];
 

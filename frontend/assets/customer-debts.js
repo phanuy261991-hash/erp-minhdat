@@ -31,6 +31,11 @@ const btnSubmitPayment = document.getElementById('btn-submit-payment');
 const paymentPartnerSelect = document.getElementById('payment-partner');
 const paymentAmountInput = document.getElementById('payment-amount');
 const paymentNoteInput = document.getElementById('payment-note');
+const paymentProjectField = document.getElementById('payment-project-field');
+const paymentProjectSelect = document.getElementById('payment-project');
+const paymentMilestoneField = document.getElementById('payment-milestone-field');
+const paymentMilestoneSelect = document.getElementById('payment-milestone');
+let paymentProjectsCache = [];
 
 const btnAddAdjustment = document.getElementById('btn-add-adjustment');
 const adjustmentModal = document.getElementById('adjustment-modal');
@@ -48,6 +53,9 @@ const adjustmentDocTypeInput = document.getElementById('adjustment-doc-type');
 const adjustmentDocIdInput = document.getElementById('adjustment-doc-id');
 const adjustmentDocSuggestions = document.getElementById('adjustment-doc-suggestions');
 let adjustableDocsCache = [];
+const adjustmentProjectField = document.getElementById('adjustment-project-field');
+const adjustmentProjectSelect = document.getElementById('adjustment-project');
+let adjustmentProjectsCache = [];
 
 function formatMoney(value) {
   return Number(value).toLocaleString('vi-VN');
@@ -213,12 +221,60 @@ function renderPartnerOptions() {
     .join('');
 }
 
-function openPaymentModal(partnerId) {
+// O "Du an"/"Dot thanh toan" (Dot 4, migration 025) - chi hien khi khach hang dang chon CO du
+// an, dung API moi `GET /projects?partner_id=` (loc dung khach hang, khong phai toan bo du an
+// he thong). Loai bo du an da "huy" giong pattern da dung o stock-receipts.js/stock-issues.js.
+async function loadProjectsForPartner(partnerId) {
+  if (!partnerId) return [];
+  const { projects } = await apiFetch(`/projects?partner_id=${partnerId}`);
+  return projects.filter((p) => p.status !== 'huy');
+}
+
+async function updatePaymentMilestoneField() {
+  const projectId = paymentProjectSelect.value;
+  if (!projectId) {
+    paymentMilestoneField.hidden = true;
+    paymentMilestoneSelect.innerHTML = '<option value="">-- Không gắn đợt --</option>';
+    return;
+  }
+
+  const { milestones } = await apiFetch(`/projects/${projectId}/milestones`);
+  if (milestones.length === 0) {
+    paymentMilestoneField.hidden = true;
+    paymentMilestoneSelect.innerHTML = '<option value="">-- Không gắn đợt --</option>';
+    return;
+  }
+  paymentMilestoneField.hidden = false;
+  paymentMilestoneSelect.innerHTML = '<option value="">-- Không gắn đợt --</option>' +
+    milestones.map((m) => `<option value="${m.id}">${m.name} - còn ${formatMoney(m.remaining_amount)}</option>`).join('');
+}
+
+async function updatePaymentProjectField() {
+  paymentProjectsCache = await loadProjectsForPartner(paymentPartnerSelect.value);
+  if (paymentProjectsCache.length === 0) {
+    paymentProjectField.hidden = true;
+    paymentProjectSelect.innerHTML = '<option value="">-- Không gắn dự án --</option>';
+  } else {
+    paymentProjectField.hidden = false;
+    paymentProjectSelect.innerHTML = '<option value="">-- Không gắn dự án --</option>' +
+      paymentProjectsCache.map((p) => `<option value="${p.id}">${p.code} - ${p.name}</option>`).join('');
+  }
+  await updatePaymentMilestoneField();
+}
+
+paymentPartnerSelect.addEventListener('change', updatePaymentProjectField);
+paymentProjectSelect.addEventListener('change', updatePaymentMilestoneField);
+
+async function openPaymentModal(partnerId) {
   renderPartnerOptions();
   paymentForm.reset();
+  paymentPartnerSelect.disabled = false;
+  paymentProjectSelect.disabled = false;
+  paymentMilestoneSelect.disabled = false;
   if (partnerId) paymentPartnerSelect.value = partnerId;
   paymentFormErrorBox.hidden = true;
   paymentModal.hidden = false;
+  await updatePaymentProjectField();
 }
 
 function closePaymentModal() {
@@ -244,6 +300,8 @@ paymentForm.addEventListener('submit', async (event) => {
         partner_id: Number(paymentPartnerSelect.value),
         amount: Number(paymentAmountInput.value),
         note: paymentNoteInput.value.trim(),
+        project_id: paymentProjectSelect.value || null,
+        milestone_id: paymentMilestoneSelect.value || null,
       }),
     });
     closePaymentModal();
@@ -325,6 +383,22 @@ document.addEventListener('click', (event) => {
   }
 });
 
+// O "Du an" cho form Dieu chinh cong no (Dot 4) - khong co "Dot thanh toan" o day, chi form
+// Ghi nhan thanh toan moi co (dung PRD 4.12).
+async function updateAdjustmentProjectField() {
+  adjustmentProjectsCache = await loadProjectsForPartner(adjustmentPartnerSelect.value);
+  if (adjustmentProjectsCache.length === 0) {
+    adjustmentProjectField.hidden = true;
+    adjustmentProjectSelect.innerHTML = '<option value="">-- Không gắn dự án --</option>';
+  } else {
+    adjustmentProjectField.hidden = false;
+    adjustmentProjectSelect.innerHTML = '<option value="">-- Không gắn dự án --</option>' +
+      adjustmentProjectsCache.map((p) => `<option value="${p.id}">${p.code} - ${p.name}</option>`).join('');
+  }
+}
+
+adjustmentPartnerSelect.addEventListener('change', updateAdjustmentProjectField);
+
 async function openAdjustmentModal(partnerId) {
   renderAdjustmentPartnerOptions();
   adjustmentForm.reset();
@@ -332,7 +406,7 @@ async function openAdjustmentModal(partnerId) {
   adjustmentFormErrorBox.hidden = true;
   if (partnerId) adjustmentPartnerSelect.value = partnerId;
   adjustmentModal.hidden = false;
-  await loadAdjustableDocs(adjustmentPartnerSelect.value);
+  await Promise.all([loadAdjustableDocs(adjustmentPartnerSelect.value), updateAdjustmentProjectField()]);
 }
 
 function closeAdjustmentModal() {
@@ -362,6 +436,7 @@ adjustmentForm.addEventListener('submit', async (event) => {
       type: adjustmentTypeSelect.value,
       amount: Number(adjustmentAmountInput.value),
       note: adjustmentNoteInput.value.trim(),
+      project_id: adjustmentProjectSelect.value || null,
     };
     if (adjustmentDocTypeInput.value && adjustmentDocIdInput.value) {
       body.reference_type = adjustmentDocTypeInput.value;
@@ -394,6 +469,30 @@ debtsTbody.addEventListener('click', (event) => {
   }
 });
 
+// Mo san modal Ghi nhan thanh toan tu trang chi tiet du an (nut "Ghi nhan da thu" tren 1 dot
+// thanh toan, xem project-detail.js) - dung pattern dieu huong qua URL da co o Bao hanh
+// (customer_id=/edit= tu customer-detail.html). Khoa ca 3 o (Khach hang/Du an/Dot thanh toan)
+// khong cho doi vi nguoi dung dang thao tac dung tu ngu canh 1 dot thanh toan cu the.
+async function applyPaymentPresetFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('open_payment') !== '1') return;
+
+  const partnerId = params.get('partner_id');
+  const projectId = params.get('project_id');
+  const milestoneId = params.get('milestone_id');
+  if (!partnerId) return;
+
+  await openPaymentModal(partnerId);
+  if (projectId) {
+    paymentProjectSelect.value = projectId;
+    await updatePaymentMilestoneField();
+    if (milestoneId) paymentMilestoneSelect.value = milestoneId;
+  }
+  paymentPartnerSelect.disabled = true;
+  paymentProjectSelect.disabled = true;
+  paymentMilestoneSelect.disabled = true;
+}
+
 (async function init() {
   currentUser = await initLayout('customer-debts');
   if (!currentUser) return;
@@ -406,4 +505,5 @@ debtsTbody.addEventListener('click', (event) => {
   });
 
   await loadSummary();
+  await applyPaymentPresetFromUrl();
 })();

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Giai đoạn mẫu - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Cấu hình</p>
+      <div class="page-header">
+        <h2>Giai đoạn mẫu</h2>
+        <div class="page-header-actions">
+          <button type="button" id="btn-add-template" class="btn-add"></button>
+        </div>
+      </div>
+      <p class="section-desc">Danh sách giai đoạn mặc định sẽ được sao chép vào mỗi dự án mới tạo. Sửa/xóa ở đây <strong>không</strong> ảnh hưởng các dự án đã tạo trước đó.</p>
+
+      <div id="templates-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="templates-error-text"></span>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Thứ tự</th>
+              <th>Tên giai đoạn</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="templates-tbody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <div id="template-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3 id="template-modal-title">Thêm giai đoạn mẫu</h3>
+      <form id="template-form">
+        <div id="template-form-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="template-form-error-text"></span>
+        </div>
+
+        <div class="form-field">
+          <label for="template-name">Tên giai đoạn</label>
+          <input type="text" id="template-name" required autocomplete="off" placeholder="vd: Khảo sát, Thiết kế, Thi công..." />
+        </div>
+
+        <div class="form-field">
+          <label for="template-sort-order">Thứ tự hiển thị</label>
+          <input type="number" id="template-sort-order" min="0" step="1" autocomplete="off" />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-template" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-template" class="btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/project-phase-templates.js"></script>
+</body>
+</html>

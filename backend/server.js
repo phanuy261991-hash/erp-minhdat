@@ -23,6 +23,8 @@ const reportsRoutes = require('./routes/reports.routes');
 const cashVouchersRoutes = require('./routes/cashVouchers.routes');
 const cashCategoriesRoutes = require('./routes/cashCategories.routes');
 const cashBookSettingsRoutes = require('./routes/cashBookSettings.routes');
+const projectsRoutes = require('./routes/projects.routes');
+const projectPhaseTemplatesRoutes = require('./routes/projectPhaseTemplates.routes');
 const { requireAuth } = require('./middleware/auth');
 const { requirePermission } = require('./middleware/requirePermission');
 
@@ -93,6 +95,12 @@ app.use('/api/reports', requireAuth, requirePermission('bao_cao'), reportsRoutes
 app.use('/api/cash-vouchers', requireAuth, requirePermission('so_quy'), cashVouchersRoutes);
 app.use('/api/cash-categories', requireAuth, requirePermission('so_quy'), cashCategoriesRoutes);
 app.use('/api/cash-book-settings', requireAuth, cashBookSettingsRoutes);
+// Module "Quan ly du an" (2026-08-04) - so cai cong no VAN thuoc khach hang, module nay khong
+// dung debt_ledger (xem docs/DECISIONS.md). GET mo cho moi nguoi da dang nhap (dung khi tao du
+// an de xem truoc danh sach Giai doan mau se duoc copy), POST/PUT/DELETE rieng quyen 'cau_hinh'
+// ben trong file route (xem projectPhaseTemplates.routes.js).
+app.use('/api/project-phase-templates', requireAuth, projectPhaseTemplatesRoutes);
+app.use('/api/projects', requireAuth, requirePermission('du_an'), projectsRoutes);
 
 // Route kiem tra server song - dung de test nhanh khi chay demo.
 app.get('/api/health', (req, res) => {

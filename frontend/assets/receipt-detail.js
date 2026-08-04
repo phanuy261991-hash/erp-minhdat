@@ -39,6 +39,7 @@ function renderReceiptDetail(receipt) {
     detailInfoItem('Người lập', receipt.created_by_name),
     detailInfoItem('Mã đơn hàng', receipt.order_code || '-'),
     detailInfoItem('Thanh toán', paymentBadge),
+    detailInfoItem('Dự án', receipt.project_name || '-'),
     detailInfoItem('Ghi chú', receipt.note || '-', true),
   ];
 

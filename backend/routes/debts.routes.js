@@ -98,7 +98,7 @@ router.get('/', (req, res) => {
 });
 
 router.post('/payment', (req, res) => {
-  const { partner_id: partnerId, amount, note } = req.body || {};
+  const { partner_id: partnerId, amount, note, project_id: rawProjectId, milestone_id: rawMilestoneId } = req.body || {};
 
   if (!partnerId || !(Number(amount) > 0)) {
     return res.status(400).json({ error: 'Thieu doi tac hoac so tien thanh toan khong hop le' });
@@ -110,6 +110,8 @@ router.post('/payment', (req, res) => {
       amount: Number(amount),
       note: note ? String(note).trim() : '',
       createdBy: req.session.user.id,
+      projectId: rawProjectId ? Number(rawProjectId) : null,
+      milestoneId: rawMilestoneId ? Number(rawMilestoneId) : null,
     });
     res.status(201).json({ entry });
   } catch (err) {
@@ -145,7 +147,15 @@ router.get('/documents', (req, res) => {
 // Dieu chinh cong no thu cong (migration 016, khac "Ghi nhan thanh toan"): sua so du sai (vd
 // nhap nham gia von phieu nhap) ma khong sua/xoa dong ledger goc - xem debt.service.js.
 router.post('/adjustment', (req, res) => {
-  const { partner_id: partnerId, type, amount, reference_type: referenceType, reference_id: referenceId, note } = req.body || {};
+  const {
+    partner_id: partnerId,
+    type,
+    amount,
+    reference_type: referenceType,
+    reference_id: referenceId,
+    note,
+    project_id: rawProjectId,
+  } = req.body || {};
 
   if (!partnerId) {
     return res.status(400).json({ error: 'Thieu doi tac' });
@@ -160,6 +170,7 @@ router.post('/adjustment', (req, res) => {
       referenceId: referenceId ? Number(referenceId) : null,
       note,
       createdBy: req.session.user.id,
+      projectId: rawProjectId ? Number(rawProjectId) : null,
     });
     res.status(201).json({ entry });
   } catch (err) {

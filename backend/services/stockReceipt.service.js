@@ -23,7 +23,11 @@ function generateReceiptCode() {
 // paymentStatus ('da_thanh_toan' mac dinh hoac 'cong_no', migration 011): 'cong_no' phat sinh
 // 1 dong debt_ledger (no phai tra NCC) trong CUNG transaction nay - bat buoc phai co partnerId
 // (khong the ghi no cho doi tac khong xac dinh).
-function createStockReceipt({ partnerId, createdBy, note, items, receiptDate, orderCode, adjustsType, adjustsId, paymentStatus }) {
+// projectId (tuy chon, migration 024): gan phieu voi 1 du an - dung de doi chieu vat tu du toan/
+// da xuat va loc cong no theo du an (module "Quan ly du an" Dot 3, xem docs/DECISIONS.md).
+// Validate ton tai o day (khong o tang route) vi phai chay TRONG transaction giong het cach
+// validate san pham ben duoi.
+function createStockReceipt({ partnerId, createdBy, note, items, receiptDate, orderCode, adjustsType, adjustsId, paymentStatus, projectId }) {
   if (!Array.isArray(items) || items.length === 0) {
     throw new ServiceError('Phieu nhap phai co it nhat 1 dong san pham');
   }
@@ -32,6 +36,13 @@ function createStockReceipt({ partnerId, createdBy, note, items, receiptDate, or
   }
 
   const run = db.transaction(() => {
+    if (projectId) {
+      const project = db.prepare('SELECT id FROM projects WHERE id = ?').get(projectId);
+      if (!project) {
+        throw new ServiceError('Khong tim thay du an');
+      }
+    }
+
     items.forEach((item) => {
       const product = db.prepare('SELECT id, is_active FROM products WHERE id = ?').get(item.productId);
       if (!product) {
@@ -48,9 +59,9 @@ function createStockReceipt({ partnerId, createdBy, note, items, receiptDate, or
     const resolvedPaymentStatus = paymentStatus || 'da_thanh_toan';
     const receiptResult = db
       .prepare(
-        'INSERT INTO stock_receipts (code, partner_id, created_by, note, created_at, order_code, adjusts_type, adjusts_id, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO stock_receipts (code, partner_id, created_by, note, created_at, order_code, adjusts_type, adjusts_id, payment_status, project_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
       )
-      .run(code, partnerId || null, createdBy, note || '', timestamp, orderCode || '', adjustsType || null, adjustsId || null, resolvedPaymentStatus);
+      .run(code, partnerId || null, createdBy, note || '', timestamp, orderCode || '', adjustsType || null, adjustsId || null, resolvedPaymentStatus, projectId || null);
     const receiptId = receiptResult.lastInsertRowid;
 
     const insertItem = db.prepare(
@@ -84,6 +95,7 @@ function createStockReceipt({ partnerId, createdBy, note, items, receiptDate, or
         referenceType: 'receipt',
         referenceId: receiptId,
         createdBy,
+        projectId,
       });
     }
 

@@ -1,7 +1,7 @@
 # Plan chi tiết: Hệ thống Quản lý Kho & Công nợ nội bộ
 
-**Dựa trên**: PRD v1.5 — cập nhật 2026-08-02
-**Version**: v1.3 — cập nhật 2026-08-02 (Import/Export Excel sản phẩm, ngoài phase)
+**Dựa trên**: PRD v1.6 — cập nhật 2026-08-04
+**Version**: v1.4 — cập nhật 2026-08-04 (bổ sung kế hoạch module Quản lý dự án, chưa code)
 
 ---
 
@@ -39,7 +39,12 @@ project-root/
 │  │     ├─ 017_warranties.sql (đã có, 2026-08-01) bảng warranties (Bảo hành, gắn khách hàng)
 │  │     ├─ 018_backup_path.sql (đã có, 2026-08-01) warehouse_settings.backup_path (Phase 5)
 │  │     ├─ 019_cash_book.sql (đã có, 2026-08-02) module So quy: cash_book_settings, cash_categories, cash_vouchers (doc lap voi debt_ledger)
-│  │     └─ 020_partner_assigned_user.sql (đã có, 2026-08-03) partners.assigned_user_id (Nguoi phu trach, nullable, hien tai chi dung o customers.html)
+│  │     ├─ 020_partner_assigned_user.sql (đã có, 2026-08-03) partners.assigned_user_id (Nguoi phu trach, nullable, hien tai chi dung o customers.html)
+│  │     ├─ 021_projects.sql            (kế hoạch, Đợt 1) project_phase_templates, projects, project_members, project_phases + seed quyen 'du_an'
+│  │     ├─ 022_project_tasks.sql       (đã có, 2026-08-04) project_tasks (thuoc phase_id, khong luu project_id trung lap)
+│  │     ├─ 023_project_task_actual_dates.sql (đã có, 2026-08-04, ngoai ke hoach ban dau) project_tasks.actual_start_date/actual_end_date (nhap tay, thay completed_at)
+│  │     ├─ 024_project_materials.sql   (kế hoạch, Đợt 3 — lui so tu 023 vi 023 da dung cho actual dates o tren) project_material_plan + ADD COLUMN project_id cho stock_issues/stock_receipts/debt_ledger
+│  │     └─ 025_project_payments.sql    (kế hoạch, Đợt 4 — lui so tu 024) project_payment_milestones, project_variations + ADD COLUMN debt_ledger.milestone_id
 │  ├─ middleware/
 │  │  ├─ auth.js                       (đã có) requireAuth (kiểm tra session)
 │  │  └─ requirePermission.js          (đã có) requirePermission(module) + requireAnyPermission([module,...])
@@ -59,13 +64,18 @@ project-root/
 │  │  ├─ warranties.routes.js          (đã có, 2026-08-01) CRUD Bao hanh, xoa chi Admin
 │  │  ├─ cashVouchers.routes.js        (đã có, 2026-08-02) Phieu thu/chi (list+summary theo thang, tao, xoa, /staff) - module doc lap "so_quy"
 │  │  ├─ cashCategories.routes.js      (đã có, 2026-08-02) CRUD "Loai thu chi"
-│  │  └─ cashBookSettings.routes.js    (đã có, 2026-08-02) GET/PUT Quy dau ky (cash_book_settings, singleton)
+│  │  ├─ cashBookSettings.routes.js    (đã có, 2026-08-02) GET/PUT Quy dau ky (cash_book_settings, singleton)
+│  │  ├─ projects.routes.js            (kế hoạch, Đợt 1) CRUD du an + nguoi tham gia + giai doan cua tung du an
+│  │  ├─ projectPhaseTemplates.routes.js (kế hoạch, Đợt 1) CRUD danh muc "Giai doan mau" (menu Cau hinh)
+│  │  ├─ projectTasks.routes.js        (kế hoạch, Đợt 2) CRUD cong viec theo giai doan
+│  │  └─ projectFinance.routes.js      (kế hoạch, Đợt 3-4) du toan vat tu, cong no du an, dot thanh toan, phat sinh
 │  └─ services/
 │     ├─ stockReceipt.service.js       (đã có) transaction: tạo phiếu nhập + movements + lô hàng + ghi nợ NCC neu cong_no
 │     ├─ stockIssue.service.js         (đã có) transaction: tạo phiếu xuất + movements, tiêu thụ lô + ghi nợ khach hang neu cong_no
 │     ├─ costing.service.js            (đã có) tính giá vốn bình quân gia quyền/FIFO (Phase 2)
 │     ├─ debt.service.js               (đã có) Phase 3 — ghi nợ (trong transaction cua phieu)/thanh toan/tinh so du
-│     └─ cashVoucher.service.js        (đã có, 2026-08-02) tao ma PT/PC, tinh Quy dau ky/Tong thu/Tong chi/Ton quy theo thang (moc thoi gian UTC+7 co dinh)
+│     ├─ cashVoucher.service.js        (đã có, 2026-08-02) tao ma PT/PC, tinh Quy dau ky/Tong thu/Tong chi/Ton quy theo thang (moc thoi gian UTC+7 co dinh)
+│     └─ project.service.js            (kế hoạch, Đợt 1-4) sinh ma DA, copy giai doan mau khi tao du an, tinh % tien do / vat tu da xuat / cong no du an / trang thai dot thanh toan (tat ca on-the-fly, khong luu)
 ├─ frontend/
 │  ├─ login.html                       (đã có)
 │  ├─ dashboard.html                   (đã có) trang chủ sau đăng nhập
@@ -90,6 +100,9 @@ project-root/
 │  ├─ reports.html                     (đã có) Phase 4 — ton kho + mua/ban theo thang (bieu do SVG tu ve) + cong no tong hop
 │  ├─ cash-book.html                   (đã có, 2026-08-02) Sổ quỹ — danh sách phiếu thu/chi theo tháng (chọn Tháng/Năm), thẻ Quỹ đầu kỳ/Tổng thu/Tổng chi/Tồn quỹ, modal lập phiếu (kèm tạo nhanh "Loại thu chi")
 │  ├─ cash-categories.html             (đã có, 2026-08-02) CRUD "Loại thu chi", thuộc menu Quỹ
+│  ├─ projects.html                    (kế hoạch, Đợt 1) danh sách dự án + modal thêm/sửa (kèm người tham gia)
+│  ├─ project-detail.html              (kế hoạch, Đợt 1-4) chi tiết dự án dạng 6 tab — pattern giao diện MỚI, phải dùng skill ui-ux-pro-max
+│  ├─ project-phase-templates.html     (kế hoạch, Đợt 1) danh mục "Giai đoạn mẫu", thuộc menu Cấu hình
 │  └─ assets/
 │     ├─ style.css                     (đã có) design system (xem docs/DESIGN-SYSTEM.md)
 │     ├─ api.js                        (đã có) helper gọi API dùng chung
@@ -153,7 +166,26 @@ project-root/
 | `cash_book_settings` | id PK (CHECK id=1), opening_balance, updated_at | migration `019`, 2026-08-02 — Quỹ đầu kỳ, nhập 1 lần, tự động cộng dồn qua các tháng (không lưu riêng từng tháng) |
 | `cash_categories` | id PK, name, type (`thu`/`chi`), created_at | migration `019` — danh mục "Loại thu chi", `UNIQUE(name, type)` |
 | `cash_vouchers` | id PK, code, type, category_id FK NOT NULL, counterpart_name, handled_by FK(users), amount, note, record_business_result, created_by FK(users), created_at | migration `019` — Phiếu thu (`code` = `PT000001...`) / Phiếu chi (`PC000001...`), riêng từng type; **độc lập hoàn toàn với `debt_ledger`** (không ghi công nợ); không sửa được, chỉ tạo + xóa cứng; `created_at` nhận giá trị tùy chỉnh từ form (giống `stock_receipts`), quyết định phiếu thuộc tháng nào |
+| `project_phase_templates` | id PK, name, sort_order, created_at | **kế hoạch** migration `021` — danh mục "Giai đoạn mẫu" (menu Cấu hình), seed sẵn Khảo sát → Thiết kế → Chuẩn bị vật tư → Thi công → Nghiệm thu → Bàn giao & Bảo hành |
+| `projects` | id PK, code, name, partner_id FK(partners), contract_no, contract_date, site_address, contract_value, start_date, planned_end_date, actual_end_date, status, manager_id FK(users), note, created_by FK(users), created_at, updated_at | **kế hoạch** migration `021` — `code` tự sinh `DA000001...`; `partner_id` bắt buộc và phải là `type='khach_hang'` (validate ở API); `status` ∈ {chuan_bi, dang_thuc_hien, tam_dung, hoan_thanh, huy}. **Không lưu** % tiến độ, giá trị hợp đồng thực tế, vật tư đã xuất, công nợ — tất cả tính on-the-fly |
+| `project_members` | id PK, project_id FK, user_id FK(users), role_in_project, UNIQUE(project_id, user_id) | **kế hoạch** migration `021` — danh sách người tham gia; `role_in_project` là ô chữ tự do (không có danh mục vai trò riêng ở giai đoạn này). Dùng để giới hạn dropdown "Người phụ trách" khi giao việc |
+| `project_phases` | id PK, project_id FK, name, sort_order, planned_start, planned_end, actual_start, actual_end, status, note | **kế hoạch** migration `021` — copy từ `project_phase_templates` lúc tạo dự án rồi **tách rời hoàn toàn** (sửa mẫu về sau không ảnh hưởng dự án đã tạo) |
+| `project_tasks` | id PK, phase_id FK(project_phases), name, assigned_user_id FK(users), start_date, due_date, actual_start_date, actual_end_date, status, completed_at, note, created_by FK(users), created_at, updated_at | migration `022` — **chỉ lưu `phase_id`**, lấy dự án qua JOIN (không lưu thêm `project_id` để tránh lệch dữ liệu khi chuyển công việc sang giai đoạn khác); `status` ∈ {chua_lam, dang_lam, hoan_thanh} — nguồn duy nhất để tính % tiến độ. `actual_start_date`/`actual_end_date` (migration `023`, 2026-08-04, ngoài kế hoạch ban đầu) — nhập tay giống hệt `project_phases.actual_start`/`actual_end`, **thay thế hoàn toàn** cơ chế `completed_at` tự động của Đợt 2 (cột `completed_at` vẫn còn trong schema nhưng không còn đọc/ghi, chỉ giữ dữ liệu lịch sử cũ) — cảnh báo trễ tiến độ của công việc nay so `due_date` với `actual_end_date` thay vì `completed_at` |
+| `project_material_plan` | id PK, project_id FK, product_id FK, quantity, note, UNIQUE(project_id, product_id) | **kế hoạch** migration `023` — dự toán vật tư; "Đã xuất" **không lưu ở đây**, tính bằng phiếu xuất gắn dự án **trừ** phiếu nhập gắn dự án |
+| `project_payment_milestones` | id PK, project_id FK, name, sort_order, amount, percent, due_date, note, created_at | **kế hoạch** migration `024` — đợt thanh toán theo hợp đồng. **Không lưu** số tiền đã thu hay trạng thái — suy ra từ `SUM(debt_ledger WHERE milestone_id)` so với `amount`: Chưa thu / Thu một phần / Đã thu đủ / Quá hạn |
+| `project_variations` | id PK, project_id FK, type, title, amount, occurred_date, description, status, resolution, created_by FK(users), created_at, updated_at | **kế hoạch** migration `024` — phát sinh; `type` ∈ {chi_phi, van_de}. Chỉ `type='chi_phi'` + đã duyệt mới cộng vào giá trị hợp đồng thực tế; `type='van_de'` là nhật ký sự cố, `amount=0` |
 | `schema_migrations` | version PK, applied_at | migration runner đọc bảng này |
+
+**Cột thêm vào bảng có sẵn cho module Quản lý dự án** (kế hoạch, 2026-08-04 — tất cả đều là `ALTER TABLE ADD COLUMN` nullable, **không dựng lại bảng nào**):
+
+| Bảng | Cột thêm | Migration | Lý do |
+|---|---|---|---|
+| `stock_issues` | `project_id` | `023` | Gắn phiếu xuất với dự án — nguồn tính vật tư đã xuất và công nợ phát sinh của dự án |
+| `stock_receipts` | `project_id` | `023` | Bắt buộc có để "Đã xuất cho dự án" trừ được phiếu nhập bù trừ khi trả vật tư thừa về kho |
+| `debt_ledger` | `project_id` | `023` | Nhãn dự án trên dòng công nợ — sổ cái vẫn thuộc khách hàng, đây chỉ là chiều phân tích thêm. Nếu suy ra bằng JOIN thì **dòng điều chỉnh công nợ thủ công không cách nào gắn được** vào dự án |
+| `debt_ledger` | `milestone_id` | `024` | Biết khoản thu thuộc đợt thanh toán nào. **Cố ý không thêm giá trị `'project_milestone'` vào `reference_type`** — cột đó có `CHECK` mà SQLite không sửa được bằng `ALTER TABLE`, phải dựng lại toàn bộ bảng sổ cái đang chứa dữ liệu thật (rủi ro cao nhất có thể làm trong dự án này) |
+
+> **Ràng buộc SQLite cần nhớ**: dự án bắt buộc `PRAGMA foreign_keys=ON`, nên cột thêm bằng `ADD COLUMN` có `REFERENCES` **phải mặc định NULL** — không `NOT NULL`, không `DEFAULT` khác NULL.
 
 **Nguyên tắc quan trọng** (đã thống nhất ở bước trước, nhắc lại để dev không quên khi code):
 - Tồn kho và công nợ **không bao giờ** lưu dưới dạng 1 số cố định — luôn tính từ tổng cộng dồn (`stock_movements`, `debt_ledger`). Tránh lệch dữ liệu.
@@ -165,7 +197,7 @@ Sơ đồ ERD tương ứng: xem file `erd.mermaid` đi kèm (cần bổ sung `r
 
 Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân quyền theo module**:
 
-- `module_key` là hằng số cố định trong code (không lưu thành bảng riêng vì đây là tập hợp module do ứng dụng định nghĩa, không phải dữ liệu người dùng tạo ra): `kho`, `cong_no`, `bao_cao`, `nguoi_dung`, `cau_hinh`, `so_quy` (Sổ quỹ, 2026-08-02). Mở rộng thêm khi có module mới (vd `ban_hang` khi module Bán hàng/POS được lên kế hoạch).
+- `module_key` là hằng số cố định trong code (không lưu thành bảng riêng vì đây là tập hợp module do ứng dụng định nghĩa, không phải dữ liệu người dùng tạo ra): `kho`, `cong_no`, `bao_cao`, `nguoi_dung`, `cau_hinh`, `so_quy` (Sổ quỹ, 2026-08-02), `du_an` (Quản lý dự án, kế hoạch 2026-08-04). Mở rộng thêm khi có module mới (vd `ban_hang` khi module Bán hàng/POS được lên kế hoạch). Thêm module mới phải sửa cả `MODULE_KEYS` lẫn `MODULE_LABELS` trong `backend/config/modules.js` (trang "Vai trò" đọc động qua `GET /api/roles/modules`) và `NAV_GROUPS` trong `frontend/assets/layout.js`.
 - Vai trò Admin (`is_protected = 1`) mặc nhiên có mọi `module_key`, không lưu dòng nào trong `role_permissions` cho Admin — middleware luôn cho qua nếu `role.is_protected = 1`, không cần tra bảng.
 - Middleware `requireRole('admin')` kiểu cũ (so khớp tên vai trò) được thay bằng `requirePermission('module_key')` (tra `role_permissions` theo `role_id` của user, hoặc cho qua thẳng nếu vai trò `is_protected`).
 - `GET /api/auth/me` trả thêm danh sách `permissions` (mảng `module_key`) của user hiện tại, để frontend (`layout.js`) lọc menu mà không cần gọi thêm API.
@@ -238,6 +270,34 @@ Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân qu
 | PUT | `/api/cash-book-settings` | `so_quy` | Cập nhật Quỹ đầu kỳ (giá trị gốc, tự cộng dồn qua các tháng) |
 
 > Admin (`is_protected`) luôn qua được mọi route ở trên, không cần liệt kê riêng.
+
+### API module Quản lý dự án (kế hoạch 2026-08-04, chưa code)
+
+| Method | Path | Quyền | Mô tả | Đợt |
+|---|---|---|---|---|
+| GET/POST/PUT/DELETE | `/api/project-phase-templates(/:id)` | GET: đã đăng nhập / ghi: `cau_hinh` | CRUD danh mục "Giai đoạn mẫu" | 1 |
+| GET | `/api/projects` | `du_an` | Danh sách dự án kèm khách hàng, trạng thái, % tiến độ (tính on-the-fly) | 1 |
+| GET | `/api/projects/:id` | `du_an` | Chi tiết dự án + người tham gia + giai đoạn + số liệu tổng hợp | 1 |
+| POST | `/api/projects` | `du_an` | Tạo dự án — validate `partner_id` phải là `type='khach_hang'`, tự sinh mã `DA...`, **copy toàn bộ Giai đoạn mẫu** vào dự án trong cùng transaction | 1 |
+| PUT | `/api/projects/:id` | `du_an` | Sửa thông tin dự án + danh sách người tham gia | 1 |
+| DELETE | `/api/projects/:id` | `du_an` | Xóa cứng — **chặn nếu đã có** `stock_receipts`/`stock_issues`/`debt_ledger` gắn dự án (chỉ cho chuyển trạng thái `huy`) | 1 |
+| POST/PUT/DELETE | `/api/projects/:id/phases(/:phaseId)` | `du_an` | Thêm/sửa/xóa giai đoạn của riêng dự án đó | 1 |
+| GET/POST/PUT/DELETE | `/api/projects/:id/tasks(/:taskId)` | `du_an` | CRUD công việc — validate `assigned_user_id` **phải nằm trong `project_members`** của dự án | 2 |
+| GET/PUT | `/api/projects/:id/materials` | `du_an` | Dự toán vật tư + bảng đối chiếu Dự toán/Đã xuất/Còn lại/Vượt | 3 |
+| GET | `/api/projects/:id/documents` | `du_an` | Danh sách phiếu nhập/xuất đã gắn dự án | 3 |
+| GET | `/api/projects/:id/debts` | `du_an` | Công nợ của dự án: phát sinh, đã thu, còn phải thu (tính từ `debt_ledger` lọc theo `project_id`) | 4 |
+| GET/POST/PUT/DELETE | `/api/projects/:id/milestones(/:mid)` | `du_an` | CRUD đợt thanh toán; GET trả kèm số tiền đã thu + trạng thái suy ra | 4 |
+| GET/POST/PUT/DELETE | `/api/projects/:id/variations(/:vid)` | `du_an` | CRUD phát sinh (chi phí / vấn đề) | 4 |
+
+**Route có sẵn cần sửa** (không đổi hành vi cũ khi không truyền tham số mới):
+
+| Path | Thay đổi | Đợt |
+|---|---|---|
+| `POST /api/stock-receipts`, `POST /api/stock-issues` | Nhận thêm `project_id` (tùy chọn); truyền xuống service để ghi lên phiếu **và** lên dòng `debt_ledger` sinh ra khi `payment_status='cong_no'` | 3 |
+| `GET /api/stock-receipts/:id`, `GET /api/stock-issues/:id` | Trả thêm `project_id`/`project_name` (dùng cho modal chi tiết + trang in) | 3 |
+| `POST /api/debts/payment` | Nhận thêm `project_id` và `milestone_id` (đều tùy chọn) — **bắt buộc validate dự án thuộc đúng đối tác** đang ghi nhận, không tin dữ liệu gửi từ trình duyệt | 4 |
+| `POST /api/debts/adjustment` | Nhận thêm `project_id` (tùy chọn), cùng cách validate như trên — nếu thiếu, mỗi lần điều chỉnh sẽ làm lệch "Còn phải thu của dự án" | 4 |
+| `GET /api/debts?partner_id=` | Trả thêm `project_name` trên từng dòng lịch sử | 4 |
 
 ## 4. Trình tự triển khai theo phase (checklist)
 
@@ -358,6 +418,58 @@ Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân qu
 - [x] Frontend `products.html`/`.js`: nút "Nhập Excel" (modal, bảng lỗi "Dòng"/"Lỗi") + "Xuất Excel" (theo đúng danh sách đang hiển thị)
 - [x] Test qua API (curl) + trình duyệt thật (CDP thô, `DOM.setFileInputFiles` + `Browser.setDownloadBehavior`) — chi tiết `docs/CHANGELOG.md`
 
+### Module "Quản lý dự án" (ngoài phase, theo yêu cầu người dùng 2026-08-04 — đã chốt kế hoạch, chưa code)
+
+> 14 quyết định nghiệp vụ + kỹ thuật đã hỏi và chốt trước khi lên kế hoạch — chi tiết đầy đủ `docs/DECISIONS.md` mục 2026-08-04. Nghiệp vụ: `docs/PRD.md` mục 4.12.
+> **Chia 4 đợt + 1 đợt tùy chọn. Mỗi đợt tự chạy được và test được độc lập** — dừng lại sau bất kỳ đợt nào hệ thống vẫn hoạt động bình thường, không để lại chức năng dở dang.
+
+**Đợt 1 — Nền tảng dự án (đã xong, 2026-08-04)**
+- [x] Migration `021_projects.sql`: `project_phase_templates` (seed 6 giai đoạn mẫu), `projects`, `project_members`, `project_phases`; **không** seed quyền `du_an` cho vai trò mặc định nào (khác `so_quy` vốn rõ ràng thuộc Kế toán — module Dự án liên quan cả Kho/Công nợ/điều phối nhân sự, không gắn rõ 1 vai trò có sẵn, để Admin tự cấp qua trang "Vai trò")
+- [x] `backend/config/modules.js`: thêm `du_an` vào `MODULE_KEYS` **và** `MODULE_LABELS`
+- [x] `backend/services/project.service.js`: sinh mã `DA...`, copy Giai đoạn mẫu vào dự án mới (cùng transaction), tính % tiến độ (trả `null` — hiện "-" — cho tới khi có bảng `project_tasks` ở Đợt 2, tránh lỗi "no such table")
+- [x] `backend/routes/projectPhaseTemplates.routes.js`, `projects.routes.js` (kèm sub-resource `/:id/phases`) — mount vào `server.js`
+- [x] Frontend `project-phase-templates.html`/`.js` (menu Cấu hình), `projects.html`/`.js` (danh sách + modal thêm/sửa kèm người tham gia), `project-detail.html`/`.js` (tab Tổng quan + Giai đoạn, biểu đồ Gantt SVG)
+- [x] `layout.js`: nhóm nav mới "Dự án" (sau "Khách hàng", trước "Quỹ"); `icons.js`: icon `briefcase` mới cho dự án
+- [x] **Dùng skill `ui-ux-pro-max` cho pattern trang chi tiết dạng tab** (chưa từng có trong dự án) + cập nhật `docs/DESIGN-SYSTEM.md`
+- [x] Test qua API (curl) + trình duyệt thật (Chrome headless điều khiển bằng CDP thô tự viết — không có sẵn `chromium-cli`/Playwright trong môi trường): tạo dự án tự copy đủ 6 giai đoạn mẫu, validate partner phải khách hàng, validate người tham gia trùng lặp, chặn xóa dự án đã có giai đoạn đang làm/hoàn thành, phân quyền `du_an` chặn đúng UI+API, không lỗi console. Phát hiện + sửa 1 lỗi UX: giai đoạn có ngày bắt đầu trùng mép trái vùng vẽ Gantt không hiện nhãn tháng tham chiếu — đã đệm 3 ngày 2 bên + ép hiện nhãn tháng đầu tại mép trái. Dữ liệu test đã xóa sạch sau khi xong.
+
+**Đợt 2 — Công việc & Timeline (đã xong, 2026-08-04)**
+- [x] Migration `022_project_tasks.sql`: `project_tasks` (chỉ `phase_id`, không lưu `project_id` trùng lặp), `status` là nguồn duy nhất tính % tiến độ
+- [x] `backend/routes/projectTasks.routes.js` — router `mergeParams:true`, **lồng vào `projects.routes.js`** tại `/:id/tasks` (khác dự tính ban đầu là mount riêng ở `server.js` — mounting 2 router riêng cùng tiền tố `/api/projects` dễ vỡ do thứ tự khớp route của Express; lồng trực tiếp an toàn và rõ ràng hơn): CRUD, validate `phase_id` thuộc đúng dự án, validate `assigned_user_id` phải nằm trong `project_members`; `completed_at` tự động gán/xóa theo trạng thái, không nhận nhập tay
+- [x] `getPhases()` trong `projects.routes.js` bổ sung `progress_percent` riêng từng giai đoạn (1 câu SQL gộp nhóm, không N+1); `deleteProject()` trong `project.service.js` bổ sung chặn khi dự án đã có công việc
+- [x] Frontend tab "Công việc" (`project-detail.html`/`.js`): lọc theo giai đoạn, bảng danh sách, modal thêm/sửa/xóa — "Người phụ trách" chỉ liệt kê người tham gia dự án (không phải toàn bộ tài khoản hệ thống)
+- [x] Cập nhật Gantt (Đợt 1): mỗi thanh có phần tô đậm bên trong = % hoàn thành + nhãn số ngay sau thanh; bảng "Danh sách giai đoạn" thêm cột "Tiến độ" (thanh ngang nhỏ + %) — cập nhật `docs/DESIGN-SYSTEM.md`
+- [x] % tiến độ tính từ công việc — giai đoạn/dự án chưa có việc nào hiện `—`, không hiện `0%`
+- [x] Test qua API + trình duyệt thật (CDP thô): validate người phụ trách/giai đoạn sai bị chặn, % tính đúng, `completed_at` tự động đúng, chặn xóa khi có công việc. Phát hiện + sửa 1 lỗi hiển thị: 2 nhãn tháng liên tiếp trên Gantt đè chữ lên nhau khi bị ép sát mép trái — đã bỏ nhãn nào cách nhãn trước dưới 55px (vẫn giữ đường kẻ)
+
+**Bỏ tab "Công việc" riêng, gộp vào tab "Giai đoạn" + thêm ngày thực tế cho công việc (2026-08-04, ngoài kế hoạch ban đầu, theo yêu cầu người dùng)**
+- [x] Migration `023_project_task_actual_dates.sql`: `project_tasks.actual_start_date`/`actual_end_date` (nhập tay) — thay thế hoàn toàn `completed_at` tự động (giữ nguyên cột cũ, không xóa, chỉ không còn đọc/ghi)
+- [x] `projectTasks.routes.js`: đọc/ghi 2 cột mới thay cho logic tự gán `completed_at`; `withDelay()` so `due_date` với `actual_end_date` thay vì `completed_at`
+- [x] Bỏ tab "Công việc" khỏi `project-detail.html` — gộp toàn bộ CRUD công việc vào tab "Giai đoạn": bấm 1 dòng giai đoạn (trừ vùng nút) sẽ xổ ra bảng công việc con ngay dưới, mỗi dòng có 2 ô ngày thực tế (nhập tay) + chọn Trạng thái + nút "Lưu" cập nhật nhanh không cần mở modal; icon "Sửa" vẫn mở modal đầy đủ (đổi tên/người phụ trách/giai đoạn/ngày kế hoạch)
+- [x] Biểu đồ Gantt đồng bộ cùng trạng thái mở rộng (`expandedPhaseIds` dùng chung bảng + Gantt): bấm vào giai đoạn trên Gantt cũng xổ ra danh sách công việc dạng text ngắn gọn (chấm màu theo trạng thái + tên + trạng thái + cảnh báo trễ nếu có) ngay dưới thanh giai đoạn đó — theo lựa chọn người dùng, không vẽ thêm thanh SVG riêng cho từng việc
+- [x] Cập nhật `docs/DESIGN-SYSTEM.md` mục pattern mới "Dòng giai đoạn bấm mở rộng bảng công việc con"
+- [x] Test qua API (curl, file UTF-8) + trình duyệt thật (CDP thô, 3 script test): mở/đóng đúng, lưu nhanh ngay thuộc dòng cập nhật đúng qua UI thật (xác nhận lại qua API), nút "Thêm công việc" mở modal đúng giai đoạn preset, nút "Sửa" điền đúng ngày thực tế, giai đoạn chưa có việc hiện đúng "Chưa có công việc nào" ở cả bảng lẫn Gantt, không lỗi console. Dữ liệu thật (dự án "Villa Kỳ Duyên") bị đổi tạm trong lúc test đã khôi phục đúng nguyên trạng ngay sau đó.
+
+**Đợt 3 — Vật tư & gắn dự án vào phiếu** ⚠️ *đợt nhạy cảm nhất* (số migration lùi từ `023` xuống `024` vì `023` đã dùng cho actual dates ở trên)
+- [ ] Migration `024_project_materials.sql`: `project_material_plan` + `ADD COLUMN project_id` (nullable) cho `stock_issues`, `stock_receipts`, `debt_ledger`
+- [ ] Sửa `stockIssue.service.js`/`stockReceipt.service.js`: nhận `projectId`, ghi lên phiếu **và** truyền xuống `recordDebtFromDocument()`. **Chỉ thêm 1 trường ghi kèm — không đụng logic tồn kho/giá vốn/ghi nợ hiện có**
+- [ ] Sửa `debt.service.js` (`recordDebtFromDocument`) — rà lại **mọi** nơi đang gọi để không làm hỏng luồng công nợ NCC đang chạy
+- [ ] Frontend: trường "Dự án" trên form lập phiếu nhập/xuất, hiển thị dự án trên modal chi tiết phiếu (`receipt-detail.js`/`issue-detail.js`)
+- [ ] `print-issue.html`/`.js`: dòng "Công trình: …", tự ẩn nếu phiếu không gắn dự án (tái dùng `renderCompanyLine()`)
+- [ ] Frontend tab "Vật tư": bảng Dự toán / Đã xuất / Còn lại / Vượt + danh sách phiếu đã gắn dự án
+- [ ] Test bắt buộc: rollback transaction vẫn đúng; phiếu **không** gắn dự án chạy y hệt như cũ; trả vật tư về kho qua phiếu nhập gắn dự án làm giảm đúng "Đã xuất"
+
+**Đợt 4 — Đợt thanh toán, Công nợ dự án & Phát sinh** (số migration lùi từ `024` xuống `025`)
+- [ ] Migration `025_project_payments.sql`: `project_payment_milestones`, `project_variations` + `ADD COLUMN debt_ledger.milestone_id`
+- [ ] `backend/routes/projectFinance.routes.js` (hoặc mở rộng `projects.routes.js`): công nợ dự án, đợt thanh toán, phát sinh
+- [ ] `debts.routes.js`/`debt.service.js`: `POST /payment` và `POST /adjustment` nhận thêm `project_id`/`milestone_id`, **validate dự án thuộc đúng đối tác**
+- [ ] Frontend: ô "Dự án" trên form Ghi nhận thanh toán + form Điều chỉnh công nợ ở `customer-debts.html` (ẩn hẳn nếu khách hàng chưa có dự án nào; **không** thêm vào `debts.html` của NCC)
+- [ ] Frontend tab "Thanh toán & Công nợ" (đợt thanh toán + phiếu xuất công nợ + lịch sử thu + nút Ghi nhận thanh toán tự chọn sẵn và khóa dự án) và tab "Phát sinh"
+- [ ] Chỉ bật tab này ở Đợt 4 — bật sớm từ Đợt 3 sẽ hiển thị số sai (nợ đã gắn dự án nhưng tiền thu thì chưa)
+
+**Đợt 5 — Báo cáo dự án (tùy chọn)**
+- [ ] Thêm phần "Dự án" vào `reports.html`: tiến độ, công nợ, chênh lệch vật tư của toàn bộ dự án
+
 ## 5. Kiểm thử cơ bản mỗi phase
 
 - Phase 1: đăng nhập sai/đúng, truy cập route không đúng role bị chặn.
@@ -367,3 +479,5 @@ Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân qu
 - Phase 3: nhiều lần ghi nợ + thanh toán từng phần → số dư tính đúng.
 - Phase 4: in thử trên máy in văn phòng thật, không chỉ xem trên PDF ảo.
 - Phase 5: tắt máy chủ giữa chừng, bật lại → xác nhận PM2 tự chạy app mà không cần thao tác thủ công.
+- Module Dự án — Đợt 3 (nhạy cảm nhất): lập phiếu nhập/xuất **không** gắn dự án → kết quả phải y hệt trước khi sửa (tồn kho, giá vốn, công nợ); gây lỗi giữa transaction → rollback đúng, phiếu lẫn dòng công nợ đều không được ghi; xuất vật tư cho dự án rồi nhập trả lại một phần → "Đã xuất cho dự án" giảm đúng.
+- Module Dự án — Đợt 4: 1 khách hàng có **2 dự án** cùng lúc, ghi nhận thanh toán cho từng dự án → số dư tổng của khách hàng và "Còn phải thu" của **từng** dự án đều đúng, không lẫn sang nhau; chọn dự án của khách hàng khác qua API bị chặn.

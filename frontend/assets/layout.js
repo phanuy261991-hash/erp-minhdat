@@ -41,6 +41,14 @@ const NAV_GROUPS = [
     ],
   },
   {
+    // Module "Quan ly du an" (2026-08-04) - so cai cong no VAN thuoc khach hang, du an chi doc
+    // lai (xem docs/DECISIONS.md). Dat sau "Khach hang", truoc "Quy" (theo dung thu tu da chot).
+    label: 'Dự án',
+    items: [
+      { key: 'projects', label: 'Dự án', href: 'projects.html', icon: 'briefcase', module: 'du_an', enabled: true },
+    ],
+  },
+  {
     // Module "So quy" (2026-08-02) - doc lap hoan toan voi Cong no, khong ghi debt_ledger
     // (xem docs/DECISIONS.md). Dat rieng nhom, sau "Khach hang" truoc "Quan tri".
     label: 'Quỹ',
@@ -63,6 +71,7 @@ const NAV_GROUPS = [
       { key: 'company-settings', label: 'Thông tin công ty', href: 'company-settings.html', icon: 'building', module: 'cau_hinh', enabled: true },
       { key: 'warehouse-settings', label: 'Cấu hình kho', href: 'warehouse-settings.html', icon: 'sliders', module: 'cau_hinh', enabled: true },
       { key: 'customer-categories', label: 'Loại khách hàng', href: 'customer-categories.html', icon: 'tag', module: 'cau_hinh', enabled: true },
+      { key: 'project-phase-templates', label: 'Giai đoạn mẫu', href: 'project-phase-templates.html', icon: 'ledger', module: 'cau_hinh', enabled: true },
       { key: 'sales-settings', label: 'Cấu hình bán hàng', href: 'sales-settings.html', icon: 'cart', module: 'cau_hinh', enabled: true },
       { key: 'about', label: 'Thông tin phần mềm', href: 'about.html', icon: 'info', module: null, enabled: true },
     ],

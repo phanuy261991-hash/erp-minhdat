@@ -42,6 +42,7 @@ const ICONS = {
   moon: '<path d="M20 14.5a8.5 8.5 0 1 1-8-11.2 7 7 0 0 0 8 11.2Z"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5h.01"/>',
   wallet: '<path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h12A1.5 1.5 0 0 1 18 7.5V9"/><rect x="3" y="9" width="18" height="11.5" rx="2"/><path d="M15.5 15.5a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4Z"/>',
+  briefcase: '<rect x="2.5" y="7" width="19" height="12.5" rx="2"/><path d="M8 7V5.5A1.5 1.5 0 0 1 9.5 4h5A1.5 1.5 0 0 1 16 5.5V7"/><path d="M2.5 12.5h19"/><path d="M10.5 12v1.5h3V12"/>',
 };
 
 function icon(name, size) {

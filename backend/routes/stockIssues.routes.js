@@ -13,17 +13,19 @@ const ADJUSTS_TYPES = ['receipt', 'issue'];
 
 // adjusts_code: xem chu thich tuong ung trong stockReceipts.routes.js. partner_phone/
 // partner_address: dung cho trang in phieu xuat (Phase 4, xem docs/PRD.md muc 4.5).
+// project_name (migration 024, Dot 3): dung de hien dong "Cong trinh: ..." khi in phieu.
 const SELECT_ISSUE = `
   SELECT i.id, i.code, i.partner_id, pa.name AS partner_name, pa.phone AS partner_phone,
          pa.address AS partner_address, i.created_by,
          u.full_name AS created_by_name, i.note, i.payment_status, i.created_at,
-         i.adjusts_type, i.adjusts_id,
+         i.adjusts_type, i.adjusts_id, i.project_id, pr.name AS project_name,
          CASE i.adjusts_type WHEN 'receipt' THEN ar.code WHEN 'issue' THEN ai.code ELSE NULL END AS adjusts_code
   FROM stock_issues i
   LEFT JOIN partners pa ON pa.id = i.partner_id
   JOIN users u ON u.id = i.created_by
   LEFT JOIN stock_receipts ar ON i.adjusts_type = 'receipt' AND ar.id = i.adjusts_id
   LEFT JOIN stock_issues ai ON i.adjusts_type = 'issue' AND ai.id = i.adjusts_id
+  LEFT JOIN projects pr ON pr.id = i.project_id
 `;
 
 // Doc + validate lien ket "dieu chinh cho phieu nao" tu body (tuy chon, xem migration 010).
@@ -126,7 +128,13 @@ router.get('/:id', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  const { partner_id: partnerId, note, payment_status: paymentStatus, issue_date: rawIssueDate } = req.body || {};
+  const {
+    partner_id: partnerId,
+    note,
+    payment_status: paymentStatus,
+    issue_date: rawIssueDate,
+    project_id: rawProjectId,
+  } = req.body || {};
   const { items, error } = readItems((req.body || {}).items);
 
   if (error) {
@@ -158,6 +166,7 @@ router.post('/', (req, res) => {
       adjustsType,
       adjustsId,
       issueDate,
+      projectId: rawProjectId ? Number(rawProjectId) : null,
     });
     res.status(201).json({ issue });
   } catch (err) {

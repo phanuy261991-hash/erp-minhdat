@@ -245,6 +245,71 @@
 - [x] Test qua API (curl): file lỗi bị chặn đúng + báo đúng dòng/lỗi, file hợp lệ nhập đúng, mã trùng DB/trong file bị chặn, sai định dạng/thiếu file bị chặn, phân quyền `kho` chặn đúng cho import/template nhưng export vẫn mở cho mọi tài khoản đã đăng nhập (giống `GET /products`)
 - [x] Test qua trình duyệt thật (Chrome headless điều khiển CDP thô, chụp ảnh màn hình): mở modal, upload file lỗi → bảng lỗi đúng, upload file hợp lệ → thành công + danh sách tự làm mới, bấm "Xuất Excel" tải file thật đúng nội dung, không lỗi console. Dữ liệu test đã xóa sạch sau khi test xong.
 
+### Module "Quản lý dự án" (ngoài phase, theo yêu cầu người dùng 2026-08-04 — đã chốt kế hoạch, CHƯA CODE)
+
+> Đã hỏi và chốt **14 quyết định** qua 3 vòng trước khi lên kế hoạch (cấu trúc 1 cấp, gắn dự án vào phiếu hiện có, giai đoạn mẫu, đợt thanh toán mở form công nợ, công việc thuộc giai đoạn, % tiến độ tự tính, phát sinh 2 loại, dự toán vật tư, công nợ theo phiếu xuất và quản lý qua khách hàng, nhãn dự án trên dòng công nợ, người tham gia kèm vai trò, giao việc giới hạn theo người tham gia, ô Dự án trên form thanh toán/điều chỉnh, in tên công trình lên phiếu xuất) — chi tiết đầy đủ `docs/DECISIONS.md` mục 2026-08-04, nghiệp vụ `docs/PRD.md` mục 4.12, kỹ thuật `docs/Plan.md`.
+
+**Đợt 1 — Nền tảng dự án (đã xong, 2026-08-04)**
+- [x] Migration `021_projects.sql`: `project_phase_templates` (seed 6 giai đoạn mẫu), `projects`, `project_members`, `project_phases`; **không** seed quyền `du_an` cho vai trò mặc định nào (module liên quan cả Kho/Công nợ/điều phối nhân sự, không gắn rõ với 1 vai trò có sẵn — để Admin tự cấp qua trang "Vai trò")
+- [x] `backend/config/modules.js`: thêm `du_an` vào `MODULE_KEYS` **và** `MODULE_LABELS`
+- [x] `backend/services/project.service.js`: sinh mã `DA...`, copy Giai đoạn mẫu vào dự án mới (cùng transaction), tính % tiến độ (trả `null` cho tới khi có bảng `project_tasks` ở Đợt 2), validate `partner_id` phải `type='khach_hang'`, validate người tham gia (không trùng, phải đang hoạt động), chặn xóa dự án đã có giai đoạn "đang làm"/"hoàn thành"
+- [x] `backend/routes/projectPhaseTemplates.routes.js` (CRUD, GET mở/ghi quyền `cau_hinh`) + `projects.routes.js` (CRUD dự án + sub-resource `/:id/phases`), mount vào `server.js`
+- [x] Frontend `project-phase-templates.html`/`.js` (rập khuôn `customer-categories.html`), `projects.html`/`.js` (danh sách + modal thêm/sửa kèm `.member-picker-row` chọn nhiều người tham gia), `project-detail.html`/`.js` (tab Tổng quan + Giai đoạn kèm biểu đồ Gantt SVG tự vẽ)
+- [x] `layout.js` nhóm nav "Dự án" (sau "Khách hàng", trước "Quỹ") + icon `briefcase` mới trong `icons.js`
+- [x] Dùng skill `ui-ux-pro-max` cho pattern **trang chi tiết dạng tab** (mới, chưa từng có) + cập nhật `docs/DESIGN-SYSTEM.md`
+- [x] Test qua API (curl, dùng file JSON UTF-8 thật thay vì gõ tiếng Việt trực tiếp vào `-d` — phát hiện gõ trực tiếp qua git-bash làm hỏng encoding, không phải lỗi ứng dụng): tạo dự án tự copy đủ 6 giai đoạn mẫu, validate partner phải là khách hàng, validate người tham gia trùng lặp, chặn xóa dự án đã có giai đoạn đang làm/hoàn thành, phân quyền `du_an` chặn đúng (403 với `thukho1`) nhưng `GET /project-phase-templates` vẫn mở cho mọi tài khoản đã đăng nhập
+- [x] Test qua trình duyệt thật (Chrome headless điều khiển bằng CDP thô tự viết — không có sẵn `chromium-cli`/Playwright trong môi trường, xem `docs/CHANGELOG.md`): CRUD Giai đoạn mẫu, modal thêm dự án + chọn/xóa người tham gia, trang chi tiết dự án cả 2 tab, không lỗi console. **Phát hiện 1 lỗi UX khi test**: giai đoạn có ngày bắt đầu trùng đúng mép trái vùng vẽ Gantt không hiện nhãn tháng tham chiếu — đã sửa (đệm 3 ngày 2 bên + ép hiện nhãn tháng đầu tiên tối thiểu tại mép trái), test lại xác nhận đúng. Dữ liệu test đã xóa sạch sau khi xong.
+
+**Đợt 2 — Công việc & Timeline (đã xong, 2026-08-04)**
+- [x] Migration `022_project_tasks.sql`: `project_tasks` (chỉ `phase_id`, không lưu `project_id` trùng lặp), `status` là nguồn duy nhất tính % tiến độ
+- [x] `backend/routes/projectTasks.routes.js` (router `mergeParams:true`, lồng vào `projects.routes.js` tại `/:id/tasks`): CRUD, validate `phase_id` thuộc đúng dự án, validate `assigned_user_id` phải nằm trong `project_members` của dự án đó; `completed_at` tự động gán/xóa khi trạng thái chuyển vào/ra khỏi `hoan_thanh` (không cho nhập tay)
+- [x] `backend/routes/projects.routes.js`: `getPhases()` bổ sung `progress_percent` tính riêng từng giai đoạn (SQL gộp nhóm theo `phase_id`, không N+1 query); `backend/services/project.service.js`: `deleteProject()` bổ sung chặn khi dự án đã có công việc
+- [x] Frontend tab "Công việc" (`project-detail.html`/`.js`): bộ lọc theo giai đoạn, bảng danh sách, modal thêm/sửa/xóa — select "Người phụ trách" **chỉ liệt kê người tham gia dự án** (không phải toàn bộ tài khoản hệ thống)
+- [x] Cập nhật biểu đồ Gantt (đã có từ Đợt 1): mỗi thanh giờ có phần tô đậm bên trong thể hiện % hoàn thành + nhãn số ngay sau thanh; bảng "Danh sách giai đoạn" thêm cột "Tiến độ" (thanh ngang nhỏ + %)
+- [x] % tiến độ tính từ công việc; giai đoạn/dự án chưa có việc hiện `—` không hiện `0%` — xác nhận đúng qua test (`getProjectProgress()`/`getPhases()` đã viết sẵn logic này từ Đợt 1, chỉ cần bảng `project_tasks` tồn tại là chạy đúng ngay)
+- [x] Test qua API (curl): validate người phụ trách ngoài danh sách tham gia bị chặn (400), validate giai đoạn không thuộc dự án bị chặn, % tiến độ tính đúng theo tỷ lệ hoàn thành (2/4=50%, 67%, 0%...), `completed_at` tự động gán/xóa đúng, chặn xóa giai đoạn/dự án đang có công việc
+- [x] Test qua trình duyệt thật (CDP thô): lọc theo giai đoạn đúng, modal thêm chỉ hiện đúng người tham gia dự án, tạo công việc qua UI → bảng + % tiến độ tổng quan cập nhật đúng ngay, không lỗi console. **Phát hiện + sửa 1 lỗi hiển thị**: khi khoảng đệm 3 ngày (đã thêm ở Đợt 1) đẩy domain sang tháng liền trước chỉ vài ngày, 2 nhãn tháng liên tiếp bị ép về gần sát mép trái đè chữ lên nhau (vd "Th6/2026" chồng "Th7/2026") — đã sửa bằng cách bỏ qua vẽ nhãn (vẫn giữ đường kẻ phân tháng) nếu cách nhãn liền trước dưới 55px
+
+**Sau Đợt 2 — sửa lỗi + bổ sung theo phản hồi người dùng (đã xong, 2026-08-04, ngoài checklist chính)**
+- [x] Sửa 4 lỗi người dùng phát hiện khi tự test qua UI thật: (1) tạo dự án chọn "Đang thực hiện" nhưng danh sách hiện "Chuẩn bị" — `createProject()` thiếu hẳn cột `status` trong INSERT; (2) "Thêm giai đoạn" điền Trạng thái + ngày thực tế nhưng lưu vẫn "Chưa bắt đầu" — route `POST /:id/phases` bỏ qua hoàn toàn 3 trường đó; (3) nút "Thêm giai đoạn"/"Thêm công việc" trông như lỗi — chưa từng gán icon+chữ qua JS; (4) combobox lọc trạng thái/giai đoạn không đúng style — `<select>` trần không có class, thêm `.filter-select` dùng chung
+- [x] Thêm **cảnh báo "Trễ tiến độ"** cho giai đoạn + công việc (theo yêu cầu người dùng, đã hỏi 2 câu chốt phạm vi trước khi code): tính cả "đang trễ" (chưa xong, quá hạn so hôm nay) lẫn "xong trễ" (đã xong, ngày thực tế trễ hơn dự kiến) — `computeDelay()` trong `project.service.js`, mốc "hôm nay" theo giờ VN cố định UTC+7; hiển thị nhãn cảnh báo kèm icon dưới badge Trạng thái ở cả 2 bảng, không đổi màu Gantt
+- [x] Sửa lỗi cảnh báo trễ im lặng khi giai đoạn đánh dấu "Hoàn thành" nhưng chưa điền `actual_end` (trường nhập tay riêng biệt với status, không tự động điền như `completed_at` của công việc) — `computeDelay()` nay fallback dùng "hôm nay" khi thiếu `actual_end` thay vì bỏ qua; đồng bộ luôn response `POST`/`PUT /:id/phases` trả đủ `is_late`/`late_days` giống `GET`
+- [x] Sự cố phát sinh, đã xử lý: gõ tiếng Việt có dấu trực tiếp vào `curl -d` qua Git Bash **2 lần** trong lúc điều tra, lần 2 ghi đè dữ liệu thật dự án "Villa Kỳ Duyên" của người dùng — đã khôi phục đúng nguyên trạng ngay cả 2 lần; rà và sửa toàn bộ ~20 chuỗi lỗi tự viết cho module Dự án sang có dấu tiếng Việt đầy đủ theo phản hồi người dùng
+- [x] Test qua API + trình duyệt thật (CDP thô) cho cả 3 đợt sửa trên, dữ liệu test đã xóa sạch mỗi lần — chi tiết đầy đủ `docs/CHANGELOG.md` (3 mục ngày 2026-08-04)
+
+**Bỏ tab "Công việc" riêng, gộp vào tab "Giai đoạn" + ngày thực tế nhập tay cho công việc (đã xong, 2026-08-04, ngoài checklist chính, theo yêu cầu người dùng — đã hỏi 3 câu chốt phạm vi trước khi code)**
+- [x] Migration `023_project_task_actual_dates.sql`: `project_tasks.actual_start_date`/`actual_end_date` (nhập tay) — thay thế hoàn toàn `completed_at` tự động của Đợt 2 (giữ nguyên cột cũ, không xóa)
+- [x] `projectTasks.routes.js`: đọc/ghi 2 cột mới; `withDelay()` so `due_date` với `actual_end_date` thay vì `completed_at`
+- [x] Bỏ tab "Công việc" khỏi `project-detail.html`/`.js` — gộp CRUD công việc vào tab "Giai đoạn": bấm dòng giai đoạn xổ ra bảng công việc con (`.phase-row`/`.phase-tasks-row`/`.subtask-table`), mỗi dòng có ô ngày thực tế + chọn Trạng thái + nút "Lưu" cập nhật nhanh, icon "Sửa" mở modal đầy đủ
+- [x] Gantt dùng chung trạng thái mở rộng (`expandedPhaseIds`) với bảng — bấm giai đoạn trên Gantt cũng xổ danh sách công việc dạng text ngắn gọn (không vẽ thêm thanh SVG cho từng việc)
+- [x] Cập nhật `docs/DESIGN-SYSTEM.md` (pattern mới), `docs/DECISIONS.md`, `docs/erd.mermaid`, `docs/Plan.md` (lùi số migration `023`/`024` kế hoạch xuống `024`/`025`)
+- [x] Test qua API + trình duyệt thật (CDP thô, 3 script): mở/đóng đồng bộ đúng, lưu nhanh qua UI thật đúng, modal Thêm/Sửa đúng, giai đoạn rỗng hiện đúng thông báo, không lỗi console. Dữ liệu thật "Villa Kỳ Duyên" bị đổi tạm khi test đã khôi phục ngay.
+- [x] **Sửa thêm 2 lỗi hiển thị phát hiện sau khi người dùng phản hồi lại "nền bị trắng"** (điều tra bằng computed style + tọa độ ô qua CDP thay vì đoán từ ảnh chụp): (1) `display:flex` đặt thẳng lên `<td>` hành động làm bảng tính sai độ rộng cột (~24px thay vì ~150px), 3 nút tràn ra ngoài ô — sửa bằng cách bọc nút trong `<div class="subtask-actions">` riêng bên trong `<td>` thay vì đặt flex lên chính ô; (2) `.phase-tasks-row td` (selector hậu duệ) vô tình áp nền muted lên cả ô của bảng con lồng bên trong — sửa thành `.phase-tasks-row > td`. Test hồi quy đầy đủ qua UI thật dùng giai đoạn trống ("Nghiệm thu") thay vì dữ liệu thật, xóa sạch sau khi xong, xác nhận lại qua API không còn sót.
+
+**Đợt 3 — Vật tư & gắn dự án vào phiếu** ⚠️ *đợt nhạy cảm nhất, sửa vào transaction tạo phiếu* (số migration lùi từ `023` xuống `024`) — **đã xong, 2026-08-04**
+- [x] Migration `024_project_materials.sql`: `project_material_plan` + `ADD COLUMN project_id` (nullable) cho `stock_issues`, `stock_receipts`, `debt_ledger`
+- [x] `stockIssue.service.js`/`stockReceipt.service.js`: nhận `projectId`, ghi lên phiếu và truyền xuống `recordDebtFromDocument()` — không đụng logic tồn kho/giá vốn/ghi nợ hiện có
+- [x] `debt.service.js`: rà lại **mọi** nơi gọi `recordDebtFromDocument()` trước khi đổi chữ ký hàm (chỉ 2 nơi: `stockReceipt.service.js`, `stockIssue.service.js`)
+- [x] Frontend: trường "Dự án" trên form lập phiếu nhập/xuất + hiển thị trên `receipt-detail.js`/`issue-detail.js`
+- [x] `print-issue.html`/`.js`: dòng "Công trình: …" tự ẩn nếu không gắn dự án
+- [x] Frontend tab "Vật tư": Dự toán / Đã xuất / Còn lại / Vượt + danh sách phiếu đã gắn (`projectMaterials.routes.js` mới, lồng `/:id/materials`)
+- [x] Bổ sung ngoài checklist gốc (đã ghi sẵn trong code từ Đợt 1): `project.service.js#deleteProject()` chặn xóa dự án đã có phiếu/công nợ gắn `project_id`
+- [x] Test bắt buộc: phiếu **không** gắn dự án chạy y hệt như cũ; rollback đúng khi lỗi giữa transaction (dự án không tồn tại bị chặn, không sót phiếu/nợ); nhập trả vật tư về kho làm giảm đúng "Đã xuất" (xác nhận qua cả API lẫn UI thật, công thức `issued - received`)
+- [x] Test qua API (curl) + trình duyệt thật (CDP thô, script Node dùng `WebSocket` built-in) — chi tiết đầy đủ `docs/CHANGELOG.md`
+
+**Đợt 4 — Đợt thanh toán, Công nợ dự án & Phát sinh** (số migration lùi từ `024` xuống `025`) — **đã xong, 2026-08-04**
+- [x] Migration `025_project_payments.sql`: `project_payment_milestones`, `project_variations` + `ADD COLUMN debt_ledger.milestone_id`
+- [x] Routes: công nợ dự án (`contract_value_actual`/`debt_summary` trong `GET /projects/:id`), CRUD đợt thanh toán (`projectMilestones.routes.js`, trạng thái suy ra: Chưa thu/Thu một phần/Đã thu đủ/Quá hạn), CRUD phát sinh (`projectVariations.routes.js`)
+- [x] `projects.routes.js`: thêm filter `?partner_id=` cho `GET /` (dùng cho select "Dự án" lọc theo khách hàng ở `customer-debts.html`)
+- [x] `debts.routes.js`/`debt.service.js`: `POST /payment` + `POST /adjustment` nhận `project_id`/`milestone_id`, validate dự án thuộc đúng đối tác (và đợt thanh toán thuộc đúng dự án)
+- [x] Frontend: ô "Dự án" (+ "Đợt thanh toán" chỉ ở form thanh toán) trên form Ghi nhận thanh toán + Điều chỉnh công nợ ở `customer-debts.html` (ẩn nếu khách chưa có dự án; không thêm vào `debts.html` của NCC)
+- [x] Frontend tab "Thanh toán & Công nợ" (đợt thanh toán + số liệu Nợ phát sinh/Đã thu/Còn phải thu, nút "Ghi nhận đã thu" điều hướng sang `customer-debts.html` tự chọn sẵn + khóa Khách hàng/Dự án/Đợt thanh toán) và tab "Phát sinh" (CRUD chi phí/vấn đề, "Giá trị hợp đồng thực tế" hiện thêm ở tab Tổng quan khi có chi phí đã duyệt)
+- [x] Test qua API (curl): 1 khách hàng có 2 dự án (`DA000002`/`DA000003`), thanh toán riêng từng dự án → số dư khách hàng và "Còn phải thu" từng dự án đều đúng, không lẫn sang nhau; chọn đợt thanh toán của dự án khác hoặc dự án của khách hàng khác qua API đều bị chặn 400; xóa đợt đã có tiền thu bị chặn; phát sinh "vấn đề" ép `amount=0` dù client gửi gì
+- [x] Test qua trình duyệt thật (CDP thô): thêm đợt thanh toán, bấm "Ghi nhận đã thu" mở đúng modal đã khóa + điền sẵn, ghi nhận thành công, số liệu cập nhật đúng khi quay lại trang dự án; thêm phát sinh chi phí đã duyệt → "Giá trị hợp đồng thực tế" ở tab Tổng quan cộng đúng; không lỗi console
+
+**Đợt 5 — Báo cáo dự án (tùy chọn)**
+- [ ] Thêm phần "Dự án" vào `reports.html`: tiến độ, công nợ, chênh lệch vật tư toàn bộ dự án
+
 ## Open questions cần chốt trước khi code phần liên quan
 
 Xem `docs/DECISIONS.md` mục "Open questions".
