@@ -113,6 +113,15 @@ h1, h2, h3 {
   color: var(--color-foreground);
 }
 
+/* Rieng login.html (logo NEXA One, khong phai .login-brand-icon nho cua setup.html): keo dong
+   tieu de xuong xa logo hon (16px -> 26px) de vi tri gan can giua khoang cach logo <-> dong
+   "Ten dang nhap" (form phia duoi cach .login-brand 28px, xem .login-brand margin-bottom) -
+   theo phan hoi nguoi dung 2026-08-03. Chi khop h1 ngay sau .login-brand-logo nen KHONG anh
+   huong setup.html (van dung .login-brand-icon + h1, giu nguyen 16px). */
+.login-brand-logo + h1 {
+  margin-top: 26px;
+}
+
 .login-subtitle {
   margin: 0;
   color: var(--color-muted-foreground);
