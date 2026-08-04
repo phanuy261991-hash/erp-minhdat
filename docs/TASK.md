@@ -232,6 +232,7 @@
 - [x] Sửa lỗi phát sinh: icon sidebar biến mất khi thu gọn (flexbox ép về 0 do `.sidebar-brand` có `overflow:hidden`) — xếp dọc icon/nút thu gọn khi collapsed
 - [x] `frontend/about.html`/`.js`/`style.css`: thay khung icon gradient bằng logo đầy đủ (`.about-logo`)
 - [x] Test qua trình duyệt thật (Chrome headless CDP thô, chụp ảnh xác nhận): cả 4 điểm (đăng nhập, sidebar mở rộng, sidebar thu gọn, Thông tin phần mềm) hiển thị đúng, không lỗi console
+- [x] **Chỉnh sửa thêm (2026-08-04)**: logo đăng nhập cắt lại từ nguồn độ phân giải cao hơn cho sắc nét; tăng khoảng cách logo↔tiêu đề (`margin-top` 16px→26px, chỉ `login.html`); đánh giá bản logo SVG người dùng gửi thêm (phát hiện nền đục + dữ liệu lặp 4 lần + rủi ro mất màu xanh khi trích xuất) — người dùng chọn giữ nguyên bộ PNG hiện tại
 
 ### Import/Export Excel cho Sản phẩm (ngoài phase, theo yêu cầu người dùng 2026-08-02)
 
