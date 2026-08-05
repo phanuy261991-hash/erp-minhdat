@@ -28,6 +28,7 @@ const projectPhaseTemplatesRoutes = require('./routes/projectPhaseTemplates.rout
 const contactsRoutes = require('./routes/contacts.routes');
 const notificationsRoutes = require('./routes/notifications.routes');
 const notificationSettingsRoutes = require('./routes/notificationSettings.routes');
+const printTemplatesRoutes = require('./routes/printTemplates.routes');
 const { requireAuth } = require('./middleware/auth');
 const { requirePermission } = require('./middleware/requirePermission');
 
@@ -113,6 +114,9 @@ app.use('/api/contacts', requireAuth, contactsRoutes);
 // nhan thong bao), PUT cau hinh rieng quyen 'cau_hinh' kiem tra ben trong file route.
 app.use('/api/notifications', requireAuth, notificationsRoutes);
 app.use('/api/notification-settings', requireAuth, notificationSettingsRoutes);
+// Cau hinh mau in (migration 028) - GET mo cho moi tai khoan da dang nhap (trang in phieu that
+// can doc mau de render), PUT rieng kiem tra quyen 'cau_hinh' ben trong file route.
+app.use('/api/print-templates', requireAuth, printTemplatesRoutes);
 
 // Route kiem tra server song - dung de test nhanh khi chay demo.
 app.get('/api/health', (req, res) => {

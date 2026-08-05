@@ -36,6 +36,8 @@ const paymentProjectSelect = document.getElementById('payment-project');
 const paymentMilestoneField = document.getElementById('payment-milestone-field');
 const paymentMilestoneSelect = document.getElementById('payment-milestone');
 let paymentProjectsCache = [];
+let paymentMilestonesCache = []; // cache lai list milestone vua fetch (kem remaining_amount/status)
+                                   // de applyPaymentPresetFromUrl() tra cuu duoc, khong goi lai API
 
 const btnAddAdjustment = document.getElementById('btn-add-adjustment');
 const adjustmentModal = document.getElementById('adjustment-modal');
@@ -233,12 +235,14 @@ async function loadProjectsForPartner(partnerId) {
 async function updatePaymentMilestoneField() {
   const projectId = paymentProjectSelect.value;
   if (!projectId) {
+    paymentMilestonesCache = [];
     paymentMilestoneField.hidden = true;
     paymentMilestoneSelect.innerHTML = '<option value="">-- Không gắn đợt --</option>';
     return;
   }
 
   const { milestones } = await apiFetch(`/projects/${projectId}/milestones`);
+  paymentMilestonesCache = milestones;
   if (milestones.length === 0) {
     paymentMilestoneField.hidden = true;
     paymentMilestoneSelect.innerHTML = '<option value="">-- Không gắn đợt --</option>';
@@ -247,6 +251,16 @@ async function updatePaymentMilestoneField() {
   paymentMilestoneField.hidden = false;
   paymentMilestoneSelect.innerHTML = '<option value="">-- Không gắn đợt --</option>' +
     milestones.map((m) => `<option value="${m.id}">${m.name} - còn ${formatMoney(m.remaining_amount)}</option>`).join('');
+}
+
+// Tu dien so tien theo dung so con phai thu cua dot thanh toan dang chon (khong bat buoc nguoi
+// dung phai tu tra lai va go tay) - chi ap dung khi nguoi dung tu chon dot trong dropdown (khong
+// ghi de neu ho da tu sua so tien) hoac khi mo san tu URL preset (xem applyPaymentPresetFromUrl).
+function autofillAmountFromMilestone() {
+  const milestoneId = paymentMilestoneSelect.value;
+  if (!milestoneId) return;
+  const milestone = paymentMilestonesCache.find((m) => String(m.id) === milestoneId);
+  if (milestone) setMoneyValue(paymentAmountInput, Math.max(milestone.remaining_amount, 0));
 }
 
 async function updatePaymentProjectField() {
@@ -264,6 +278,7 @@ async function updatePaymentProjectField() {
 
 paymentPartnerSelect.addEventListener('change', updatePaymentProjectField);
 paymentProjectSelect.addEventListener('change', updatePaymentMilestoneField);
+paymentMilestoneSelect.addEventListener('change', autofillAmountFromMilestone);
 
 async function openPaymentModal(partnerId) {
   renderPartnerOptions();
@@ -271,6 +286,11 @@ async function openPaymentModal(partnerId) {
   paymentPartnerSelect.disabled = false;
   paymentProjectSelect.disabled = false;
   paymentMilestoneSelect.disabled = false;
+  // Reset lai trang thai khoa (neu lan mo truoc la preset tu URL cho 1 dot da thu du - xem
+  // applyPaymentPresetFromUrl) - trang khong tai lai giua cac lan mo modal trong cung 1 phien.
+  paymentAmountInput.disabled = false;
+  paymentNoteInput.disabled = false;
+  btnSubmitPayment.disabled = false;
   if (partnerId) paymentPartnerSelect.value = partnerId;
   paymentFormErrorBox.hidden = true;
   paymentModal.hidden = false;
@@ -486,7 +506,23 @@ async function applyPaymentPresetFromUrl() {
   if (projectId) {
     paymentProjectSelect.value = projectId;
     await updatePaymentMilestoneField();
-    if (milestoneId) paymentMilestoneSelect.value = milestoneId;
+    if (milestoneId) {
+      paymentMilestoneSelect.value = milestoneId;
+      // Tu dien so tien theo dung so con phai thu cua dot (khong bat nguoi dung tu go lai) va
+      // khoa han chuc nang ghi nhan neu dot nay da thu du - tranh nhap trung 2 lan (theo phan hoi
+      // nguoi dung 2026-08-05, xem docs/DECISIONS.md).
+      const milestone = paymentMilestonesCache.find((m) => String(m.id) === milestoneId);
+      if (milestone) {
+        setMoneyValue(paymentAmountInput, Math.max(milestone.remaining_amount, 0));
+        if (milestone.status === 'da_thu_du' || milestone.remaining_amount <= 0) {
+          paymentAmountInput.disabled = true;
+          paymentNoteInput.disabled = true;
+          btnSubmitPayment.disabled = true;
+          paymentFormErrorText.textContent = 'Đợt thanh toán này đã thu đủ - không thể ghi nhận thêm để tránh nhập trùng.';
+          paymentFormErrorBox.hidden = false;
+        }
+      }
+    }
   }
   paymentPartnerSelect.disabled = true;
   paymentProjectSelect.disabled = true;

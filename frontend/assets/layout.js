@@ -79,6 +79,7 @@ const NAV_GROUPS = [
       { key: 'company-settings', label: 'Thông tin công ty', href: 'company-settings.html', icon: 'building', module: 'cau_hinh', enabled: true },
       { key: 'warehouse-settings', label: 'Cấu hình kho', href: 'warehouse-settings.html', icon: 'sliders', module: 'cau_hinh', enabled: true },
       { key: 'notification-settings', label: 'Cấu hình thông báo', href: 'notification-settings.html', icon: 'bell', module: 'cau_hinh', enabled: true },
+      { key: 'print-templates', label: 'Mẫu in', href: 'print-templates.html', icon: 'printer', module: 'cau_hinh', enabled: true },
       { key: 'customer-categories', label: 'Loại khách hàng', href: 'customer-categories.html', icon: 'tag', module: 'cau_hinh', enabled: true },
       { key: 'project-phase-templates', label: 'Giai đoạn mẫu', href: 'project-phase-templates.html', icon: 'ledger', module: 'cau_hinh', enabled: true },
       { key: 'sales-settings', label: 'Cấu hình bán hàng', href: 'sales-settings.html', icon: 'cart', module: 'cau_hinh', enabled: true },

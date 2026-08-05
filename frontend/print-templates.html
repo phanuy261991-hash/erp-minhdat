@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mẫu in - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Cấu hình</p>
+      <div class="page-header">
+        <h2>Mẫu in</h2>
+      </div>
+
+      <div id="templates-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="templates-error-text"></span>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tên mẫu</th>
+              <th>Loại phiếu</th>
+              <th>Khổ giấy</th>
+              <th>Cập nhật lần cuối</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="templates-tbody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/print-templates.js"></script>
+</body>
+</html>

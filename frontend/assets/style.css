@@ -755,6 +755,10 @@ input:focus-visible {
   display: flex;
   align-items: center;
   gap: 12px;
+  /* flex-shrink:0 - khong bi ep hep lai khi tieu de h2 ben canh dai (.page-header dung
+     justify-content:space-between, ca 2 phia deu co the co-gian mac dinh) - phat hien qua phan
+     hoi nguoi dung: nut bi nen lai khien chu xuong dong (2026-08-05). */
+  flex-shrink: 0;
 }
 
 /* .btn-secondary mac dinh co margin-top:16px (danh cho dung dung mot minh trong form/modal,
@@ -762,12 +766,24 @@ input:focus-visible {
    nay va can inline-flex de icon+chu thang hang voi .btn-add (nut "Ghi nhan thanh toan"), khac
    truoc day bi lech xuong duoi (xem phan hoi nguoi dung 2026-08-01). :not([hidden]) - tranh lap
    lai loi display de len thuoc tinh hidden (xem .alert) - phat hien khi an nut "Xoa" tren
-   warranty-detail.html voi tai khoan khong phai Admin (2026-08-01). */
-.page-header-actions .btn-secondary:not([hidden]) {
+   warranty-detail.html voi tai khoan khong phai Admin (2026-08-01).
+   white-space:nowrap + flex-shrink:0 - nut khong bao gio bi ep hep hon do rong noi dung (chu
+   xuong dong xau xi); text-decoration:none - can cho truong hop nut la the <a> (vd "Quay lai"
+   o print-template-edit.html, truoc gio chi co .print-toolbar a.btn-secondary rieng xu ly, chua
+   co ban chung cho .page-header-actions) - phat hien qua phan hoi nguoi dung 2026-08-05. */
+.page-header-actions .btn-secondary:not([hidden]),
+.page-header-actions .btn-primary:not([hidden]) {
   margin-top: 0;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  text-decoration: none;
+  /* .btn-primary mac dinh width:100% (danh cho nut submit toan bo form/modal) - trong hang nut
+     dau trang phai bo ve width:auto, neu khong no se co chiem het khong gian con lai trong hang
+     (phat hien qua phan hoi nguoi dung: nut "Luu mau" o print-template-edit.html qua kho, 2026-08-05). */
+  width: auto;
 }
 
 .search-box {
@@ -1043,6 +1059,18 @@ input:focus-visible {
 .form-row > .form-field {
   flex: 1;
   min-width: 0;
+}
+
+/* Nhan cua 2 truong ghep chung 1 hang co the dai ngan khac nhau, co the xuong 2 dong (vd "Dot
+   thanh toan (khong bat buoc)" dai hon "Du an (khong bat buoc)") - neu khong xu ly, o nhap/select
+   ben duoi se bi lech nhau vi moi cot tu xep theo chieu cao nhan rieng cua no (phat hien qua
+   phan hoi nguoi dung tren modal "Ghi nhan thanh toan", 2026-08-05). Danh rieng khong gian co
+   dinh du cho 2 dong + can chu xuong day, de o nhap luon bat dau tai cung 1 vi tri du nhan 1 hay
+   2 dong. */
+.form-row > .form-field > label {
+  min-height: 38px;
+  display: flex;
+  align-items: flex-end;
 }
 
 /* Chi ap dung cho label truc tiep cua form-field (ten truong) - dung ">" de KHONG dinh
@@ -1896,6 +1924,13 @@ input:focus-visible {
   color: #000;
 }
 
+/* Kho ngang (migration 028, cau hinh mau in) - chi doi be rong hien thi tren man hinh/khung xem
+   truoc. Khi in that, kich thuoc trang giay (@page size) duoc chen dong bang JS luc bam In
+   (xem print-issue.js) - khong the dieu kien hoa @page theo class trong CSS thuan. */
+.print-sheet--landscape {
+  max-width: 1100px;
+}
+
 .print-header {
   display: flex;
   justify-content: space-between;
@@ -1915,7 +1950,10 @@ input:focus-visible {
 .print-header p {
   margin: 2px 0;
   font-size: 13px;
-  color: var(--color-muted-foreground);
+  /* Doi tu mau xam nhat (--color-muted-foreground) sang mau chu chinh + dam hon 1 chut - theo
+     phan hoi nguoi dung: thong tin cong ty tren ban in qua nhat, kho doc (2026-08-05). */
+  color: var(--color-foreground);
+  font-weight: 500;
 }
 
 .print-doc-title {
@@ -1942,6 +1980,9 @@ input:focus-visible {
   width: 100%;
   border-collapse: collapse;
   margin: 20px 0 24px;
+  /* table-layout:fixed - ton trong tuyet doi do rong khai bao trong <colgroup> (cau hinh duoc qua
+     trang "Chinh sua mau in", migration 029) thay vi tu co gian cot theo do dai noi dung. */
+  table-layout: fixed;
 }
 
 .print-table th,
@@ -1950,15 +1991,21 @@ input:focus-visible {
   padding: 8px 10px;
   font-size: 13px;
   text-align: left;
+  /* Chu dai tu xuong dong trong dung do rong cot da chinh (thay vi tran ra ngoai) - dung y nghia
+     voi table-layout:fixed o tren. */
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .print-table th {
   background: var(--color-muted);
   font-weight: 600;
+  /* Tieu de cot luon can giua cho dep (theo yeu cau nguoi dung) - khac voi du lieu than bang
+     (can trai/phai tuy loai du lieu, xem .print-num ben duoi). */
+  text-align: center;
 }
 
-.print-table td.print-num,
-.print-table th.print-num {
+.print-table td.print-num {
   text-align: right;
 }
 
@@ -1971,6 +2018,13 @@ input:focus-visible {
   text-align: right;
   font-weight: 700;
   font-size: 15px;
+}
+
+/* Dong "So tien viet bang chu" (migration 029, theo yeu cau nguoi dung) - dat ngay duoi dong
+   Tong cong trong cung tfoot, chi bat/tat duoc qua trang "Chinh sua mau in" (show_amount_in_words). */
+.print-amount-words {
+  font-style: italic;
+  font-size: 13px;
 }
 
 /* Ghi chu cua cong ty (dieu kien bao hanh, chinh sach doi tra...) - cau hinh duoc qua trang
@@ -2044,6 +2098,365 @@ input:focus-visible {
   @page {
     margin: 12mm;
   }
+}
+
+/* ---- Giay de nghi tam ung (print-project-advance.html, migration 030) - mau in THU 2, khong co
+   bang san pham. Chu mac dinh dung mau chinh (--color-foreground), KHONG dung muted-foreground -
+   dung bai hoc tu lan lam mau in truoc (thong tin cong ty qua nhat). ---- */
+
+.print-advance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.print-advance-national {
+  flex-shrink: 0;
+  text-align: center;
+  min-width: 260px;
+}
+
+.print-advance-national p {
+  margin: 2px 0;
+  /* Dung dung cỡ chữ voi .print-header p cua Phieu xuat kho (13px) - dong bo font/co chu giua
+     2 mau in, theo yeu cau nguoi dung. */
+  font-size: 13px;
+}
+
+.print-advance-national p:last-child {
+  text-decoration: underline;
+}
+
+.print-advance-title {
+  text-align: center;
+  /* Dung dung font-size/letter-spacing voi .print-doc-title h1 cua Phieu xuat kho. */
+  font-size: 20px;
+  letter-spacing: 0.04em;
+  margin: 0 0 20px;
+}
+
+.print-advance-amount {
+  text-align: center;
+  /* Dung dung co chu voi .print-total-value cua Phieu xuat kho (dong tien noi bat). */
+  font-size: 15px;
+  margin: 4px 0 20px;
+}
+
+.print-advance-signature {
+  text-align: right;
+  margin-top: 32px;
+}
+
+.print-advance-signature p {
+  margin: 2px 0;
+}
+
+.print-advance-signature-name {
+  margin-top: 56px !important;
+}
+
+/* ---- Trang "Chinh sua mau in" (print-template-edit.html, migration 028) - bo cuc 2 cot: trai
+   la trinh soan thao (toolbar + 2 vung contenteditable + cau hinh cot bang/kho giay), phai la
+   khung xem truoc thu nho tren nen giay (dung LAI class .print-sheet/.print-table/... that su,
+   khong dung rieng CSS khac de dam bao xem truoc dung 100% giong ban in that). Thiet ke qua
+   skill ui-ux-pro-max. ---- */
+
+.pt-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.pt-editor-col {
+  flex: 0 0 460px;
+  min-width: 0;
+}
+
+.pt-editor-card {
+  max-width: none;
+}
+
+.pt-preview-col {
+  flex: 1;
+  min-width: 0;
+  position: sticky;
+  top: 20px;
+}
+
+.pt-preview-label {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+}
+
+.pt-preview-frame {
+  background: var(--color-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+}
+
+.pt-preview-frame .print-sheet {
+  box-shadow: var(--shadow-card);
+  flex-shrink: 0;
+}
+
+/* Toolbar dinh dang chu, dung chung cho ca 2 vung "Dau trang"/"Chan trang" - ap dung len vung
+   dang co con tro (activeZone trong print-template-edit.js). */
+.pt-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pt-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-foreground);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pt-toolbar-btn:hover {
+  background: var(--color-muted);
+  border-color: var(--color-border);
+}
+
+.pt-toolbar-btn-wide {
+  width: auto;
+  padding: 0 12px;
+  font-weight: 500;
+}
+
+.pt-toolbar-divider {
+  width: 1px;
+  height: 22px;
+  background: var(--color-border);
+  margin: 0 6px;
+}
+
+.pt-token-dropdown {
+  position: relative;
+}
+
+.pt-token-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  min-width: 240px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: 6px;
+}
+
+.pt-token-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-foreground);
+  font-family: var(--font-body);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pt-token-menu-item:hover {
+  background: var(--color-muted);
+}
+
+/* Vung soan thao WYSIWYG - vien ro rang de phan biet voi text tinh xung quanh, focus ring giong
+   input thuong de nhat quan voi he thong. */
+.pt-editable {
+  min-height: 140px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-foreground);
+}
+
+.pt-editable:focus {
+  outline: none;
+  border-color: var(--color-ring);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Chip "truong thong tin" da chen - noi bat ro voi text thuong, khong the go chu vao trong
+   (contenteditable="false" tren chinh no khi tao o print-template-edit.js). */
+.pt-token {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px 2px 8px;
+  margin: 0 1px;
+  border-radius: 5px;
+  background: rgba(37, 99, 235, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  color: var(--color-primary-dark);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.pt-token-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-primary-dark);
+  cursor: pointer;
+}
+
+.pt-token-remove:hover {
+  background: rgba(37, 99, 235, 0.3);
+}
+
+/* Cau hinh cot bang san pham - danh sach ~9 dong, checkbox bat/tat + mui ten len/xuong sap xep
+   thu tu (khong keo-tha, da chot voi nguoi dung). */
+.pt-columns-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pt-column-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.pt-column-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* O nhap do rong tung cot (migration 029, ti le % - tu quy doi ve 100% luc render, khong bat
+   buoc phai nhap tong dung 100). */
+.pt-column-width {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.pt-column-width input {
+  width: 52px;
+  padding: 5px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 13px;
+  text-align: right;
+}
+
+.pt-column-width input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pt-column-width-suffix {
+  font-size: 12px;
+  color: var(--color-muted-foreground);
+}
+
+.pt-column-move {
+  display: flex;
+  gap: 4px;
+}
+
+.pt-column-move button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-foreground);
+  cursor: pointer;
+}
+
+.pt-column-move button:hover {
+  background: var(--color-muted);
+}
+
+.pt-column-move button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Toggle "Kho doc / Kho ngang" - 2 nut dang segmented control, khac .switch (boolean bat/tat)
+   vi day la chon 1 trong 2 trang thai co ten rieng, khong phai on/off. */
+.pt-orientation-toggle {
+  display: inline-flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.pt-orientation-btn {
+  padding: 9px 18px;
+  border: none;
+  background: var(--color-surface);
+  color: var(--color-foreground);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pt-orientation-btn + .pt-orientation-btn {
+  border-left: 1px solid var(--color-border);
+}
+
+.pt-orientation-btn.is-active {
+  background: var(--color-primary);
+  color: #fff;
 }
 
 /* ---- Trang Bao cao (reports.html) - the/kpi + bieu do cot ve tay bang SVG (khong dung thu

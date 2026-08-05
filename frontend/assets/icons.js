@@ -46,6 +46,13 @@ const ICONS = {
   contact: '<rect x="3" y="4" width="14" height="16" rx="2"/><circle cx="10" cy="10" r="2.3"/><path d="M6.3 17c0-2 1.7-3.3 3.7-3.3s3.7 1.3 3.7 3.3"/><path d="M17.5 8h3M17.5 12h3M17.5 16h2"/>',
   bell: '<path d="M6 9a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
   cake: '<path d="M4 21v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7"/><path d="M4 17c1.2.8 2.3.8 3.5 0 1.2.8 2.3.8 3.5 0 1.2.8 2.3.8 3.5 0 1.2.8 2.3.8 3.5 0"/><path d="M9 12V8M15 12V8"/><path d="M9 5.5c0-1 .8-1 .8-2S9 2 9 2M15 5.5c0-1 .8-1 .8-2S15 2 15 2"/>',
+  // 6 icon dinh dang chu + can le, dung rieng cho toolbar trang "Chinh sua mau in" (migration 028).
+  bold: '<path d="M14 12a4 4 0 0 0 0-8H6v8"/><path d="M15 20a4 4 0 0 0 0-8H6v8Z"/>',
+  italic: '<line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/>',
+  underline: '<path d="M6 4v6a6 6 0 0 0 12 0V4"/><line x1="4" y1="20" x2="20" y2="20"/>',
+  alignLeft: '<line x1="21" y1="6" x2="3" y2="6"/><line x1="15" y1="12" x2="3" y2="12"/><line x1="17" y1="18" x2="3" y2="18"/>',
+  alignCenter: '<line x1="21" y1="6" x2="3" y2="6"/><line x1="17" y1="12" x2="7" y2="12"/><line x1="19" y1="18" x2="5" y2="18"/>',
+  alignRight: '<line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="12" x2="9" y2="12"/><line x1="21" y1="18" x2="7" y2="18"/>',
 };
 
 function icon(name, size) {

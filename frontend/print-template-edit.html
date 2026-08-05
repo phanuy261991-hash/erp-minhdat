@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chỉnh sửa mẫu in - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Cấu hình</p>
+      <div class="page-header">
+        <h2 id="template-title">Chỉnh sửa mẫu in</h2>
+        <div class="page-header-actions">
+          <a href="print-templates.html" class="btn-secondary" id="btn-back"></a>
+          <button type="button" id="btn-reset" class="btn-secondary">Đặt lại</button>
+          <button type="button" id="btn-save" class="btn-primary">Lưu mẫu</button>
+        </div>
+      </div>
+
+      <div id="template-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="template-error-text"></span>
+      </div>
+      <div id="template-success" class="alert alert-success" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="template-success-text">Đã lưu mẫu in.</span>
+      </div>
+
+      <div class="pt-layout">
+        <div class="pt-editor-col">
+          <div class="settings-card pt-editor-card">
+            <div class="pt-toolbar">
+              <button type="button" class="pt-toolbar-btn" data-cmd="bold" data-icon="bold" title="Đậm"></button>
+              <button type="button" class="pt-toolbar-btn" data-cmd="italic" data-icon="italic" title="Nghiêng"></button>
+              <button type="button" class="pt-toolbar-btn" data-cmd="underline" data-icon="underline" title="Gạch chân"></button>
+              <span class="pt-toolbar-divider"></span>
+              <button type="button" class="pt-toolbar-btn" data-cmd="justifyLeft" data-icon="alignLeft" title="Căn trái"></button>
+              <button type="button" class="pt-toolbar-btn" data-cmd="justifyCenter" data-icon="alignCenter" title="Căn giữa"></button>
+              <button type="button" class="pt-toolbar-btn" data-cmd="justifyRight" data-icon="alignRight" title="Căn phải"></button>
+              <span class="pt-toolbar-divider"></span>
+              <button type="button" class="pt-toolbar-btn" id="btn-font-smaller" title="Giảm cỡ chữ">A-</button>
+              <button type="button" class="pt-toolbar-btn" id="btn-font-larger" title="Tăng cỡ chữ">A+</button>
+              <span class="pt-toolbar-divider"></span>
+              <div class="pt-token-dropdown">
+                <button type="button" id="btn-insert-token" class="pt-toolbar-btn pt-toolbar-btn-wide">Chèn trường thông tin</button>
+                <div id="token-menu" class="pt-token-menu" hidden></div>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <h4>Đầu trang</h4>
+              <p class="setting-row-desc" id="header-section-desc">Hiển thị phía trên bảng sản phẩm - bấm vào vùng bên dưới rồi dùng thanh công cụ ở trên để định dạng hoặc chèn trường thông tin.</p>
+              <div id="header-editable" class="pt-editable" contenteditable="true" data-zone="header"></div>
+            </div>
+
+            <div class="settings-section">
+              <h4>Chân trang</h4>
+              <p class="setting-row-desc" id="footer-section-desc">Hiển thị phía dưới bảng sản phẩm.</p>
+              <div id="footer-editable" class="pt-editable" contenteditable="true" data-zone="footer"></div>
+            </div>
+
+            <div class="settings-section" id="columns-section">
+              <h4>Cột bảng sản phẩm</h4>
+              <p class="setting-row-desc">Bật/tắt và sắp xếp thứ tự cột hiển thị trên bảng sản phẩm (giữ tối thiểu 2 cột).</p>
+              <div id="columns-list" class="pt-columns-list"></div>
+            </div>
+
+            <div class="settings-section">
+              <h4>Khổ giấy</h4>
+              <div class="pt-orientation-toggle" id="orientation-toggle">
+                <button type="button" class="pt-orientation-btn" data-value="portrait">Khổ dọc</button>
+                <button type="button" class="pt-orientation-btn" data-value="landscape">Khổ ngang</button>
+              </div>
+            </div>
+
+            <div class="settings-section" id="amount-words-section">
+              <label class="pt-column-checkbox">
+                <input type="checkbox" id="show-amount-words-checkbox" />
+                <span>Hiển thị dòng "Số tiền viết bằng chữ" dưới dòng Tổng cộng</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-preview-col">
+          <p class="pt-preview-label">Xem trước (dữ liệu mẫu)</p>
+          <div class="pt-preview-frame">
+            <div class="print-sheet" id="preview-sheet">
+              <div id="preview-header-mount"></div>
+              <div id="preview-table-mount"></div>
+              <div id="preview-footer-mount"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/print-template-render.js"></script>
+  <script src="assets/print-template-edit.js"></script>
+</body>
+</html>

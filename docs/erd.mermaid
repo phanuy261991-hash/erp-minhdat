@@ -25,6 +25,7 @@ erDiagram
     USERS ||--o{ CONTACTS : "tao (khong lien quan PARTNERS)"
     USERS ||--o{ NOTIFICATION_READS : "danh dau da doc"
     NOTIFICATIONS ||--o{ NOTIFICATION_READS : "trang thai doc theo tung user"
+    USERS ||--o{ PRINT_TEMPLATES : "cap nhat (nullable)"
 
     ROLES {
         int id PK
@@ -402,4 +403,16 @@ erDiagram
         int notification_id PK_FK
         int user_id PK_FK
         datetime read_at
+    }
+
+    PRINT_TEMPLATES {
+        int id PK
+        string type UK "vd 'stock_issue', mo rong sau (stock_receipt...)"
+        string name
+        string orientation "portrait | landscape"
+        string header_html "vung soan thao tu do, truoc bang san pham"
+        string footer_html "vung soan thao tu do, sau bang san pham"
+        string table_columns "JSON mang key cot da bat, dung thu tu"
+        datetime updated_at
+        int updated_by FK "nullable"
     }

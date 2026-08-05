@@ -361,6 +361,66 @@
 - [x] `.icon-btn:disabled` (mới, dùng cho nút Trước/Sau ở trang đầu/cuối)
 - [x] Test qua trình duyệt thật: seed 16 sản phẩm test xác nhận phân trang 15/5 đúng, nút Trước/Sau disable đúng, chiều cao 2 biểu đồ khớp tuyệt đối (0px lệch), số tiền không xuống dòng — xóa sạch dữ liệu test sau khi xong
 
+### Cấu hình mẫu in — bắt đầu với Phiếu xuất kho (ngoài phase, theo yêu cầu người dùng 2026-08-05)
+
+> Đã lên kế hoạch qua `EnterPlanMode` + chốt 3 quyết định phạm vi qua `AskUserQuestion` trước khi code (bảng sản phẩm chỉ bật/tắt+sắp xếp cột có sẵn không tự vẽ bảng tay, chỉ khổ A4 dọc/ngang, mỗi loại phiếu đúng 1 mẫu sửa trực tiếp) — chi tiết đầy đủ `docs/DECISIONS.md`.
+
+- [x] Migration `028_print_templates.sql`: bảng `print_templates` (`type` UNIQUE, `header_html`/`footer_html`, `table_columns` JSON, `orientation`), seed dòng `stock_issue` dựng lại đúng y hệt layout tĩnh cũ
+- [x] `backend/config/printTemplateTokens.js` (mới): registry token + cột bảng theo từng loại phiếu + nội dung mặc định ("factory default")
+- [x] `backend/routes/printTemplates.routes.js` (mới): `GET /`, `GET /:type`, `GET /:type/tokens`, `GET /:type/default` (mở), `PUT /:type` (quyền `cau_hinh`) — mount `server.js` giống pattern `companySettings.routes.js`
+- [x] `frontend/assets/print-template-render.js` (mới, dùng chung trang in thật + khung xem trước): `buildStockIssueTokenValues()`, `applyPrintTemplateTokens()`, `renderPrintTable()`, `SAMPLE_STOCK_ISSUE_DATA`
+- [x] `frontend/print-templates.html`/`.js` (mới, menu Cấu hình): danh sách loại phiếu đã có mẫu, không có nút tạo mới
+- [x] `frontend/print-template-edit.html`/`.js` (mới, dùng skill `ui-ux-pro-max` trước khi viết CSS): toolbar định dạng + chèn token, cấu hình cột bảng (checkbox + mũi tên sắp xếp), toggle khổ giấy, khung xem trước trực quan
+- [x] `frontend/print-issue.html`/`.js`: viết lại hoàn toàn phần render, bỏ markup tĩnh hardcode, dựng động từ mẫu đã lưu; tự chèn `<style>@page{size:A4 landscape;}</style>` khi mẫu là khổ ngang
+- [x] `frontend/assets/icons.js` (6 icon toolbar mới: bold/italic/underline/alignLeft/alignCenter/alignRight), `frontend/assets/layout.js` (mục nav "Mẫu in")
+- [x] `style.css`: `.print-sheet--landscape` + toàn bộ pattern mới cho trang chỉnh sửa (`.pt-*`)
+- [x] Test qua API (curl): GET/PUT đúng, chặn 403 thiếu quyền `cau_hinh`, chặn 400 dữ liệu không hợp lệ
+- [x] Test qua trình duyệt thật (Chrome headless CDP thô): danh sách + trình soạn thảo hoạt động đúng đầy đủ thao tác; **regression bắt buộc** — phiếu xuất kho thật có sẵn (PX000016) render khớp đúng 100% dữ liệu gốc sau khi đổi cơ chế, không lỗi console. Mẫu in đã khôi phục về đúng bản seed mặc định sau khi test xong.
+
+**Bổ sung: chỉnh độ rộng cột + dòng "Số tiền viết bằng chữ" (cùng ngày 2026-08-05, theo phản hồi người dùng ngay sau khi thử tính năng trên)**
+- [x] Migration `029_print_template_extra_options.sql`: `print_templates.show_amount_in_words`
+- [x] `table_columns` đổi sang mảng object `{key,width}` (tỉ lệ tương đối) — `normalizeTableColumns()` mới trong `print-template-render.js` tự quy đổi dữ liệu cũ (mảng chuỗi) sang độ rộng đều nhau, không cần migrate lại dữ liệu đã lưu
+- [x] `print-template-render.js`: `numberToVietnameseWords()` (đọc số tiền thành chữ tiếng Việt, thuần JS), `renderPrintTable()` dựng `<colgroup>` theo độ rộng đã chuẩn hóa + thêm dòng "Số tiền viết bằng chữ" cố định trong `tfoot` (bật/tắt qua `showAmountInWords`)
+- [x] `style.css`: `.print-table` đổi `table-layout:fixed` + `overflow-wrap:break-word` trên `td`/`th`; `.pt-column-width`/`.print-amount-words` mới
+- [x] `print-template-edit.html`/`.js`: ô nhập "Độ rộng (%)" từng dòng cột, checkbox "Hiển thị dòng Số tiền viết bằng chữ"
+- [x] `backend/routes/printTemplates.routes.js`: validate `table_columns` dạng object mới, đọc/lưu `show_amount_in_words`
+- [x] Test qua API (curl) + trình duyệt thật: phiếu xuất kho thật (PX000016) hiển thị đúng dòng số tiền bằng chữ + cột co giãn đúng tỉ lệ. Phát hiện dữ liệu mẫu in thật đã bị người dùng tự chỉnh qua UI giữa lúc phát triển (không phải lỗi) — chỉ còn test đọc (read-only), không chạy lại kịch bản Save/Reset để tránh ghi đè tùy chỉnh thật.
+
+**Bổ sung: sửa 3 lỗi hiển thị (cùng ngày 2026-08-05, theo ảnh chụp phản hồi người dùng)**
+- [x] `print-template-render.js#applyPrintTemplateTokens()`: thay `<span data-token>` bằng text node thuần thay vì chỉ đổi `textContent` — chip màu xanh (chỉ nên thấy lúc soạn thảo) không còn "rò rỉ" ra bản in thật/khung xem trước
+- [x] `style.css`: `.print-table th` căn giữa (`text-align:center`), tách riêng `td.print-num` khỏi rule căn phải
+- [x] `style.css`: `.page-header-actions`/`.btn-secondary`/`.btn-primary` thêm `white-space:nowrap`/`flex-shrink:0`/`text-decoration:none` — sửa nút "Quay lại" (thẻ `<a>` đầu tiên dùng pattern này) bị nén xuống dòng + gạch chân
+- [x] Test qua trình duyệt thật (chỉ đọc, không Save/Reset): xác nhận 0 chip còn sót trong bản in thật (PX000016) + khung xem trước, tiêu đề cột `text-align:center`, nút đầu trang cùng chiều cao 1 dòng không gạch chân, vùng soạn thảo vẫn giữ đúng chip để dùng bình thường, không lỗi console
+
+**Bổ sung tiếp: nút "Lưu mẫu" quá khổ + đậm chữ thông tin công ty + bỏ "đ" thừa (cùng ngày 2026-08-05)**
+- [x] `style.css`: `.page-header-actions .btn-primary` thêm `width:auto` (bỏ `width:100%` kế thừa từ `.btn-primary` mặc định)
+- [x] `style.css`: `.print-header p` đổi màu `--color-muted-foreground` → `--color-foreground` + `font-weight:500`
+- [x] `print-template-render.js#renderPrintTable()`: bỏ hậu tố `đ` ở ô `.print-total-value`
+- [x] Test qua trình duyệt thật (chỉ đọc): 3 nút đầu trang cùng cỡ hợp lý, màu/độ đậm thông tin công ty đúng, số tổng cộng không còn "đ", không lỗi console
+
+### Sửa 3 lỗi modal "Ghi nhận thanh toán" — luồng "Ghi nhận đã thu" từ Dự án (ngoài phase, theo phản hồi người dùng 2026-08-05)
+
+- [x] `style.css`: `.form-row > .form-field > label` thêm `min-height:38px` + `display:flex; align-items:flex-end` — sửa lệch hàng 2 ô "Dự án"/"Đợt thanh toán" (áp dụng chung mọi `.form-row`)
+- [x] `customer-debts.js`: cache `paymentMilestonesCache`, hàm `autofillAmountFromMilestone()` tự điền "Số tiền" theo `remaining_amount` của đợt đã chọn (gắn cả vào sự kiện chọn tay lẫn URL preset)
+- [x] `project-detail.js`: nút "Ghi nhận đã thu" trên từng dòng đợt thanh toán tự disable khi `status === 'da_thu_du'`
+- [x] `customer-debts.js#applyPaymentPresetFromUrl()`: khóa ô Số tiền/Ghi chú/nút Ghi nhận + hiện thông báo khi preset trỏ tới 1 đợt đã thu đủ; `openPaymentModal()` tự mở khóa lại các trường này mỗi lần mở modal (tránh trạng thái khóa "dính" từ lần mở trước)
+- [x] Test qua trình duyệt thật (CDP thô, chỉ đọc — không tạo bản ghi công nợ thật): dùng dữ liệu thật `DA000003` (đợt còn 300.000 và đợt đã thu đủ 10.000.000) xác nhận cả 3 lỗi đã sửa đúng, không lỗi console
+
+### In "Giấy đề nghị tạm ứng" theo đợt thanh toán dự án (ngoài phase, theo yêu cầu người dùng kèm mẫu PDF thật, 2026-08-05)
+
+> Đã lên kế hoạch qua `EnterPlanMode` + chốt 1 quyết định qua `AskUserQuestion` trước khi code (phần "Đại diện bởi"/tên người ký nhập cố định trực tiếp trong mẫu, không thêm trường mới vào `company_settings`) — chi tiết đầy đủ `docs/DECISIONS.md`.
+
+- [x] Migration `030_print_template_project_advance.sql`: seed 1 dòng `type='project_payment_advance'` (không cần `ALTER TABLE`)
+- [x] `backend/config/printTemplateTokens.js`: thêm entry `project_payment_advance` (`hasTable:false`, 8 token đầu trang + 4 token chân trang), thêm `hasTable:true` cho entry `stock_issue`
+- [x] `backend/routes/printTemplates.routes.js`: `GET /:type/tokens` trả thêm `hasTable`; `PUT /:type` bỏ qua validate cột khi `hasTable=false`
+- [x] `frontend/assets/print-template-render.js`: `formatDateVNLong()`, `buildProjectAdvanceTokenValues()`, `SAMPLE_PROJECT_ADVANCE_DATA`, registry `PRINT_TYPE_HANDLERS` (tổng quát cho mọi loại phiếu)
+- [x] `frontend/assets/print-template-edit.js`: tổng quát hóa theo `hasTable` (ẩn/hiện khối cột+checkbox, đổi mô tả 2 vùng soạn thảo, `updatePreview()` dùng `PRINT_TYPE_HANDLERS`)
+- [x] `frontend/print-project-advance.html`/`assets/print-project-advance.js` (mới, không có bảng)
+- [x] `frontend/assets/project-detail.js`: icon "In giấy đề nghị tạm ứng" trên từng dòng đợt thanh toán
+- [x] `frontend/assets/print-templates.js`: thêm nhãn loại phiếu mới vào danh sách
+- [x] `style.css`: `.print-advance-*` (dùng `--color-foreground`, không dùng muted — áp dụng bài học lần trước)
+- [x] Test qua API (curl) + trình duyệt thật (CDP thô, dữ liệu thật dự án `DA000001`): token hiện đúng, không chip xanh sót, chữ công ty màu đen. **Hồi quy bắt buộc**: mở lại mẫu `stock_issue` (chỉ đọc, không Save/Reset vì mẫu thật đã bị người dùng tự chỉnh trước đó) — xác nhận không đổi gì, không lỗi console
+
 ## Open questions cần chốt trước khi code phần liên quan
 
 Xem `docs/DECISIONS.md` mục "Open questions".
