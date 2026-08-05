@@ -25,6 +25,9 @@ const cashCategoriesRoutes = require('./routes/cashCategories.routes');
 const cashBookSettingsRoutes = require('./routes/cashBookSettings.routes');
 const projectsRoutes = require('./routes/projects.routes');
 const projectPhaseTemplatesRoutes = require('./routes/projectPhaseTemplates.routes');
+const contactsRoutes = require('./routes/contacts.routes');
+const notificationsRoutes = require('./routes/notifications.routes');
+const notificationSettingsRoutes = require('./routes/notificationSettings.routes');
 const { requireAuth } = require('./middleware/auth');
 const { requirePermission } = require('./middleware/requirePermission');
 
@@ -101,6 +104,15 @@ app.use('/api/cash-book-settings', requireAuth, cashBookSettingsRoutes);
 // ben trong file route (xem projectPhaseTemplates.routes.js).
 app.use('/api/project-phase-templates', requireAuth, projectPhaseTemplatesRoutes);
 app.use('/api/projects', requireAuth, requirePermission('du_an'), projectsRoutes);
+// Module "Doi tac" (2026-08-05) - danh ba lien he ca nhan, hoan toan tach biet Nha cung cap/
+// Khach hang. Quyen 'doi_tac' kiem tra RIENG TUNG ROUTE ben trong contacts.routes.js (khong gan
+// chung o day nhu truoc) vi GET /birthdays-this-month phai mo cho moi tai khoan (dung cho card
+// sinh nhat o dashboard.html).
+app.use('/api/contacts', requireAuth, contactsRoutes);
+// He thong thong bao (migration 027) - GET mo cho moi tai khoan da dang nhap (moi nguoi deu
+// nhan thong bao), PUT cau hinh rieng quyen 'cau_hinh' kiem tra ben trong file route.
+app.use('/api/notifications', requireAuth, notificationsRoutes);
+app.use('/api/notification-settings', requireAuth, notificationSettingsRoutes);
 
 // Route kiem tra server song - dung de test nhanh khi chay demo.
 app.get('/api/health', (req, res) => {

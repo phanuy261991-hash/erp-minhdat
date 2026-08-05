@@ -60,6 +60,51 @@ function renderQuickLinks(permissions) {
     .join('');
 }
 
+function formatDateVN(value) {
+  const [y, m, d] = value.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+// The "Sinh nhat trong thang" - danh sach doi tac (contacts.html) co ngay sinh trong THANG HIEN
+// TAI, do mau khi con <=3 ngay nua den sinh nhat (theo dung yeu cau nguoi dung, doc lap voi so
+// ngay nhac lich co the cau hinh o notification-settings.html). Dung route rieng mo cho MOI tai
+// khoan (khong doi quyen module 'doi_tac') vi day la widget chung o Tong quan.
+async function loadBirthdayCard() {
+  try {
+    const { contacts } = await apiFetch('/contacts/birthdays-this-month');
+    const heading = document.getElementById('birthday-heading');
+    const card = document.getElementById('birthday-card');
+    const listEl = document.getElementById('birthday-list');
+
+    if (contacts.length === 0) {
+      heading.hidden = true;
+      card.hidden = true;
+      return;
+    }
+
+    heading.hidden = false;
+    card.hidden = false;
+    listEl.innerHTML = contacts
+      .map((c) => {
+        const soonClass = c.is_soon ? ' birthday-row--soon' : '';
+        const countdownText = c.days_until === 0 ? 'Hôm nay' : `Còn ${c.days_until} ngày`;
+        return `
+          <div class="birthday-row${soonClass}">
+            <p class="birthday-row-name">
+              <span class="birthday-row-name-text">${c.full_name}</span>
+              <span class="birthday-row-date">${formatDateVN(c.date_of_birth)}</span>
+            </p>
+            <span class="birthday-row-countdown">${countdownText}</span>
+          </div>
+        `;
+      })
+      .join('');
+  } catch (err) {
+    // Khong chan trang Tong quan chi vi widget nay loi (vd tai khoan chua co quyen lien quan) -
+    // im lang bo qua, cac card so lieu khac van hoat dong binh thuong.
+  }
+}
+
 (async function init() {
   const currentUser = await initLayout('dashboard');
   if (!currentUser) return;
@@ -95,4 +140,6 @@ function renderQuickLinks(permissions) {
   } catch (err) {
     renderError(err.message);
   }
+
+  await loadBirthdayCard();
 })();

@@ -177,6 +177,25 @@ Quản trị toàn bộ quá trình một dự án/công trình: theo giai đo�
 
 **Phân quyền**: module mới `du_an` (mục 4.1) — vai trò nào được cấp module này thì thao tác được mọi chức năng thuộc dự án, đúng triết lý phân quyền theo module.
 
+### 4.13 Đối tác (bổ sung 2026-08-05, theo yêu cầu người dùng — hoàn thành)
+
+Danh bạ liên hệ cá nhân, **hoàn toàn tách biệt** với "Nhà cung cấp"/"Khách hàng" (mục 4.4) — không gắn kho, không gắn công nợ, không tham chiếu tới bảng nào khác trong hệ thống.
+
+- Thông tin lưu trữ: Họ và tên (bắt buộc), Số điện thoại, Địa chỉ, Nghề nghiệp, Ngày tháng năm sinh, Sở thích, Ghi chú.
+- Thêm mới/chỉnh sửa: mọi tài khoản có quyền module `doi_tac`. **Xóa: chỉ tài khoản vai trò Admin** (`is_protected`), bất kể vai trò đó có quyền `doi_tac` hay không — khác nguyên tắc chung "quyền module áp dụng đều cho mọi hành động" của các module khác, vì người dùng yêu cầu rõ ràng giới hạn riêng cho hành động xóa.
+- Trang "Xem chi tiết" riêng (`contact-detail.html`) hiển thị đầy đủ thông tin, có nút Sửa/Xóa.
+- **Phân quyền**: module mới `doi_tac` (mục 4.1) — tự động xuất hiện ở trang "Vai trò" (nguồn `backend/config/modules.js`), không seed sẵn cho vai trò mặc định nào. Riêng route `GET /birthdays-this-month` (phục vụ card sinh nhật ở Tổng quan, mục 4.14) mở cho **mọi** tài khoản, không đòi quyền `doi_tac`.
+
+### 4.14 Hệ thống thông báo (bổ sung 2026-08-05, theo yêu cầu người dùng — hoàn thành phiên bản đầu)
+
+Chuông thông báo nổi ở mọi trang (góc dưới-phải màn hình), mọi tài khoản đang hoạt động đều nhận. "Realtime" là **giả lập qua polling định kỳ** (không dùng WebSocket) — khi phát hiện thông báo mới, tự động hiện thêm popup toast (tự ẩn sau 4 giây) ngay trên chuông, kèm số đếm chưa đọc trên icon chuông.
+
+- **3 loại thông báo**: (1) thanh toán công nợ nhà cung cấp, (2) thanh toán công nợ khách hàng — cả 2 phát sinh khi ghi nhận thanh toán ở mục 4.4; (3) sinh nhật đối tác — dựa trên `contacts.date_of_birth` (mục 4.13).
+- **Cấu hình thông báo** (trang riêng, menu Cấu hình, chỉ Admin sửa được — quyền `cau_hinh`): bật/tắt riêng từng loại trong 3 loại trên; **danh sách nhiều mốc nhắc lịch sinh nhật** tự thêm/xóa được (vd nhắc trước 3 ngày, nhắc lại khi còn 1 ngày, nhắc đúng ngày sinh nhật) — không giới hạn cố định 1 mốc.
+- **Đánh dấu đã đọc riêng từng tài khoản** — cùng 1 thông báo, người này đã xem không ảnh hưởng trạng thái của người khác.
+- **Card "Sinh nhật trong tháng"** ở trang Tổng quan (mở cho mọi tài khoản): liệt kê đối tác có sinh nhật trong tháng hiện tại kèm ngày sinh, tô đỏ khi còn ≤3 ngày nữa tới sinh nhật.
+- **Phân quyền**: không cần module riêng — mọi tài khoản đăng nhập đều xem/đánh dấu đã đọc được thông báo của chính mình; chỉ trang cấu hình đòi quyền `cau_hinh`.
+
 ## 5. Success Metrics
 
 | Mục tiêu | Chỉ số | Ngưỡng |

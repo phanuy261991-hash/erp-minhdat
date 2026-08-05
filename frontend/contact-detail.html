@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chi tiết đối tác - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Đối tác</p>
+      <div class="page-header">
+        <div class="page-title-group">
+          <a href="contacts.html" id="btn-back" class="icon-btn" title="Quay lại danh sách đối tác"></a>
+          <h2 id="contact-name">Chi tiết đối tác</h2>
+        </div>
+        <div class="page-header-actions">
+          <a href="#" id="btn-edit-contact" class="btn-secondary"></a>
+          <button type="button" id="btn-delete-contact" class="btn-secondary" hidden></button>
+        </div>
+      </div>
+
+      <div id="detail-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="detail-error-text"></span>
+      </div>
+
+      <div class="detail-info-grid" id="contact-info-grid"></div>
+    </main>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/contact-detail.js"></script>
+</body>
+</html>

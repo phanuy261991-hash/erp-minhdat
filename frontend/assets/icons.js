@@ -43,6 +43,9 @@ const ICONS = {
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5h.01"/>',
   wallet: '<path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h12A1.5 1.5 0 0 1 18 7.5V9"/><rect x="3" y="9" width="18" height="11.5" rx="2"/><path d="M15.5 15.5a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4Z"/>',
   briefcase: '<rect x="2.5" y="7" width="19" height="12.5" rx="2"/><path d="M8 7V5.5A1.5 1.5 0 0 1 9.5 4h5A1.5 1.5 0 0 1 16 5.5V7"/><path d="M2.5 12.5h19"/><path d="M10.5 12v1.5h3V12"/>',
+  contact: '<rect x="3" y="4" width="14" height="16" rx="2"/><circle cx="10" cy="10" r="2.3"/><path d="M6.3 17c0-2 1.7-3.3 3.7-3.3s3.7 1.3 3.7 3.3"/><path d="M17.5 8h3M17.5 12h3M17.5 16h2"/>',
+  bell: '<path d="M6 9a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  cake: '<path d="M4 21v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7"/><path d="M4 17c1.2.8 2.3.8 3.5 0 1.2.8 2.3.8 3.5 0 1.2.8 2.3.8 3.5 0 1.2.8 2.3.8 3.5 0"/><path d="M9 12V8M15 12V8"/><path d="M9 5.5c0-1 .8-1 .8-2S9 2 9 2M15 5.5c0-1 .8-1 .8-2S15 2 15 2"/>',
 };
 
 function icon(name, size) {

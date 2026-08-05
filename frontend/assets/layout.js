@@ -49,6 +49,14 @@ const NAV_GROUPS = [
     ],
   },
   {
+    // Module "Doi tac" (2026-08-05) - danh ba lien he ca nhan, HOAN TOAN TACH BIET voi
+    // "Nha cung cap"/"Khach hang" (partners, gan kho/cong no) - theo yeu cau nguoi dung.
+    label: 'Đối tác',
+    items: [
+      { key: 'contacts', label: 'Đối tác', href: 'contacts.html', icon: 'contact', module: 'doi_tac', enabled: true },
+    ],
+  },
+  {
     // Module "So quy" (2026-08-02) - doc lap hoan toan voi Cong no, khong ghi debt_ledger
     // (xem docs/DECISIONS.md). Dat rieng nhom, sau "Khach hang" truoc "Quan tri".
     label: 'Quỹ',
@@ -70,6 +78,7 @@ const NAV_GROUPS = [
     items: [
       { key: 'company-settings', label: 'Thông tin công ty', href: 'company-settings.html', icon: 'building', module: 'cau_hinh', enabled: true },
       { key: 'warehouse-settings', label: 'Cấu hình kho', href: 'warehouse-settings.html', icon: 'sliders', module: 'cau_hinh', enabled: true },
+      { key: 'notification-settings', label: 'Cấu hình thông báo', href: 'notification-settings.html', icon: 'bell', module: 'cau_hinh', enabled: true },
       { key: 'customer-categories', label: 'Loại khách hàng', href: 'customer-categories.html', icon: 'tag', module: 'cau_hinh', enabled: true },
       { key: 'project-phase-templates', label: 'Giai đoạn mẫu', href: 'project-phase-templates.html', icon: 'ledger', module: 'cau_hinh', enabled: true },
       { key: 'sales-settings', label: 'Cấu hình bán hàng', href: 'sales-settings.html', icon: 'cart', module: 'cau_hinh', enabled: true },
@@ -156,6 +165,198 @@ function applyCollapsedState(collapsed) {
   toggleIcon.innerHTML = icon(collapsed ? 'sidebarExpand' : 'sidebarCollapse', 18);
 }
 
+// ----- Chuong thong bao (migration 027) - noi FIXED goc tren-phai, doc lap voi sidebar, chay
+// tren MOI trang da goi initLayout() (khong can them script/the rieng vao tung file HTML). -----
+// "Realtime" o day la GIA LAP bang polling dinh ky (khong co ha tang WebSocket/push that -
+// dung quyet dinh da chot 2026-08-05: khong dung WebSocket, phu hop app LAN <20 nguoi dung).
+// Moi lan poll goi GET /notifications (lay ca danh sach, khong chi so dem) de vua cap nhat badge
+// vua phat hien dong MOI (id lon hon lan poll truoc) va tu dong hien popup toast cho dong do.
+
+const NOTIFICATION_POLL_MS = 20000;
+const NOTIFICATION_TOAST_DURATION_MS = 4000;
+const NOTIFICATION_ICON_BY_TYPE = { supplier_payment: 'truck', customer_payment: 'users', birthday: 'cake' };
+
+// null = chua poll lan nao - lan poll DAU TIEN sau khi tai trang chi thiet lap moc, KHONG toast
+// hang loat thong bao cu da co san tu truoc (tranh spam popup moi lan mo lai trinh duyet).
+let lastSeenNotificationId = null;
+
+function notificationLink(n) {
+  if (n.type === 'supplier_payment') return 'debts.html';
+  if (n.type === 'customer_payment') return 'customer-debts.html';
+  if (n.type === 'birthday' && n.reference_id) return `contact-detail.html?id=${n.reference_id}`;
+  return null;
+}
+
+function formatNotificationTime(sqliteDateTime) {
+  const d = new Date(sqliteDateTime.replace(' ', 'T') + 'Z');
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function renderNotificationBadge(count) {
+  const badge = document.getElementById('notification-badge');
+  if (count > 0) {
+    badge.textContent = count > 99 ? '99+' : String(count);
+    badge.hidden = false;
+  } else {
+    badge.hidden = true;
+  }
+}
+
+function ensureToastStack() {
+  let stack = document.getElementById('toast-stack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.id = 'toast-stack';
+    stack.className = 'toast-stack';
+    document.body.appendChild(stack);
+  }
+  return stack;
+}
+
+// Popup hinh chu nhat goc duoi-phai man hinh, tu an sau 4 giay (NOTIFICATION_TOAST_DURATION_MS) -
+// bam vao dieu huong toi trang lien quan giong item trong chuong (dung chung notificationLink()).
+function showNotificationToast(n) {
+  const stack = ensureToastStack();
+  const href = notificationLink(n);
+
+  const toastEl = document.createElement('div');
+  toastEl.className = 'toast-item';
+  if (href) toastEl.classList.add('toast-item--clickable');
+  toastEl.innerHTML = `
+    <span class="toast-item-icon">${icon(NOTIFICATION_ICON_BY_TYPE[n.type] || 'bell', 16)}</span>
+    <div class="toast-item-body">
+      <p class="toast-item-title">${n.title}</p>
+      <p class="toast-item-message">${n.message || ''}</p>
+    </div>
+  `;
+  if (href) {
+    toastEl.addEventListener('click', () => {
+      window.location.href = href;
+    });
+  }
+  stack.appendChild(toastEl);
+
+  setTimeout(() => {
+    toastEl.classList.add('toast-item--leaving');
+    toastEl.addEventListener('animationend', () => toastEl.remove(), { once: true });
+  }, NOTIFICATION_TOAST_DURATION_MS);
+}
+
+async function pollNotifications() {
+  try {
+    const { notifications } = await apiFetch('/notifications');
+    const unreadCount = notifications.filter((n) => !n.is_read).length;
+    renderNotificationBadge(unreadCount);
+
+    if (lastSeenNotificationId === null) {
+      lastSeenNotificationId = notifications.reduce((max, n) => Math.max(max, n.id), 0);
+      return;
+    }
+
+    const freshOnes = notifications.filter((n) => n.id > lastSeenNotificationId).sort((a, b) => a.id - b.id);
+    freshOnes.forEach(showNotificationToast);
+    if (notifications.length > 0) {
+      lastSeenNotificationId = notifications.reduce((max, n) => Math.max(max, n.id), lastSeenNotificationId);
+    }
+  } catch (err) {
+    // Bo qua loi polling ngam - khong lam gian doan trai nghiem trang chinh.
+  }
+}
+
+async function loadNotificationList() {
+  const listEl = document.getElementById('notification-list');
+  try {
+    const { notifications } = await apiFetch('/notifications');
+    if (notifications.length === 0) {
+      listEl.innerHTML = '<p class="notification-empty">Chưa có thông báo nào.</p>';
+      return;
+    }
+    listEl.innerHTML = notifications
+      .map((n) => {
+        const href = notificationLink(n);
+        const tag = href ? 'a' : 'div';
+        const hrefAttr = href ? `href="${href}"` : '';
+        return `
+          <${tag} ${hrefAttr} class="notification-item${n.is_read ? '' : ' notification-item--unread'}" data-id="${n.id}">
+            <span class="notification-item-icon">${icon(NOTIFICATION_ICON_BY_TYPE[n.type] || 'bell', 16)}</span>
+            <div class="notification-item-body">
+              <p class="notification-item-title">${n.title}</p>
+              <p class="notification-item-message">${n.message || ''}</p>
+              <p class="notification-item-time">${formatNotificationTime(n.created_at)}</p>
+            </div>
+          </${tag}>
+        `;
+      })
+      .join('');
+  } catch (err) {
+    listEl.innerHTML = `<p class="notification-empty">${err.message}</p>`;
+  }
+}
+
+function renderNotificationBell() {
+  const wrap = document.createElement('div');
+  wrap.className = 'notification-bell-wrap';
+  wrap.id = 'notification-bell-wrap';
+  wrap.innerHTML = `
+    <button type="button" id="notification-bell-btn" class="notification-bell-btn" aria-label="Thông báo">
+      ${icon('bell', 20)}
+      <span id="notification-badge" class="notification-badge" hidden></span>
+    </button>
+    <div id="notification-panel" class="notification-panel" hidden>
+      <div class="notification-panel-header">
+        <h4>Thông báo</h4>
+        <button type="button" id="notification-mark-all" class="notification-mark-all">Đánh dấu tất cả đã đọc</button>
+      </div>
+      <div id="notification-list" class="notification-list"></div>
+    </div>
+  `;
+  document.body.appendChild(wrap);
+
+  const bellBtn = document.getElementById('notification-bell-btn');
+  const panel = document.getElementById('notification-panel');
+
+  bellBtn.addEventListener('click', async () => {
+    const opening = panel.hidden;
+    panel.hidden = !opening;
+    if (opening) {
+      await loadNotificationList();
+    }
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!wrap.contains(event.target)) {
+      panel.hidden = true;
+    }
+  });
+
+  document.getElementById('notification-list').addEventListener('click', async (event) => {
+    const item = event.target.closest('.notification-item[data-id]');
+    if (!item) return;
+    const id = item.dataset.id;
+    try {
+      await apiFetch(`/notifications/${id}/read`, { method: 'POST' });
+      item.classList.remove('notification-item--unread');
+      pollNotifications();
+    } catch (err) {
+      // Bo qua - khong chan viec dieu huong (neu co href) chi vi loi danh dau da doc.
+    }
+  });
+
+  document.getElementById('notification-mark-all').addEventListener('click', async () => {
+    try {
+      await apiFetch('/notifications/read-all', { method: 'POST' });
+      await loadNotificationList();
+      pollNotifications();
+    } catch (err) {
+      // Bo qua loi - nguoi dung co the bam lai.
+    }
+  });
+
+  pollNotifications();
+  setInterval(pollNotifications, NOTIFICATION_POLL_MS);
+}
+
 function findNavItem(activeKey) {
   for (const group of NAV_GROUPS) {
     const item = group.items.find((i) => i.key === activeKey);
@@ -186,5 +387,6 @@ async function initLayout(activeKey) {
   }
 
   renderSidebar(user, activeKey);
+  renderNotificationBell();
   return user;
 }

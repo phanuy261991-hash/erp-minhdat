@@ -320,6 +320,47 @@
 - [x] Đổi 11 trường tiền trên 9 trang từ `type="number"` sang `type="text" class="money-input"`: `products.html`, `stock-receipts.js`/`stock-issues.js` (dòng động), `projects.html`, `project-detail.html` (đợt thanh toán + phát sinh), `customer-categories.html`, `cash-book.html` (phiếu + quỹ đầu kỳ), `debts.html`/`customer-debts.html` (thanh toán + điều chỉnh)
 - [x] Test qua trình duyệt thật (CDP thô, gõ ký tự thật): cả 11 trường + dòng phiếu nhập (tính "Thành tiền"), không lỗi console
 
+### Module "Đối tác" (ngoài phase, theo yêu cầu người dùng 2026-08-05)
+
+> Đã hỏi 2 câu qua `AskUserQuestion` trước khi code (tách biệt hoàn toàn với Nhà cung cấp/Khách hàng, xóa chỉ đúng vai trò Admin `is_protected`) — chi tiết đầy đủ `docs/DECISIONS.md`.
+
+- [x] Migration `026_contacts.sql`: bảng `contacts` (Họ và tên/SĐT/Địa chỉ/Nghề nghiệp/Ngày sinh/Ghi chú), độc lập hoàn toàn với `partners`
+- [x] `backend/config/modules.js`: thêm module `doi_tac` vào `MODULE_KEYS`/`MODULE_LABELS` — trang "Vai trò" tự động hiện checkbox mới, không cần sửa `roles.routes.js`/`roles.js`
+- [x] `backend/routes/contacts.routes.js` (mới): CRUD, GET/POST/PUT theo quyền `doi_tac` (kiểm tra ở `server.js`), DELETE kiểm tra thêm `req.session.user.is_protected` ngay trong file (giống `warranties.routes.js`)
+- [x] Frontend `contacts.html`/`assets/contacts.js` (mới, rập khuôn `warranties.html`): danh sách + tìm kiếm theo tên/SĐT, modal thêm/sửa, nút Xóa chỉ hiện với Admin
+- [x] Trang "Xem chi tiết" (bổ sung ngay sau, theo yêu cầu người dùng): `frontend/contact-detail.html`/`assets/contact-detail.js` (mới, rập khuôn `customer-detail.html`) — đủ 6 trường + Ngày tạo, nút Sửa điều hướng `contacts.html?edit=ID` (mở sẵn modal), nút Xóa chỉ hiện với Admin; icon "Xem chi tiết" thêm vào từng dòng ở `contacts.js`
+- [x] `frontend/assets/icons.js` thêm icon `contact`; `frontend/assets/layout.js` thêm nhóm nav "Đối tác" (sau "Khách hàng", trước "Dự án")
+- [x] `docs/PRD.md` (mục 4.13 mới), `docs/erd.mermaid` (bảng `CONTACTS`)
+- [x] Test qua API (curl): CRUD đúng, tài khoản chưa có quyền `doi_tac` bị chặn 403, tài khoản có quyền `doi_tac` nhưng không phải Admin bị chặn đúng khi xóa (403), khôi phục lại quyền vai trò Thủ kho về nguyên trạng sau test
+- [x] Test qua trình duyệt thật (Chrome headless CDP thô, script Node dùng `WebSocket` built-in): thêm/sửa/xóa qua đúng thao tác UI thật, trang "Vai trò" tự hiện "Đối tác", không lỗi console
+
+### Hệ thống thông báo (ngoài phase, theo yêu cầu người dùng 2026-08-05 — hoàn thành phiên bản đầu)
+
+> Ban đầu tạm dừng sau khi chốt 7 quyết định qua `AskUserQuestion` để ưu tiên làm module "Đối tác" trước — sau khi Đối tác xong, người dùng yêu cầu làm tiếp với phạm vi cụ thể hơn: 3 loại (thanh toán NCC/KH, sinh nhật đối tác — dùng `contacts` thay vì `partners` như dự tính ban đầu), cấu hình nhiều mốc nhắc lịch, card sinh nhật ở Tổng quan, thêm trường "Sở thích". Chi tiết đầy đủ `docs/DECISIONS.md`.
+
+- [x] Migration `027_notifications.sql`: `contacts.hobby` (mới), `notification_settings` (singleton, `birthday_reminder_days` dạng CSV nhiều mốc), `notifications` (co `dedupe_key` UNIQUE), `notification_reads` (đọc riêng từng user)
+- [x] `backend/services/notification.service.js`: `notifySupplierPayment()`/`notifyCustomerPayment()`, `ensureBirthdayNotifications()` (quét MỖI LẦN gọi, không gate theo ngày — xem quyết định kỹ thuật ở `docs/DECISIONS.md`), `daysUntilNextBirthday()`
+- [x] `backend/services/debt.service.js#recordPayment()`: gọi `notifySupplierPayment()`/`notifyCustomerPayment()` theo `partner.type`, bọc try/catch không chặn luồng thanh toán chính nếu ghi thông báo lỗi
+- [x] `backend/routes/notifications.routes.js` (GET/unread-count/POST :id/read/POST read-all, mở cho mọi tài khoản) + `notificationSettings.routes.js` (GET mở, PUT quyền `cau_hinh`)
+- [x] `backend/routes/contacts.routes.js`: thêm `GET /birthdays-this-month` (mở cho MỌI tài khoản, không đòi quyền `doi_tac` — dùng cho card Tổng quan) + trường `hobby` trong CRUD
+- [x] `server.js`: đổi cách mount `/api/contacts` (quyền `doi_tac` chuyển vào kiểm tra riêng từng route thay vì gán chung ở đây) để route `birthdays-this-month` mở được cho mọi người
+- [x] Frontend: chuông nổi + popup toast realtime (giả lập qua polling 20s) trực tiếp trong `frontend/assets/layout.js` (không tạo file riêng, không sửa từng trang HTML)
+- [x] `frontend/notification-settings.html`/`.js` (mới, menu Cấu hình): 3 toggle + danh sách mốc nhắc lịch sinh nhật (thêm/xóa từng mốc, dùng lại pattern `.member-picker-row`/`.member-list`)
+- [x] Card "Sinh nhật trong tháng" trên `dashboard.html`/`.js`: đỏ khi còn ≤3 ngày, hiện ngày sinh — đã thu gọn mỗi dòng còn 1 dòng duy nhất (~30px) sau phản hồi người dùng
+- [x] `frontend/contacts.html`/`.js`, `contact-detail.html`/`.js`: thêm trường "Sở thích"
+- [x] Sửa 2 lỗi CSS `[hidden]` bị `display` đè phát hiện khi test (`.notification-panel`, `.notification-badge`) — thêm `:not([hidden])`
+- [x] Đổi vị trí chuông xuống góc dưới-phải (ban đầu ở trên) + popup toast hiện ngay trên chuông, theo phản hồi người dùng
+- [x] Test qua API (curl): dedupe sinh nhật đúng (không tạo trùng khi quét lại), hook thanh toán tạo đúng thông báo đúng nội dung mẫu yêu cầu
+- [x] Test qua trình duyệt thật (CDP thô, `fetch` built-in thay `curl` qua `child_process.exec` để né lỗi quoting trên Windows cmd.exe): toast xuất hiện đúng vị trí/nội dung/tự ẩn sau 4s, panel thu gọn đúng khi bấm ra ngoài, trang cấu hình lưu/tải lại đúng, card sinh nhật hiện đúng + đỏ đúng ngưỡng
+
+### Sửa trang Báo cáo: phân trang + số tiền không xuống dòng + khớp chiều cao (ngoài phase, theo phản hồi người dùng kèm ảnh chụp 2026-08-05)
+
+- [x] `reports.html`/`.js`: phân trang bảng tồn kho (15 dòng/trang, nút Trước/Sau, `.pagination` — tư vấn qua skill `ui-ux-pro-max` trước khi code)
+- [x] `style.css`: `.report-chart-row .stat-card-value` giảm cỡ chữ + `white-space:nowrap` + `text-overflow:ellipsis` dự phòng; `title` gắn qua `reports.js` để xem đủ khi bị cắt
+- [x] `style.css`: `.report-chart-svg` đổi từ `height:auto` (phụ thuộc bề rộng màn hình) sang **cố định 200px**, `.report-chart-row .stat-grid` đặt `min-height` cố định tương ứng — khớp tuyệt đối với khung biểu đồ, áp dụng chung cho cả "Mua hàng" và "Bán hàng theo tháng"
+- [x] `.icon-btn:disabled` (mới, dùng cho nút Trước/Sau ở trang đầu/cuối)
+- [x] Test qua trình duyệt thật: seed 16 sản phẩm test xác nhận phân trang 15/5 đúng, nút Trước/Sau disable đúng, chiều cao 2 biểu đồ khớp tuyệt đối (0px lệch), số tiền không xuống dòng — xóa sạch dữ liệu test sau khi xong
+
 ## Open questions cần chốt trước khi code phần liên quan
 
 Xem `docs/DECISIONS.md` mục "Open questions".

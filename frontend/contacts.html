@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đối tác - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Đối tác</p>
+      <div class="page-header">
+        <h2>Đối tác</h2>
+        <div class="page-header-actions">
+          <div class="search-box">
+            <span class="input-icon"></span>
+            <input type="text" id="contact-search" class="search-input" placeholder="Tìm theo tên hoặc số điện thoại..." autocomplete="off" />
+          </div>
+          <button type="button" id="btn-add-contact" class="btn-add"></button>
+        </div>
+      </div>
+
+      <div id="contacts-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="contacts-error-text"></span>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Họ và tên</th>
+              <th>Số điện thoại</th>
+              <th>Địa chỉ</th>
+              <th>Nghề nghiệp</th>
+              <th>Ngày sinh</th>
+              <th>Sở thích</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="contacts-tbody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <div id="contact-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3 id="contact-modal-title">Thêm đối tác mới</h3>
+      <form id="contact-form">
+        <div id="contact-form-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="contact-form-error-text"></span>
+        </div>
+
+        <div class="form-field">
+          <label for="contact-full-name">Họ và tên</label>
+          <input type="text" id="contact-full-name" required autocomplete="off" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="contact-phone">Số điện thoại</label>
+            <input type="text" id="contact-phone" autocomplete="off" />
+          </div>
+          <div class="form-field">
+            <label for="contact-birth-date">Ngày tháng năm sinh</label>
+            <input type="date" id="contact-birth-date" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="contact-address">Địa chỉ</label>
+            <input type="text" id="contact-address" autocomplete="off" />
+          </div>
+          <div class="form-field">
+            <label for="contact-occupation">Nghề nghiệp</label>
+            <input type="text" id="contact-occupation" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="contact-hobby">Sở thích</label>
+          <input type="text" id="contact-hobby" placeholder="Không bắt buộc" autocomplete="off" />
+        </div>
+
+        <div class="form-field">
+          <label for="contact-note">Ghi chú</label>
+          <textarea id="contact-note" rows="4" placeholder="Không bắt buộc"></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-contact" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-contact" class="btn-primary">Tạo đối tác</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/contacts.js"></script>
+</body>
+</html>

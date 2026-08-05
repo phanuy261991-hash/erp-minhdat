@@ -7,7 +7,7 @@
 // module 'so_quy' (Sổ quỹ) nen o giao dien "Vai tro" khong hien checkbox chon duoc, dan toi mat
 // quyen 'so_quy' khoi vai tro moi khi luu (checkbox khong ton tai thi khong the gui len). Tu nay
 // frontend goi GET /api/roles/modules de lay dong danh sach nay, khong con hardcode trung lap.
-const MODULE_KEYS = ['kho', 'cong_no', 'bao_cao', 'nguoi_dung', 'cau_hinh', 'so_quy', 'du_an'];
+const MODULE_KEYS = ['kho', 'cong_no', 'bao_cao', 'nguoi_dung', 'cau_hinh', 'so_quy', 'du_an', 'doi_tac'];
 
 const MODULE_LABELS = {
   kho: 'Kho',
@@ -17,6 +17,7 @@ const MODULE_LABELS = {
   cau_hinh: 'Cấu hình',
   so_quy: 'Sổ quỹ',
   du_an: 'Dự án',
+  doi_tac: 'Đối tác',
 };
 
 module.exports = { MODULE_KEYS, MODULE_LABELS };

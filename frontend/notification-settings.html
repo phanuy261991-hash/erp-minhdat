@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cấu hình thông báo - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Cấu hình</p>
+      <div class="page-header">
+        <h2>Cấu hình thông báo</h2>
+      </div>
+
+      <div id="settings-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="settings-error-text"></span>
+      </div>
+      <div id="settings-success" class="alert alert-success" hidden>
+        <span class="alert-icon-success-slot"></span>
+        <span>Đã lưu cấu hình thông báo.</span>
+      </div>
+
+      <form id="notification-settings-form" class="settings-card">
+        <div class="settings-section">
+          <h3 class="settings-section-title">Loại thông báo</h3>
+          <div class="setting-row">
+            <div class="setting-row-info">
+              <p class="setting-row-title">Thanh toán công nợ nhà cung cấp</p>
+              <p class="setting-row-desc">Báo khi có ai ghi nhận thanh toán công nợ cho nhà cung cấp.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="supplier_payment_enabled" />
+              <span class="switch-track"></span>
+              <span class="switch-thumb"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <div class="setting-row-info">
+              <p class="setting-row-title">Thanh toán công nợ khách hàng</p>
+              <p class="setting-row-desc">Báo khi có ai ghi nhận thanh toán công nợ từ khách hàng.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="customer_payment_enabled" />
+              <span class="switch-track"></span>
+              <span class="switch-thumb"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <div class="setting-row-info">
+              <p class="setting-row-title">Sinh nhật đối tác</p>
+              <p class="setting-row-desc">Nhắc lịch sinh nhật các đối tác trong danh bạ (mục "Đối tác").</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="birthday_enabled" />
+              <span class="switch-track"></span>
+              <span class="switch-thumb"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-section-title">Mốc nhắc lịch sinh nhật</h3>
+          <p class="settings-section-desc">Ví dụ: nhắc trước 3 ngày, nhắc lại khi còn 1 ngày, nhắc đúng ngày sinh nhật (nhập 0).</p>
+
+          <div class="form-field">
+            <div class="member-picker-row">
+              <input type="number" id="reminder-day-input" min="0" step="1" placeholder="Số ngày trước sinh nhật (0 = đúng ngày)" />
+              <button type="button" id="btn-add-reminder-day" class="btn-add"></button>
+            </div>
+          </div>
+          <div id="reminder-day-list" class="member-list"></div>
+        </div>
+
+        <div class="settings-actions">
+          <button type="submit" id="btn-save-notification-settings" class="btn-primary">Lưu thay đổi</button>
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/notification-settings.js"></script>
+</body>
+</html>

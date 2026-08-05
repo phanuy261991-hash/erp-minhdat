@@ -22,6 +22,9 @@ erDiagram
     STOCK_RECEIPTS ||--o{ STOCK_MOVEMENTS : "phat sinh"
     STOCK_ISSUES ||--o{ STOCK_MOVEMENTS : "phat sinh"
     STOCK_RECEIPTS ||--o{ STOCK_LOTS : "tao lo"
+    USERS ||--o{ CONTACTS : "tao (khong lien quan PARTNERS)"
+    USERS ||--o{ NOTIFICATION_READS : "danh dau da doc"
+    NOTIFICATIONS ||--o{ NOTIFICATION_READS : "trang thai doc theo tung user"
 
     ROLES {
         int id PK
@@ -358,4 +361,45 @@ erDiagram
         int created_by FK
         datetime created_at
         datetime updated_at
+    }
+
+    CONTACTS {
+        int id PK
+        string full_name
+        string phone "nullable"
+        string address "nullable"
+        string occupation "nullable"
+        string date_of_birth "nullable, YYYY-MM-DD"
+        string hobby "nullable"
+        string note "nullable"
+        int created_by FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    NOTIFICATION_SETTINGS {
+        int id PK "CHECK id=1, singleton"
+        boolean supplier_payment_enabled
+        boolean customer_payment_enabled
+        boolean birthday_enabled
+        string birthday_reminder_days "CSV so ngay, vd '3,1,0'"
+        string last_birthday_check_date "nullable, chi mang tinh thong tin"
+        datetime updated_at
+    }
+
+    NOTIFICATIONS {
+        int id PK
+        string type "supplier_payment | customer_payment | birthday"
+        string title
+        string message "nullable"
+        string reference_type "nullable"
+        int reference_id "nullable"
+        string dedupe_key "nullable, UNIQUE khi co gia tri"
+        datetime created_at
+    }
+
+    NOTIFICATION_READS {
+        int notification_id PK_FK
+        int user_id PK_FK
+        datetime read_at
     }

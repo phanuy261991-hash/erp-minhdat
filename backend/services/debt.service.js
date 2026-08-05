@@ -4,6 +4,7 @@
 // (khong tu mo transaction rieng) - dam bao phieu + movement + no phat sinh cung 1 giao dich.
 
 const db = require('../db/database');
+const notificationService = require('./notification.service');
 
 class ServiceError extends Error {}
 
@@ -56,7 +57,7 @@ function recordPayment({ partnerId, amount, note, createdBy, projectId, mileston
     throw new ServiceError('So tien thanh toan phai lon hon 0');
   }
 
-  const partner = db.prepare('SELECT id FROM partners WHERE id = ?').get(partnerId);
+  const partner = db.prepare('SELECT id, name, type FROM partners WHERE id = ?').get(partnerId);
   if (!partner) {
     throw new ServiceError('Khong tim thay doi tac');
   }
@@ -66,6 +67,18 @@ function recordPayment({ partnerId, amount, note, createdBy, projectId, mileston
   db.prepare(
     "INSERT INTO debt_ledger (partner_id, type, amount, reference_type, reference_id, note, created_by, project_id, milestone_id) VALUES (?, 'tra', ?, 'payment', NULL, ?, ?, ?, ?)"
   ).run(partnerId, amount, note || '', createdBy, projectId || null, milestoneId || null);
+
+  // Thong bao (migration 027) - khong de loi ghi thong bao lam hong viec ghi nhan thanh toan
+  // (da ghi vao debt_ledger thanh cong roi), chi log canh bao.
+  try {
+    if (partner.type === 'nha_cung_cap') {
+      notificationService.notifySupplierPayment({ partnerId, partnerName: partner.name, amount });
+    } else if (partner.type === 'khach_hang') {
+      notificationService.notifyCustomerPayment({ partnerId, partnerName: partner.name, amount });
+    }
+  } catch (err) {
+    console.error('[CANH BAO] Khong the ghi thong bao thanh toan:', err.message);
+  }
 
   return db.prepare('SELECT * FROM debt_ledger WHERE id = last_insert_rowid()').get();
 }

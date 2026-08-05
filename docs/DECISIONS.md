@@ -2,6 +2,63 @@
 
 > Ghi lại các quyết định đã chốt để không thảo luận lại trừ khi có lý do mới. Mỗi mục ghi ngày chốt.
 
+## 2026-08-05 — Sửa trang Báo cáo: chiều cao khung tiền/biểu đồ dùng SVG cố định thay vì CSS stretch
+
+**Bối cảnh**: người dùng phản hồi kèm ảnh chụp 3 lỗi ở `reports.html`: bảng tồn kho quá dài (không phân trang), số tiền lớn ở khung "Mua/Bán hàng tháng này" xuống dòng xấu, khung số tiền và biểu đồ cột cao thấp lệch nhau. Đã dùng skill `ui-ux-pro-max` trước khi code component phân trang (UI pattern mới trong dự án).
+
+**Quyết định kỹ thuật quan trọng nhất — khớp chiều cao khung/biểu đồ**: đã thử lần lượt 2 cách trước khi tìm ra cách đúng:
+1. **CSS Grid + `align-items:stretch`** (cách ban đầu) — không hoạt động: `stretch` chỉ kéo box ngoài cùng của `.stat-grid` cao bằng biểu đồ, nhưng bên trong `.stat-grid` là 1 grid con với 1 dòng `auto` không tự giãn theo, để lại khoảng trống mà viền `.stat-card` không phủ tới (đã đo bằng `getBoundingClientRect()` qua CDP xác nhận).
+2. **Đổi sang Flexbox lồng nhau + `align-items:stretch`** — vẫn không ổn định: `.report-chart-svg` dùng `height:auto` (giữ tỉ lệ theo viewBox 560×200) nên chiều cao THẬT của `.chart-card` phụ thuộc **bề rộng được cấp**, không cố định. Khi 2 khung cùng stretch lẫn nhau, mỗi lần đo/gán lại tạo ra kết quả khác (đã đo qua CDP thấy số liệu nhảy 108→132→156→86 qua các lần thử, không hội tụ).
+3. **Cách đúng, cuối cùng**: đổi `.report-chart-svg` sang chiều cao **cố định 200px** (bỏ hẳn `height:auto`) — SVG tự giữ tỉ lệ viewBox bên trong khung cố định (letterbox nếu cần), không còn phụ thuộc bề rộng màn hình. Khi đó `.chart-card` có chiều cao ổn định tuyệt đối (200 + padding + border = 226px), chỉ cần đặt `min-height: 226px` tĩnh cho `.report-chart-row .stat-grid` là khớp chính xác — không cần JS đo lường, không cần stretch. Đã verify qua CDP: lệch 0px.
+- **Bài học chung**: khi 1 phần tử có kích thước phụ thuộc tỉ lệ/nội dung động (SVG giữ aspect ratio, text dài ngắn khác nhau...), đừng cố "stretch" nó khớp phần tử khác bằng CSS suy luận qua nhiều tầng lồng nhau — cách chắc chắn nhất là cố định kích thước phần biến động trước, rồi khớp phần còn lại theo đúng con số cố định đó.
+
+**Các quyết định khác**:
+- **Số tiền lớn không xuống dòng**: giảm cỡ chữ `.stat-card-value` xuống 21px (chỉ trong `.report-chart-row`, không ảnh hưởng nơi khác đang dùng cỡ 26px mặc định) + `white-space:nowrap`. Vẫn giữ `overflow:hidden`/`text-overflow:ellipsis` làm lưới an toàn cuối cùng cho trường hợp cực đoan (hàng chục tỷ trở lên) thay vì để tràn/xuống dòng, kèm `title` đầy đủ qua hover — chấp nhận đánh đổi nhỏ (hiếm khi xảy ra ở quy mô doanh nghiệp nhỏ) để đổi lấy bố cục không bao giờ vỡ.
+- **Phân trang bảng tồn kho (15 dòng/trang)**: component `.pagination` mới hoàn toàn trong dự án (chưa từng có UI pattern phân trang trước đây) — làm client-side (dữ liệu tải hết 1 lần, chỉ cắt mảng khi đổi trang), không gọi lại API mỗi lần chuyển trang vì số sản phẩm ở quy mô dự án này không lớn tới mức cần phân trang phía server.
+
+## 2026-08-05 — Hệ thống thông báo: tiếp tục sau khi tạm dừng — sinh nhật dùng "Đối tác" (contacts) thay vì "Khách hàng" (partners), bỏ gate quét theo ngày, thêm popup toast realtime giả lập
+
+**Bối cảnh**: sau khi tạm dừng (xem quyết định 7 điểm bên dưới) để ưu tiên làm module "Đối tác" trước, người dùng quay lại yêu cầu làm tiếp với phạm vi cụ thể hơn nhiều so với lúc tạm dừng — không hỏi lại các quyết định đã chốt, chỉ hỏi/quyết thêm phần mới phát sinh:
+
+1. **"Sinh nhật đối tác" dùng bảng `contacts` (module "Đối tác" vừa làm xong), KHÔNG dùng `partners.date_of_birth` như dự tính ban đầu lúc tạm dừng** — vì `contacts` đã có sẵn `date_of_birth` từ trước, không cần thêm migration cho `partners` nữa. Đây là thay đổi tự nhiên phát sinh từ việc module "Đối tác" đã hoàn thành ở giữa 2 lần làm thông báo.
+2. **3 loại thông báo cụ thể lần này**: thanh toán công nợ NCC, thanh toán công nợ khách hàng (cả 2 hook vào `debt.service.js#recordPayment()` — điểm chạm duy nhất cho cả 2 hướng NCC/KH), sinh nhật đối tác.
+3. **Nhiều mốc nhắc lịch sinh nhật cấu hình được** (không phải 1 số ngày cố định) — vd "trước 3 ngày" + "trước 1 ngày" + "đúng ngày" cùng lúc, lưu dạng CSV (`birthday_reminder_days`, vd `"3,1,0"`) trong `notification_settings`, parse thành mảng khi dùng.
+4. **Card "Sinh nhật trong tháng" ở Tổng quan** — mở cho **mọi tài khoản** (không đòi quyền `doi_tac`) vì đây là tiện ích chung, khác hẳn trang danh sách "Đối tác" đầy đủ (đòi quyền `doi_tac`). Route riêng `GET /contacts/birthdays-this-month` tách khỏi `GET /contacts` để phục vụ đúng mức mở này — theo đúng tiền lệ đã dùng ở `/api/partners/staff`/`/api/cash-vouchers/staff` (mở 1 route con hẹp cho mục đích hiển thị, không mở toàn bộ module).
+5. **Thêm trường "Sở thích"** cho `contacts` (cùng migration `027`).
+6. **Realtime = popup toast + giả lập qua polling** (không có WebSocket, đúng quyết định gốc "không dùng WebSocket" đã chốt lúc tạm dừng) — mỗi vòng polling (20s, rút ngắn từ 45s ban đầu để "thật" hơn) so sánh id thông báo mới nhất đã thấy, thông báo nào mới hơn thì tự bật popup 4 giây góc dưới-phải, đúng NGAY TRÊN chuông (chuông cũng dời xuống góc dưới-phải theo yêu cầu, ban đầu đặt ở trên).
+7. **Câu chữ thông báo theo đúng mẫu người dùng đưa ra** ("Thông báo sinh nhật: Sinh nhật đối tác X sẽ diễn ra trong N ngày tới", "Thông báo thanh toán công nợ: Khách hàng X đã thanh toán số tiền Y") — dùng chung 1 nguồn (backend `notification.service.js`) cho cả nội dung trong chuông lẫn popup toast, không định nghĩa 2 lần.
+
+**Quyết định kỹ thuật phát sinh khi hiện thực hóa**:
+- **Bỏ hẳn cơ chế "chỉ quét sinh nhật 1 lần/ngày" (`last_birthday_check_date` gate)** đã thiết kế lúc tạm dừng — phát hiện qua test: nếu 1 người dùng mở chuông (kích hoạt quét) TRƯỚC khi Admin thêm 1 đối tác mới có sinh nhật đúng vào 1 trong các mốc nhắc, đối tác đó sẽ **không bao giờ** được nhắc trong năm đó nữa (vì các ngày sau không còn khớp mốc nào). Sửa: quét lại **mỗi lần gọi** `GET /notifications`/`unread-count` — an toàn tuyệt đối nhờ `dedupe_key` UNIQUE (không tạo trùng), chi phí quét lại (SELECT bảng `contacts` nhỏ, <20 người dùng đồng thời) không đáng kể ở quy mô dự án. Cột `last_birthday_check_date` vẫn giữ lại (chỉ mang tính thông tin/debug), không còn dùng để chặn.
+- **`server.js` đổi cách mount `/api/contacts`**: trước đây `requirePermission('doi_tac')` gán ở `server.js` cho toàn bộ router — nay chuyển vào kiểm tra riêng từng route bên trong `contacts.routes.js`, để `GET /birthdays-this-month` có thể mở cho mọi tài khoản trong khi các route khác (`GET /`, `POST`, `PUT`, `DELETE`) vẫn giữ nguyên yêu cầu quyền `doi_tac` như cũ.
+- **2 lỗi CSS `[hidden]` bị `display` đè phát hiện khi test** (`.notification-panel`, `.notification-badge`) — cùng loại lỗi đã lặp lại nhiều lần trong dự án (`.form-row`, `.modal-card`, `.page-header-actions`...): đặt `display:flex` thẳng lên selector khiến thuộc tính `[hidden]` do JS gán bị ghi đè, phần tử không bao giờ ẩn được thật sự. Sửa bằng `:not([hidden])`, đúng pattern đã áp dụng nhiều lần trước đó — **cần rà lại mọi rule CSS mới có `display:` áp lên phần tử bị JS toggle `hidden`, luôn kèm `:not([hidden])` ngay từ đầu thay vì chờ phát hiện lỗi**.
+
+## 2026-08-05 — Module "Đối tác": tách biệt hoàn toàn với Nhà cung cấp/Khách hàng, xóa chỉ đúng vai trò Admin
+
+**Bối cảnh**: người dùng yêu cầu module quản lý "đối tác" với các trường Họ và tên/SĐT/Địa chỉ/Nghề nghiệp/Ngày sinh/Ghi chú — các trường này (đặc biệt Nghề nghiệp, Ngày sinh) không khớp với khái niệm "Nhà cung cấp"/"Khách hàng" (bảng `partners`) hiện có, vốn gắn chặt với kho/công nợ. Đã hỏi 2 câu qua `AskUserQuestion` trước khi code:
+
+1. **Hoàn toàn tách biệt với `partners`** — bảng mới `contacts`, không mở rộng thêm trường vào `partners`. Lý do: `partners` đã có ý nghĩa nghiệp vụ rõ ràng (NCC/KH, gắn `stock_receipts`/`stock_issues`/`debt_ledger`), nhồi thêm khái niệm "danh bạ cá nhân" vào sẽ làm mơ hồ ranh giới module.
+2. **"Xóa chỉ có admin" = đúng vai trò `is_protected`** (không phải "ai có quyền module `doi_tac` thì xóa được") — đúng pattern đã dùng ở Bảo hành/Người dùng/Sản phẩm.
+
+**Quyết định kỹ thuật khi hiện thực hóa**:
+- Bảng `contacts` (migration `026`) không có FK/tham chiếu nào tới `partners` hay bất kỳ bảng nghiệp vụ nào khác — chỉ có `created_by` (FK `users`, không bắt buộc). Không có khái niệm "đã có lịch sử" cần bảo vệ khi xóa.
+- Module quyền mới `doi_tac` — nhờ cơ chế đã sửa từ 2026-08-03 (`roles.routes.js#GET /roles/modules` đọc động từ `backend/config/modules.js`), thêm module mới vào `MODULE_KEYS`/`MODULE_LABELS` là đủ để trang "Vai trò" tự hiện checkbox, không cần sửa `roles.js`/`roles.html` — đúng yêu cầu người dùng "nhớ thêm giao diện mới vào chức năng phân quyền vai trò" mà không tốn thêm việc.
+- **Xem chi tiết** (bổ sung ngay sau bản đầu theo yêu cầu người dùng): làm trang riêng `contact-detail.html` (không phải modal chỉ-đọc) — nhất quán với pattern "trang chi tiết" đã dùng cho Sản phẩm/Khách hàng/Dự án trong dự án, dù `contacts` không có dữ liệu con nào khác ngoài 6 trường cơ bản. Nút "Sửa" trên trang chi tiết không tự có form riêng — điều hướng về `contacts.html?edit=ID` để tái dùng đúng 1 modal sửa duy nhất (đỡ trùng lặp logic validate/submit), đúng cách `warranty-card-edit` ở `customer-detail.js` đã làm với `warranties.html?edit=`.
+
+## 2026-08-05 — Hệ thống thông báo: TẠM DỪNG, đã chốt 7 quyết định kiến trúc để làm tiếp sau
+
+**Bối cảnh**: người dùng yêu cầu hệ thống thông báo (chuông trong app) cho 3 sự kiện ban đầu: sinh nhật khách hàng, tạo dự án mới, tạo phiếu xuất kho mới. Đã hỏi 7 câu qua `AskUserQuestion` (2 vòng) để chốt kiến trúc trước khi code — **chưa viết dòng code nào**, sau đó người dùng yêu cầu dừng lại để ưu tiên làm module "Đối tác" trước. Ghi lại đầy đủ để phiên sau làm tiếp không phải hỏi lại:
+
+1. **Kênh thông báo**: chuông trong app (icon nổi, có số đếm chưa đọc, polling định kỳ ~vài chục giây — không dùng WebSocket/hạ tầng realtime mới, phù hợp app LAN nội bộ hiện có).
+2. **Đối tượng nhận**: mọi tài khoản đang hoạt động (không phân biệt theo quyền module hay người phụ trách/tham gia).
+3. **Danh sách loại thông báo KHÔNG cố định** — "sinh nhật khách hàng" chỉ là ví dụ minh họa người dùng đưa ra, không phải yêu cầu cứng. Cần **trang cấu hình động cho Admin bật/tắt riêng từng loại thông báo** (toàn hệ thống, không phải theo từng user).
+4. **Số ngày báo trước sinh nhật**: cấu hình được (ô nhập số ngày trong trang cấu hình), không hardcode cố định.
+5. **Đánh dấu đã đọc**: riêng từng user (không phải 1 người xem là hết hiện với mọi người) — cần bảng riêng lưu trạng thái đọc theo từng cặp user+thông báo.
+6. **Trường ngày sinh khách hàng chưa tồn tại** trong CSDL (`partners` hiện không có) — sẽ cần thêm `partners.date_of_birth` (nullable, chỉ áp dụng khách hàng, theo đúng cách `category_id`/`assigned_user_id` đã làm) khi triển khai tiếp.
+7. **Trigger sinh nhật nên quét lười (lazy), không dùng cron/setInterval** — đúng nguyên tắc "tính on-the-fly" xuyên suốt dự án: mỗi khi có request liên quan tới thông báo, kiểm tra đã quét sinh nhật hôm nay (giờ VN) chưa, chưa thì quét luôn.
+
+**Kiến trúc dự kiến khi làm tiếp** (chưa chốt chi tiết từng dòng, chỉ là khung định hướng): bảng `notification_settings` (singleton, bật/tắt từng loại + số ngày báo trước), `notifications` (log sự kiện), `notification_reads` (trạng thái đọc riêng từng user); gọi tạo thông báo dự án/phiếu xuất **ngoài** transaction chính của `project.service.js`/`stockIssue.service.js` (bọc try/catch, không để lỗi ghi thông báo làm hỏng nghiệp vụ chính); chuông nổi thêm thẳng vào `frontend/assets/layout.js` (không tạo file riêng + phải sửa 24 trang HTML, vì `layout.js` đã chạy sẵn trên mọi trang qua `initLayout()`).
+
 ## 2026-08-05 — Tự động điền Đơn giá theo Giá bán khi chọn sản phẩm ở phiếu xuất, không áp dụng cho phiếu nhập
 
 **Bối cảnh**: người dùng báo "lỗi" đơn giá không tự điền khi chọn sản phẩm trên phiếu xuất — kiểm tra xác nhận đây là tính năng chưa từng có (không phải regression), nên đã hỏi lại 2 câu trước khi thêm mới (thay đổi hành vi form nhập liệu):

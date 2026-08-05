@@ -62,11 +62,15 @@ function renderDeltaLine(growth) {
   return `<p class="stat-delta ${cls}">${icon(iconName, 12)} ${Math.abs(growth).toFixed(1)}% so với tháng trước</p>`;
 }
 
-function statCardWithDelta(label, value, growth) {
+// title (tuy chon): gan vao thuoc tinh title cua the gia tri, xem duoc day du qua tooltip khi
+// ruot chuot vao - phong truong hop gia tri qua dai bi cat bot (text-overflow:ellipsis) o khung
+// hep .report-chart-row (xem style.css).
+function statCardWithDelta(label, value, growth, title) {
+  const titleAttr = title ? ` title="${title}"` : '';
   return `
     <div class="stat-card">
       <p class="stat-card-label">${label}</p>
-      <p class="stat-card-value">${value}</p>
+      <p class="stat-card-value"${titleAttr}>${value}</p>
       ${renderDeltaLine(growth)}
     </div>
   `;
@@ -134,15 +138,20 @@ function renderBarChart(container, data, color) {
   `;
 }
 
-async function loadInventoryReport() {
-  const { items, total_value: totalValue } = await apiFetch('/reports/inventory');
+// Phan trang bang ton kho (toi da 15 dong/trang, theo yeu cau nguoi dung 2026-08-05) - danh
+// sach da tai het 1 lan (khong goi lai API khi doi trang), chi cat mang va ve lai tbody.
+const INVENTORY_PAGE_SIZE = 15;
+let inventoryItemsCache = [];
+let inventoryCurrentPage = 1;
 
-  document.getElementById('inventory-stats').innerHTML = [
-    statCard('Tổng giá trị tồn kho', `${formatMoney(totalValue)} đ`),
-    statCard('Số sản phẩm đang theo dõi', items.length),
-  ].join('');
+function renderInventoryPage() {
+  const totalPages = Math.max(1, Math.ceil(inventoryItemsCache.length / INVENTORY_PAGE_SIZE));
+  inventoryCurrentPage = Math.min(inventoryCurrentPage, totalPages);
 
-  document.getElementById('inventory-tbody').innerHTML = items
+  const start = (inventoryCurrentPage - 1) * INVENTORY_PAGE_SIZE;
+  const pageItems = inventoryItemsCache.slice(start, start + INVENTORY_PAGE_SIZE);
+
+  document.getElementById('inventory-tbody').innerHTML = pageItems
     .map(
       (item) => `
         <tr>
@@ -156,6 +165,40 @@ async function loadInventoryReport() {
       `
     )
     .join('');
+
+  const paginationEl = document.getElementById('inventory-pagination');
+  paginationEl.hidden = inventoryItemsCache.length <= INVENTORY_PAGE_SIZE;
+
+  document.getElementById('inventory-pagination-info').textContent =
+    inventoryItemsCache.length === 0
+      ? 'Không có sản phẩm nào'
+      : `Hiển thị ${start + 1}-${Math.min(start + INVENTORY_PAGE_SIZE, inventoryItemsCache.length)} trên tổng ${inventoryItemsCache.length} sản phẩm`;
+  document.getElementById('inventory-page-label').textContent = `Trang ${inventoryCurrentPage}/${totalPages}`;
+  document.getElementById('inventory-prev-page').disabled = inventoryCurrentPage <= 1;
+  document.getElementById('inventory-next-page').disabled = inventoryCurrentPage >= totalPages;
+}
+
+document.getElementById('inventory-prev-page').addEventListener('click', () => {
+  inventoryCurrentPage -= 1;
+  renderInventoryPage();
+});
+
+document.getElementById('inventory-next-page').addEventListener('click', () => {
+  inventoryCurrentPage += 1;
+  renderInventoryPage();
+});
+
+async function loadInventoryReport() {
+  const { items, total_value: totalValue } = await apiFetch('/reports/inventory');
+
+  document.getElementById('inventory-stats').innerHTML = [
+    statCard('Tổng giá trị tồn kho', `${formatMoney(totalValue)} đ`),
+    statCard('Số sản phẩm đang theo dõi', items.length),
+  ].join('');
+
+  inventoryItemsCache = items;
+  inventoryCurrentPage = 1;
+  renderInventoryPage();
 }
 
 async function loadStockMovementsReport() {
@@ -166,7 +209,8 @@ async function loadStockMovementsReport() {
   document.getElementById('purchase-stats').innerHTML = statCardWithDelta(
     'Mua hàng tháng này',
     `${formatMoney(currentPurchase)} đ`,
-    computeGrowth(currentPurchase, previousPurchase)
+    computeGrowth(currentPurchase, previousPurchase),
+    `${formatMoney(currentPurchase)} đ`
   );
   renderBarChart(document.getElementById('purchase-chart'), purchases, 'var(--color-primary)');
 
@@ -175,7 +219,8 @@ async function loadStockMovementsReport() {
   document.getElementById('sales-stats').innerHTML = statCardWithDelta(
     'Bán hàng tháng này',
     `${formatMoney(currentSales)} đ`,
-    computeGrowth(currentSales, previousSales)
+    computeGrowth(currentSales, previousSales),
+    `${formatMoney(currentSales)} đ`
   );
   renderBarChart(document.getElementById('sales-chart'), sales, 'var(--color-accent)');
 }
@@ -251,6 +296,8 @@ async function loadProjectsReport() {
   document.querySelectorAll('.alert-icon-slot').forEach((slot) => {
     slot.innerHTML = icon('alertCircle', 16);
   });
+  document.getElementById('inventory-prev-page').innerHTML = icon('arrowLeft', 14);
+  document.getElementById('inventory-next-page').innerHTML = icon('arrowRight', 14);
 
   try {
     await Promise.all([loadInventoryReport(), loadStockMovementsReport(), loadDebtsReport(), loadProjectsReport()]);
