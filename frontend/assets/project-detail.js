@@ -1080,7 +1080,7 @@ function openEditMilestoneModal(milestone) {
   editingMilestoneId = milestone.id;
   milestoneModalTitle.textContent = 'Sửa đợt thanh toán';
   milestoneNameInput.value = milestone.name;
-  milestoneAmountInput.value = milestone.amount;
+  setMoneyValue(milestoneAmountInput, milestone.amount);
   milestonePercentInput.value = milestone.percent === null || milestone.percent === undefined ? '' : milestone.percent;
   milestoneSortOrderInput.value = milestone.sort_order;
   milestoneDueDateInput.value = milestone.due_date || '';
@@ -1150,7 +1150,7 @@ milestoneForm.addEventListener('submit', async (event) => {
 
   const body = {
     name: milestoneNameInput.value.trim(),
-    amount: Number(milestoneAmountInput.value),
+    amount: getMoneyValue(milestoneAmountInput),
     percent: milestonePercentInput.value === '' ? null : Number(milestonePercentInput.value),
     sort_order: milestoneSortOrderInput.value === '' ? 0 : Number(milestoneSortOrderInput.value),
     due_date: milestoneDueDateInput.value || null,
@@ -1236,7 +1236,7 @@ function openEditVariationModal(variation) {
   variationTypeSelect.value = variation.type;
   variationStatusSelect.value = variation.status;
   variationTitleInput.value = variation.title;
-  variationAmountInput.value = variation.amount || '';
+  setMoneyValue(variationAmountInput, variation.amount);
   variationOccurredDateInput.value = variation.occurred_date || '';
   variationDescriptionInput.value = variation.description || '';
   variationResolutionInput.value = variation.resolution || '';
@@ -1290,7 +1290,7 @@ variationForm.addEventListener('submit', async (event) => {
     type: variationTypeSelect.value,
     status: variationStatusSelect.value,
     title: variationTitleInput.value.trim(),
-    amount: variationTypeSelect.value === 'chi_phi' ? Number(variationAmountInput.value) : 0,
+    amount: variationTypeSelect.value === 'chi_phi' ? getMoneyValue(variationAmountInput) : 0,
     occurred_date: variationOccurredDateInput.value || null,
     description: variationDescriptionInput.value.trim(),
     resolution: variationResolutionInput.value.trim(),
@@ -1374,6 +1374,14 @@ async function loadProducts() {
 
   await loadProducts();
   await loadProjectDetail();
+
+  // Mo san 1 tab cu the qua URL (?tab=materials...) - dung cho link tu trang Bao cao (Dot 5,
+  // cot "Vat tu vuot du toan") dieu huong thang vao dung tab thay vi luon mo "Tong quan".
+  const requestedTab = new URLSearchParams(window.location.search).get('tab');
+  if (requestedTab && tabPanels[requestedTab]) {
+    const targetTabBtn = detailTabs.querySelector(`[data-tab="${requestedTab}"]`);
+    if (targetTabBtn) targetTabBtn.click();
+  }
 
   // Ve lai Gantt neu nguoi dung thay doi kich thuoc cua so (chart do lai theo be rong container).
   window.addEventListener('resize', () => {

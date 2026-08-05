@@ -107,7 +107,7 @@
 
         <div class="form-field">
           <label for="payment-amount">Số tiền</label>
-          <input type="number" id="payment-amount" required min="1" step="1" />
+          <input type="text" id="payment-amount" class="money-input" required autocomplete="off" />
         </div>
 
         <div class="form-field">
@@ -155,7 +155,7 @@
           </div>
           <div class="form-field">
             <label for="adjustment-amount">Số tiền chênh lệch</label>
-            <input type="number" id="adjustment-amount" required min="1" step="1" />
+            <input type="text" id="adjustment-amount" class="money-input" required autocomplete="off" />
           </div>
         </div>
 
@@ -183,6 +183,7 @@
   <script src="assets/api.js"></script>
   <script src="assets/icons.js"></script>
   <script src="assets/layout.js"></script>
+  <script src="assets/money-input.js"></script>
   <script src="assets/customer-debts.js"></script>
 </body>
 </html>

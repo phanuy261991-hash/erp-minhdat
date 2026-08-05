@@ -170,12 +170,13 @@ function createItemRow() {
     </div>
     <div class="item-unit-display"></div>
     <input type="number" class="item-quantity" min="0" step="1" placeholder="SL" />
-    <input type="number" class="item-unit-price" min="0" step="1000" placeholder="Đơn giá" />
+    <input type="text" class="item-unit-price money-input" placeholder="Đơn giá" />
     <input type="number" class="item-discount" min="0" max="100" step="1" placeholder="0" />
     <div class="item-net-price">0</div>
     <div class="item-line-total">0</div>
     <button type="button" class="icon-btn icon-btn-danger item-row-remove" title="Xóa dòng">${icon('trash', 14)}</button>
   `;
+  bindMoneyInputs(row);
   return row;
 }
 
@@ -195,7 +196,7 @@ function removeItemRow(row) {
 // (truoc chiet khau, xem stock_issue_items.discount_percent) - khong doi cach luu, chi them 1
 // o hien thi tinh toan o tang frontend.
 function rowNetUnitPrice(row) {
-  const unitPrice = Number(row.querySelector('.item-unit-price').value) || 0;
+  const unitPrice = getMoneyValue(row.querySelector('.item-unit-price'));
   const discountPercent = Number(row.querySelector('.item-discount').value) || 0;
   return unitPrice * (1 - discountPercent / 100);
 }
@@ -248,6 +249,10 @@ function renderSuggestions(row, keyword) {
     .join('');
 }
 
+// Tu dien Don gia theo gia ban cua san pham (theo yeu cau nguoi dung 2026-08-05) - van cho sua
+// tay sau do (vd thuong luong gia khac tung giao dich), chi la gia tri goi y ban dau. CHI ap
+// dung cho phieu XUAT (gia ban co dinh theo san pham) - phieu NHAP van de trong nhu cu, vi gia
+// mua tu NCC thuong thay doi moi lan nhap hang, khong giong gia ban.
 function selectProduct(row, productId, label) {
   row.querySelector('.item-product-id').value = productId;
   row.querySelector('.item-product-search').value = label;
@@ -255,6 +260,8 @@ function selectProduct(row, productId, label) {
 
   const product = productsCache.find((p) => String(p.id) === String(productId));
   row.querySelector('.item-unit-display').textContent = product ? product.unit : '';
+  setMoneyValue(row.querySelector('.item-unit-price'), product ? product.sale_price : '');
+  updateTotalAmount();
 }
 
 itemRowsContainer.addEventListener('input', (event) => {
@@ -338,19 +345,20 @@ function collectItems() {
   for (const row of rows) {
     const productId = row.querySelector('.item-product-id').value;
     const quantity = row.querySelector('.item-quantity').value;
-    const unitPrice = row.querySelector('.item-unit-price').value;
+    const unitPriceInput = row.querySelector('.item-unit-price');
+    const unitPriceRaw = unitPriceInput.value;
     const discountPercent = row.querySelector('.item-discount').value;
 
-    if (!productId && !quantity && unitPrice === '' && discountPercent === '') continue;
+    if (!productId && !quantity && unitPriceRaw === '' && discountPercent === '') continue;
 
-    if (!productId || !quantity || unitPrice === '') {
+    if (!productId || !quantity || unitPriceRaw === '') {
       return { error: 'Mỗi dòng sản phẩm phải chọn sản phẩm, nhập số lượng và đơn giá' };
     }
 
     items.push({
       product_id: Number(productId),
       quantity: Number(quantity),
-      unit_price: Number(unitPrice),
+      unit_price: getMoneyValue(unitPriceInput),
       discount_percent: discountPercent === '' ? 0 : Number(discountPercent),
     });
   }

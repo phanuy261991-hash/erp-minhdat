@@ -153,11 +153,12 @@ function createItemRow() {
     </div>
     <div class="item-unit-display"></div>
     <input type="number" class="item-quantity" min="0" step="1" placeholder="SL" />
-    <input type="number" class="item-unit-price" min="0" step="1000" placeholder="Đơn giá" />
+    <input type="text" class="item-unit-price money-input" placeholder="Đơn giá" />
     <input type="number" class="item-discount" min="0" max="100" step="1" placeholder="0" />
     <div class="item-line-total">0</div>
     <button type="button" class="icon-btn icon-btn-danger item-row-remove" title="Xóa dòng">${icon('trash', 14)}</button>
   `;
+  bindMoneyInputs(row);
   return row;
 }
 
@@ -174,7 +175,7 @@ function removeItemRow(row) {
 
 function rowLineTotal(row) {
   const quantity = Number(row.querySelector('.item-quantity').value) || 0;
-  const unitPrice = Number(row.querySelector('.item-unit-price').value) || 0;
+  const unitPrice = getMoneyValue(row.querySelector('.item-unit-price'));
   const discountPercent = Number(row.querySelector('.item-discount').value) || 0;
   return quantity * unitPrice * (1 - discountPercent / 100);
 }
@@ -311,19 +312,20 @@ function collectItems() {
   for (const row of rows) {
     const productId = row.querySelector('.item-product-id').value;
     const quantity = row.querySelector('.item-quantity').value;
-    const unitPrice = row.querySelector('.item-unit-price').value;
+    const unitPriceInput = row.querySelector('.item-unit-price');
+    const unitPriceRaw = unitPriceInput.value;
     const discountPercent = row.querySelector('.item-discount').value;
 
-    if (!productId && !quantity && unitPrice === '' && discountPercent === '') continue;
+    if (!productId && !quantity && unitPriceRaw === '' && discountPercent === '') continue;
 
-    if (!productId || !quantity || unitPrice === '') {
+    if (!productId || !quantity || unitPriceRaw === '') {
       return { error: 'Mỗi dòng sản phẩm phải chọn sản phẩm, nhập số lượng và đơn giá' };
     }
 
     items.push({
       product_id: Number(productId),
       quantity: Number(quantity),
-      unit_price: Number(unitPrice),
+      unit_price: getMoneyValue(unitPriceInput),
       discount_percent: discountPercent === '' ? 0 : Number(discountPercent),
     });
   }

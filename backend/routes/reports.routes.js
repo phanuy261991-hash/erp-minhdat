@@ -6,8 +6,11 @@
 const express = require('express');
 const db = require('../db/database');
 const { getCostingMethod, getWeightedAverageCost } = require('../services/costing.service');
+const projectService = require('../services/project.service');
 
 const router = express.Router();
+
+const ACTIVE_PROJECT_STATUSES = ['chuan_bi', 'dang_thuc_hien', 'tam_dung'];
 
 // Bao cao ton kho hien tai: tung san pham kem gia von binh quan gia quyen (dung nhat quan de
 // dinh gia TON KHO du costing_method dang chon la gi - khac voi gia XUAT tung phieu, xem
@@ -113,6 +116,101 @@ router.get('/debts', (req, res) => {
   });
 
   res.json({ total_payable: totals.nha_cung_cap, total_receivable: totals.khach_hang });
+});
+
+// Bao cao Du an (Dot 5, tuy chon, PRD 4.12): chi tinh cac du an DANG HOAT DONG (Chuan bi/Dang
+// thuc hien/Tam dung) - da chot voi nguoi dung 2026-08-05, khong gom Hoan thanh/Huy vi trang nay
+// dung de theo doi du an dang can quan ly. Tien do/tre tien do dung lai dung ham
+// project.service.js (computeDelay/getProjectProgress) da co san tu Dot 1-2, khong tu tinh lai
+// theo cach khac. Cong no "con phai thu" va "vuot du toan vat tu" tinh gop 1 lan cho toan bo du
+// an dang hoat dong (khong N+1 query rieng tung du an) - dung y het cong thuc da dung o
+// getProjectFinancials() (projects.routes.js) va getMaterialsForProject() (projectMaterials.routes.js).
+router.get('/projects', (req, res) => {
+  const placeholders = ACTIVE_PROJECT_STATUSES.map(() => '?').join(',');
+
+  const projects = db
+    .prepare(`
+      SELECT pr.id, pr.code, pr.name, pr.status, pr.planned_end_date, pr.actual_end_date,
+             pa.name AS partner_name
+      FROM projects pr
+      JOIN partners pa ON pa.id = pr.partner_id
+      WHERE pr.status IN (${placeholders})
+      ORDER BY pr.created_at DESC
+    `)
+    .all(...ACTIVE_PROJECT_STATUSES);
+
+  const debtRows = db
+    .prepare(`
+      SELECT project_id,
+             COALESCE(SUM(CASE WHEN type = 'no' THEN amount ELSE 0 END), 0) AS total_debt,
+             COALESCE(SUM(CASE WHEN type = 'tra' THEN amount ELSE 0 END), 0) AS total_collected
+      FROM debt_ledger
+      WHERE project_id IS NOT NULL
+      GROUP BY project_id
+    `)
+    .all();
+  const remainingDebtMap = new Map(debtRows.map((r) => [r.project_id, r.total_debt - r.total_collected]));
+
+  const key = (projectId, productId) => `${projectId}:${productId}`;
+
+  const issuedRows = db
+    .prepare(`
+      SELECT i.project_id, it.product_id, SUM(it.quantity) AS qty
+      FROM stock_issues i JOIN stock_issue_items it ON it.issue_id = i.id
+      WHERE i.project_id IS NOT NULL
+      GROUP BY i.project_id, it.product_id
+    `)
+    .all();
+  const receivedRows = db
+    .prepare(`
+      SELECT r.project_id, it.product_id, SUM(it.quantity) AS qty
+      FROM stock_receipts r JOIN stock_receipt_items it ON it.receipt_id = r.id
+      WHERE r.project_id IS NOT NULL
+      GROUP BY r.project_id, it.product_id
+    `)
+    .all();
+  const issuedMap = new Map(issuedRows.map((r) => [key(r.project_id, r.product_id), r.qty]));
+  const receivedMap = new Map(receivedRows.map((r) => [key(r.project_id, r.product_id), r.qty]));
+
+  const planRows = db.prepare('SELECT project_id, product_id, quantity FROM project_material_plan').all();
+  const overBudgetCountMap = new Map();
+  planRows.forEach((plan) => {
+    const k = key(plan.project_id, plan.product_id);
+    const issued = (issuedMap.get(k) || 0) - (receivedMap.get(k) || 0);
+    if (issued > plan.quantity) {
+      overBudgetCountMap.set(plan.project_id, (overBudgetCountMap.get(plan.project_id) || 0) + 1);
+    }
+  });
+
+  const items = projects.map((pr) => {
+    const delay = projectService.computeDelay({
+      plannedEnd: pr.planned_end_date,
+      actualEnd: pr.actual_end_date,
+      isDone: pr.status === 'hoan_thanh',
+    });
+    return {
+      id: pr.id,
+      code: pr.code,
+      name: pr.name,
+      partner_name: pr.partner_name,
+      status: pr.status,
+      progress_percent: projectService.getProjectProgress(pr.id),
+      is_late: delay.is_late,
+      late_days: delay.late_days,
+      remaining_debt: remainingDebtMap.get(pr.id) || 0,
+      over_budget_count: overBudgetCountMap.get(pr.id) || 0,
+    };
+  });
+
+  res.json({
+    items,
+    summary: {
+      active_count: items.length,
+      late_count: items.filter((i) => i.is_late).length,
+      total_receivable: items.reduce((sum, i) => sum + i.remaining_debt, 0),
+      over_budget_projects_count: items.filter((i) => i.over_budget_count > 0).length,
+    },
+  });
 });
 
 module.exports = router;

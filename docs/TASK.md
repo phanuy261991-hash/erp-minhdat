@@ -307,8 +307,18 @@
 - [x] Test qua API (curl): 1 khách hàng có 2 dự án (`DA000002`/`DA000003`), thanh toán riêng từng dự án → số dư khách hàng và "Còn phải thu" từng dự án đều đúng, không lẫn sang nhau; chọn đợt thanh toán của dự án khác hoặc dự án của khách hàng khác qua API đều bị chặn 400; xóa đợt đã có tiền thu bị chặn; phát sinh "vấn đề" ép `amount=0` dù client gửi gì
 - [x] Test qua trình duyệt thật (CDP thô): thêm đợt thanh toán, bấm "Ghi nhận đã thu" mở đúng modal đã khóa + điền sẵn, ghi nhận thành công, số liệu cập nhật đúng khi quay lại trang dự án; thêm phát sinh chi phí đã duyệt → "Giá trị hợp đồng thực tế" ở tab Tổng quan cộng đúng; không lỗi console
 
-**Đợt 5 — Báo cáo dự án (tùy chọn)**
-- [ ] Thêm phần "Dự án" vào `reports.html`: tiến độ, công nợ, chênh lệch vật tư toàn bộ dự án
+**Đợt 5 — Báo cáo dự án (tùy chọn) — đã xong, 2026-08-05**
+- [x] Đã hỏi 3 câu qua `AskUserQuestion` chốt bố cục (thẻ + bảng)/phạm vi (chỉ dự án đang hoạt động)/cột vật tư (số dòng vượt dự toán, có link) trước khi code
+- [x] `backend/routes/reports.routes.js`: `GET /reports/projects` — tiến độ + trễ tiến độ (tái dùng `project.service.js`), còn phải thu (`debt_ledger`), số dòng vật tư vượt dự toán (`project_material_plan`), tính gộp 1 lần không N+1
+- [x] `frontend/assets/project-detail.js`: hỗ trợ mở sẵn tab qua URL (`?tab=...`)
+- [x] `reports.html`/`.js`: section "Dự án đang hoạt động" — 4 thẻ tổng hợp + bảng chi tiết, link "Vật tư" điều hướng đúng tab
+- [x] Test qua API (curl) + trình duyệt thật (CDP thô): số liệu đúng, link điều hướng đúng tab, không lỗi console — **module "Quản lý dự án" hoàn thành trọn vẹn 5/5 đợt theo kế hoạch gốc**
+
+### Định dạng dấu chấm phân cách hàng nghìn khi nhập số tiền (ngoài phase, theo yêu cầu người dùng 2026-08-05)
+
+- [x] `frontend/assets/money-input.js` (mới): `bindMoneyInputs()`/`getMoneyValue()`/`setMoneyValue()` dùng chung
+- [x] Đổi 11 trường tiền trên 9 trang từ `type="number"` sang `type="text" class="money-input"`: `products.html`, `stock-receipts.js`/`stock-issues.js` (dòng động), `projects.html`, `project-detail.html` (đợt thanh toán + phát sinh), `customer-categories.html`, `cash-book.html` (phiếu + quỹ đầu kỳ), `debts.html`/`customer-debts.html` (thanh toán + điều chỉnh)
+- [x] Test qua trình duyệt thật (CDP thô, gõ ký tự thật): cả 11 trường + dòng phiếu nhập (tính "Thành tiền"), không lỗi console
 
 ## Open questions cần chốt trước khi code phần liên quan
 

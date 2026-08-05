@@ -298,7 +298,7 @@ paymentForm.addEventListener('submit', async (event) => {
       method: 'POST',
       body: JSON.stringify({
         partner_id: Number(paymentPartnerSelect.value),
-        amount: Number(paymentAmountInput.value),
+        amount: getMoneyValue(paymentAmountInput),
         note: paymentNoteInput.value.trim(),
         project_id: paymentProjectSelect.value || null,
         milestone_id: paymentMilestoneSelect.value || null,
@@ -434,7 +434,7 @@ adjustmentForm.addEventListener('submit', async (event) => {
     const body = {
       partner_id: Number(adjustmentPartnerSelect.value),
       type: adjustmentTypeSelect.value,
-      amount: Number(adjustmentAmountInput.value),
+      amount: getMoneyValue(adjustmentAmountInput),
       note: adjustmentNoteInput.value.trim(),
       project_id: adjustmentProjectSelect.value || null,
     };

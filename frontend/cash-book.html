@@ -100,7 +100,7 @@
 
         <div class="form-field">
           <label for="voucher-amount">Số tiền</label>
-          <input type="number" id="voucher-amount" required min="1" step="1" />
+          <input type="text" id="voucher-amount" class="money-input" required autocomplete="off" />
         </div>
 
         <div class="form-field">
@@ -139,7 +139,7 @@
         </div>
         <div class="form-field">
           <label for="opening-balance">Quỹ đầu kỳ</label>
-          <input type="number" id="opening-balance" required min="0" step="1" />
+          <input type="text" id="opening-balance" class="money-input" required autocomplete="off" />
         </div>
         <div class="modal-actions">
           <button type="button" id="btn-cancel-opening" class="btn-secondary">Hủy</button>
@@ -152,6 +152,7 @@
   <script src="assets/api.js"></script>
   <script src="assets/icons.js"></script>
   <script src="assets/layout.js"></script>
+  <script src="assets/money-input.js"></script>
   <script src="assets/cash-book.js"></script>
 </body>
 </html>

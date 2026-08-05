@@ -211,6 +211,17 @@
 2. **CSS selector hậu duệ (dấu cách, vd `.phase-tasks-row td`) sẽ khớp CẢ các `<td>` của bảng lồng bên trong**, không chỉ con trực tiếp — nếu ô cha có `<table>` riêng lồng bên trong (như `.subtask-table` bên trong `.phase-tasks-row`), phải dùng selector con trực tiếp (`.phase-tasks-row > td`) để tránh nền/style của ô ngoài "rò" vào ô trong.
 3. Khi nghi ngờ 1 phần tử "mất style"/"nền sai" mà code CSS nhìn có vẻ đúng, **đo trực tiếp `getComputedStyle()`/`getBoundingClientRect()` qua CDP** (màu, border, tọa độ/độ rộng thật) thay vì chỉ đoán từ ảnh chụp màn hình đã nén — ảnh chụp nhỏ dễ che mất sự khác biệt vài chục px hoặc vài đơn vị màu, dẫn tới kết luận sai nguyên nhân.
 
+## Ô nhập số tiền có dấu chấm phân cách hàng nghìn (money-input.js)
+
+> Bổ sung 2026-08-05 theo yêu cầu người dùng: mọi ô nhập số tiền phải tự hiện dấu chấm phân cách **ngay trong ô nhập** khi gõ (vd gõ `1000000` hiện ngay `1.000.000`), không chỉ ở nơi hiển thị chỉ đọc. Dùng dấu **chấm** để đồng bộ với `toLocaleString('vi-VN')` đã dùng ở mọi chỗ hiển thị số tiền trong hệ thống (đã hỏi lại người dùng xác nhận trước khi code).
+
+- **Không dùng `<input type="number">` cho ô tiền** — trình duyệt chặn cứng mọi ký tự không phải số/dấu trừ, không chèn được dấu chấm khi gõ. Dùng `<input type="text" class="money-input">` (bỏ `min`/`step`, giữ `required` nếu cần).
+- `frontend/assets/money-input.js` (script dùng chung, nạp ngay sau `layout.js`, trước script riêng của trang): `bindMoneyInputs()` tự gắn cho mọi `.money-input` tĩnh lúc `DOMContentLoaded`; dòng động (bảng sản phẩm phiếu nhập/xuất) tự gọi `bindMoneyInputs(row)` ngay sau khi tạo dòng mới.
+- **Đọc giá trị số thực để gửi API**: dùng `getMoneyValue(input)` (bỏ dấu chấm, trả về `Number`) — không dùng `Number(input.value)` vì chuỗi có dấu chấm sẽ ra `NaN`.
+- **Set giá trị ban đầu khi mở modal Sửa**: dùng `setMoneyValue(input, value)` — tự format có dấu chấm, phân biệt rõ `null`/`undefined`/`''` (hiện ô trống, vd "không giới hạn") với số `0` thật sự (vẫn hiện `"0"`, không hiện trống).
+- **Khi cần phân biệt "để trống" với "gõ số 0"** (vd hạn mức công nợ để trống = không giới hạn): đọc `input.value === ''` (raw string) để kiểm tra trống **trước**, chỉ gọi `getMoneyValue()` khi không trống — vì `getMoneyValue('')` trả về `0`, không tự phân biệt được 2 trường hợp.
+- Áp dụng cho mọi ô tiền mới từ giờ trở đi (giá bán/giá vốn, đơn giá, giá trị hợp đồng, số tiền thanh toán/điều chỉnh công nợ, phiếu thu/chi...). **Không áp dụng** cho số lượng/%/thứ tự hiển thị — các trường đó vẫn giữ `type="number"` bình thường.
+
 ## Hiệu ứng & Animation
 
 - Border-radius: 8–12px cho input/button, 16–20px cho card lớn.

@@ -155,8 +155,8 @@ function openEditModal(product) {
   codeInput.value = product.code;
   nameInput.value = product.name;
   unitInput.value = product.unit;
-  salePriceInput.value = product.sale_price;
-  costPriceInput.value = product.cost_price;
+  setMoneyValue(salePriceInput, product.sale_price);
+  setMoneyValue(costPriceInput, product.cost_price);
   lowStockInput.value = product.low_stock_threshold;
   productFormErrorBox.hidden = true;
   productModal.hidden = false;
@@ -214,8 +214,8 @@ productForm.addEventListener('submit', async (event) => {
     code: codeInput.value.trim(),
     name: nameInput.value.trim(),
     unit: unitInput.value.trim(),
-    sale_price: Number(salePriceInput.value),
-    cost_price: costPriceInput.value ? Number(costPriceInput.value) : 0,
+    sale_price: getMoneyValue(salePriceInput),
+    cost_price: getMoneyValue(costPriceInput),
     low_stock_threshold: lowStockInput.value ? Number(lowStockInput.value) : 0,
   };
 

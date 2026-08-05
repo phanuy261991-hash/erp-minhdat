@@ -222,7 +222,7 @@ async function openEditModal(projectSummary) {
     partnerSelect.value = project.partner_id;
     contractNoInput.value = project.contract_no || '';
     contractDateInput.value = project.contract_date || '';
-    contractValueInput.value = project.contract_value || '';
+    setMoneyValue(contractValueInput, project.contract_value);
     startDateInput.value = project.start_date || '';
     plannedEndDateInput.value = project.planned_end_date || '';
     managerSelect.value = project.manager_id || '';
@@ -287,7 +287,7 @@ projectForm.addEventListener('submit', async (event) => {
     partner_id: partnerSelect.value ? Number(partnerSelect.value) : null,
     contract_no: contractNoInput.value.trim(),
     contract_date: contractDateInput.value || null,
-    contract_value: contractValueInput.value === '' ? 0 : Number(contractValueInput.value),
+    contract_value: getMoneyValue(contractValueInput),
     start_date: startDateInput.value || null,
     planned_end_date: plannedEndDateInput.value || null,
     manager_id: managerSelect.value ? Number(managerSelect.value) : null,

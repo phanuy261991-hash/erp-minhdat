@@ -364,7 +364,7 @@
         <div class="form-row">
           <div class="form-field">
             <label for="milestone-amount">Số tiền</label>
-            <input type="number" id="milestone-amount" min="1" step="1" required />
+            <input type="text" id="milestone-amount" class="money-input" required autocomplete="off" />
           </div>
           <div class="form-field">
             <label for="milestone-percent">% giá trị hợp đồng (không bắt buộc)</label>
@@ -431,7 +431,7 @@
         <div class="form-row">
           <div class="form-field" id="variation-amount-field">
             <label for="variation-amount">Số tiền</label>
-            <input type="number" id="variation-amount" min="1" step="1" />
+            <input type="text" id="variation-amount" class="money-input" autocomplete="off" />
           </div>
           <div class="form-field">
             <label for="variation-occurred-date">Ngày xảy ra</label>
@@ -460,6 +460,7 @@
   <script src="assets/api.js"></script>
   <script src="assets/icons.js"></script>
   <script src="assets/layout.js"></script>
+  <script src="assets/money-input.js"></script>
   <script src="assets/project-detail.js"></script>
 </body>
 </html>

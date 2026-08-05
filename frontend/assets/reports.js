@@ -189,6 +189,61 @@ async function loadDebtsReport() {
   ].join('');
 }
 
+const PROJECT_STATUS_LABELS = {
+  chuan_bi: 'Chuẩn bị',
+  dang_thuc_hien: 'Đang thực hiện',
+  tam_dung: 'Tạm dừng',
+};
+
+function renderProjectProgressCell(progressPercent) {
+  return progressPercent === null || progressPercent === undefined ? '-' : `${progressPercent}%`;
+}
+
+function renderProjectDelayCell(isLate, lateDays) {
+  return isLate ? `<span class="delay-badge">${icon('warningTriangle', 12)} Trễ ${lateDays} ngày</span>` : '';
+}
+
+function renderProjectMaterialCell(project) {
+  if (project.over_budget_count > 0) {
+    return `<a href="project-detail.html?id=${project.id}&tab=materials" class="table-link-btn">${project.over_budget_count} SP vượt dự toán</a>`;
+  }
+  return 'Đủ dự toán';
+}
+
+// Chi tinh du an DANG HOAT DONG (Chuan bi/Dang thuc hien/Tam dung) - da chot voi nguoi dung
+// 2026-08-05, xem docs/DECISIONS.md. So lieu tinh truc tiep o backend (reports.routes.js), trang
+// nay chi hien thi lai, khong tu tinh them.
+async function loadProjectsReport() {
+  const { items, summary } = await apiFetch('/reports/projects');
+
+  document.getElementById('project-stats').innerHTML = [
+    statCard('Dự án đang hoạt động', summary.active_count),
+    statCard('Trễ tiến độ', summary.late_count),
+    statCard('Tổng còn phải thu', `${formatMoney(summary.total_receivable)} đ`),
+    statCard('Dự án vượt dự toán vật tư', summary.over_budget_projects_count),
+  ].join('');
+
+  const tbody = document.getElementById('project-report-tbody');
+  const emptyEl = document.getElementById('project-report-empty');
+  emptyEl.hidden = items.length > 0;
+
+  tbody.innerHTML = items
+    .map(
+      (p) => `
+        <tr>
+          <td><a href="project-detail.html?id=${p.id}" class="table-link-btn">${p.code}</a></td>
+          <td>${p.name}</td>
+          <td>${p.partner_name}</td>
+          <td>${renderProjectProgressCell(p.progress_percent)} ${renderProjectDelayCell(p.is_late, p.late_days)}</td>
+          <td><span class="project-status-badge project-status-badge--${p.status}">${PROJECT_STATUS_LABELS[p.status]}</span></td>
+          <td>${formatMoney(p.remaining_debt)} đ</td>
+          <td>${renderProjectMaterialCell(p)}</td>
+        </tr>
+      `
+    )
+    .join('');
+}
+
 (async function init() {
   currentUser = await initLayout('reports');
   if (!currentUser) return;
@@ -198,7 +253,7 @@ async function loadDebtsReport() {
   });
 
   try {
-    await Promise.all([loadInventoryReport(), loadStockMovementsReport(), loadDebtsReport()]);
+    await Promise.all([loadInventoryReport(), loadStockMovementsReport(), loadDebtsReport(), loadProjectsReport()]);
   } catch (err) {
     renderPageError(err.message);
   }

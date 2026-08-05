@@ -1,8 +1,11 @@
 # Trạng thái hiện tại
 
-**Cập nhật lần cuối**: 2026-08-04
+**Cập nhật lần cuối**: 2026-08-05
 
 ## Giai đoạn
+
+- ✅ **Module "Quản lý dự án" — Đợt 5/5: Báo cáo dự án (2026-08-05, tùy chọn, đợt cuối cùng theo kế hoạch gốc)**: section mới "Dự án đang hoạt động" trong `reports.html` — 4 thẻ tổng hợp (dự án đang hoạt động/trễ tiến độ/tổng còn phải thu/dự án vượt dự toán vật tư) + bảng chi tiết từng dự án, cột "Vật tư" bấm vào điều hướng thẳng sang đúng tab "Vật tư" của dự án đó (`project-detail.js` nay hỗ trợ mở sẵn tab qua URL `?tab=...`). API mới `GET /api/reports/projects` tái dùng nguyên các hàm tính tiến độ/trễ tiến độ/công nợ/vật tư đã có từ Đợt 1-4, không tự tính lại theo cách khác. Đã hỏi 3 câu chốt bố cục/phạm vi trước khi code. Test qua API + trình duyệt thật, không lỗi console. **Đến đây module "Quản lý dự án" đã hoàn thành trọn vẹn cả 5/5 đợt theo kế hoạch gốc.**
+- ✅ **Định dạng dấu chấm phân cách hàng nghìn ngay trong ô nhập số tiền, toàn hệ thống (2026-08-05, ngoài phase, theo yêu cầu người dùng)**: `frontend/assets/money-input.js` (mới, dùng chung) — 11 trường tiền trên 9 trang (Sản phẩm, Đơn giá dòng phiếu nhập/xuất, Giá trị hợp đồng dự án, Đợt thanh toán/Phát sinh dự án, Hạn mức công nợ, Sổ quỹ, Công nợ NCC/Khách hàng) đổi từ `type="number"` sang `type="text" class="money-input"`, tự hiện dấu chấm khi gõ (đồng bộ `toLocaleString('vi-VN')` đã dùng ở mọi nơi hiển thị số tiền). Xem chi tiết `docs/DECISIONS.md`/`docs/DESIGN-SYSTEM.md`. Đã test qua trình duyệt thật (CDP thô, gõ ký tự thật) toàn bộ 11 trường + dòng phiếu nhập (rủi ro cao nhất vì có tính "Thành tiền" trực tiếp), không lỗi console.
 
 Phase 1, 1.5, 1.6, 2 (Kho), 3 (Công nợ), **4 (In phiếu & Báo cáo) đã hoàn thành**. Sau đó có thêm nhiều đợt chỉnh sửa/mở rộng ngoài phase (Báo cáo, In phiếu, tách Khách hàng, Bảo hành, Tổng quan, tìm kiếm theo SĐT, module Sổ quỹ, Import/Export Excel sản phẩm — xem mục dưới). **Phase 5 (Vận hành & Go-live) đang làm** — phần code/cấu hình độc lập máy chủ đã xong, phần gắn với máy chủ thật (IP tĩnh, PM2 startup, go-live) chờ triển khai lên đúng máy chủ. **Module "Quản lý dự án" đã code xong cả 4 đợt theo kế hoạch đã chốt (Đợt 1→4, hoàn thành 2026-08-04)** + 1 đợt bổ sung ngoài kế hoạch gốc (gộp tab Công việc vào tab Giai đoạn) — chỉ còn Đợt 5 (Báo cáo dự án, tùy chọn) chưa làm, xem mục "Việc cần làm tiếp theo" ở cuối file.
 
@@ -79,11 +82,7 @@ Phase 1, 1.5, 1.6, 2 (Kho), 3 (Công nợ), **4 (In phiếu & Báo cáo) đã ho
 
 ## Việc cần làm tiếp theo
 
-**Module "Quản lý dự án" đã hoàn thành đủ 4 đợt theo kế hoạch gốc** (Đợt 1: nền tảng, Đợt 2: Công việc & Timeline, Đợt 3: Vật tư & gắn dự án vào phiếu, Đợt 4: Đợt thanh toán/Công nợ dự án/Phát sinh) + 1 đợt bổ sung ngoài kế hoạch (gộp tab Công việc vào tab Giai đoạn), tất cả đã test qua cả API lẫn trình duyệt thật, gần nhất ngày 2026-08-04.
-
-Việc còn lại liên quan module này (tùy chọn, chưa có yêu cầu cụ thể từ người dùng để bắt đầu):
-
-**Đợt 5 — Báo cáo dự án (tùy chọn)**: thêm phần "Dự án" vào `reports.html` — tiến độ, công nợ, chênh lệch vật tư của toàn bộ dự án. Đọc `docs/Plan.md` mục "Đợt 5" trước khi làm, hỏi người dùng có cần phần này không trước khi code (chưa nằm trong 14 quyết định đã chốt ngày 2026-08-04, PRD chỉ ghi "tùy chọn").
+**Module "Quản lý dự án" đã hoàn thành trọn vẹn cả 5/5 đợt theo kế hoạch gốc** (Đợt 1: nền tảng, Đợt 2: Công việc & Timeline, Đợt 3: Vật tư & gắn dự án vào phiếu, Đợt 4: Đợt thanh toán/Công nợ dự án/Phát sinh, Đợt 5: Báo cáo dự án) + 1 đợt bổ sung ngoài kế hoạch (gộp tab Công việc vào tab Giai đoạn), tất cả đã test qua cả API lẫn trình duyệt thật, gần nhất ngày 2026-08-05. Không còn việc nào dang dở của module này.
 
 Các hướng khác đang để ngỏ (chưa có yêu cầu cụ thể): hoàn tất Phase 5 trên máy chủ thật (IP tĩnh, PM2 startup, go-live), in phiếu nhập kho, mở rộng báo cáo, module Bán hàng/POS.
 

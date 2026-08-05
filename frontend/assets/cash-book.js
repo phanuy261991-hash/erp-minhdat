@@ -318,7 +318,7 @@ voucherForm.addEventListener('submit', async (event) => {
       category_id: categoryId,
       handled_by: handlerSelect.value ? Number(handlerSelect.value) : null,
       counterpart_name: counterpartInput.value.trim(),
-      amount: Number(amountInput.value),
+      amount: getMoneyValue(amountInput),
       note: noteInput.value.trim(),
       record_business_result: businessToggle.checked,
       voucher_date: dateInput.value ? toSqliteDatetime(dateInput.value) : null,
@@ -342,7 +342,7 @@ btnEditOpening.addEventListener('click', async () => {
   openingModal.hidden = false;
   try {
     const { settings } = await apiFetch('/cash-book-settings');
-    openingInput.value = settings.opening_balance;
+    setMoneyValue(openingInput, settings.opening_balance);
   } catch (err) {
     openingFormErrorText.textContent = err.message;
     openingFormErrorBox.hidden = false;
@@ -363,7 +363,7 @@ openingForm.addEventListener('submit', async (event) => {
   try {
     await apiFetch('/cash-book-settings', {
       method: 'PUT',
-      body: JSON.stringify({ opening_balance: Number(openingInput.value) }),
+      body: JSON.stringify({ opening_balance: getMoneyValue(openingInput) }),
     });
     openingModal.hidden = true;
     await loadCashBook();

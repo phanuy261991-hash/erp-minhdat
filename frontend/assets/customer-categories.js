@@ -72,7 +72,7 @@ function openEditModal(category) {
   editingCategoryId = category.id;
   categoryModalTitle.textContent = 'Sửa loại khách hàng';
   nameInput.value = category.name;
-  debtLimitInput.value = category.debt_limit === null ? '' : category.debt_limit;
+  setMoneyValue(debtLimitInput, category.debt_limit);
   categoryFormErrorBox.hidden = true;
   categoryModal.hidden = false;
   nameInput.focus();
@@ -122,7 +122,7 @@ categoryForm.addEventListener('submit', async (event) => {
 
   const body = {
     name: nameInput.value.trim(),
-    debt_limit: debtLimitInput.value === '' ? null : Number(debtLimitInput.value),
+    debt_limit: debtLimitInput.value === '' ? null : getMoneyValue(debtLimitInput),
   };
 
   try {

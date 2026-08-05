@@ -2,6 +2,31 @@
 
 > Ghi lại các quyết định đã chốt để không thảo luận lại trừ khi có lý do mới. Mỗi mục ghi ngày chốt.
 
+## 2026-08-05 — Tự động điền Đơn giá theo Giá bán khi chọn sản phẩm ở phiếu xuất, không áp dụng cho phiếu nhập
+
+**Bối cảnh**: người dùng báo "lỗi" đơn giá không tự điền khi chọn sản phẩm trên phiếu xuất — kiểm tra xác nhận đây là tính năng chưa từng có (không phải regression), nên đã hỏi lại 2 câu trước khi thêm mới (thay đổi hành vi form nhập liệu):
+
+1. **Phiếu xuất tự điền Đơn giá theo `sale_price`** của sản phẩm ngay khi chọn — vẫn sửa tay được bình thường sau đó (chỉ là giá trị gợi ý ban đầu, không khóa).
+2. **Không áp dụng cho phiếu nhập kho** — giá mua từ nhà cung cấp thường thay đổi theo từng lần nhập (khác giá bán cố định theo sản phẩm), tự điền theo `cost_price` cũ có thể gây nhầm lẫn hơn là hữu ích.
+
+Chi tiết đầy đủ: `docs/CHANGELOG.md` 2026-08-05.
+
+## 2026-08-05 — Module "Quản lý dự án" — Đợt 5: bố cục và phạm vi Báo cáo dự án
+
+**Bối cảnh**: Đợt 5 (PRD 4.12, `docs/Plan.md`) chỉ ghi "tùy chọn... tiến độ, công nợ, chênh lệch vật tư toàn bộ dự án", chưa nằm trong 14 quyết định đã chốt ngày 2026-08-04. Đã hỏi 3 câu qua `AskUserQuestion` trước khi code:
+
+1. **Thẻ tổng hợp + bảng chi tiết** (không chỉ bảng đơn thuần) — nhất quán với 2 phần Kho/Công nợ đã có sẵn trên cùng trang Báo cáo.
+2. **Chỉ tính dự án đang hoạt động** (Chuẩn bị/Đang thực hiện/Tạm dừng) — loại Hoàn thành/Hủy, vì trang này dùng để theo dõi dự án đang cần quản lý, không phải lưu trữ lịch sử.
+3. **Cột "Chênh lệch vật tư" hiện số dòng sản phẩm vượt dự toán** (vd "2 SP vượt"), bấm vào điều hướng thẳng sang đúng tab "Vật tư" của dự án đó — không chỉ hiện cờ đúng/sai.
+
+**Quyết định kỹ thuật**: `GET /api/reports/projects` tính gộp 1 lần cho toàn bộ dự án đang hoạt động (không N+1 query lặp từng dự án) nhưng vẫn tái dùng nguyên công thức đã có ở `project.service.js`/`projects.routes.js`/`projectMaterials.routes.js` — không phát minh cách tính mới. `project-detail.js` bổ sung hỗ trợ mở sẵn 1 tab cụ thể qua query string (`?tab=...`) để phục vụ link điều hướng từ Báo cáo. Chi tiết đầy đủ: `docs/CHANGELOG.md` 2026-08-05.
+
+## 2026-08-05 — Định dạng dấu chấm phân cách hàng nghìn ngay trong ô nhập số tiền
+
+**Bối cảnh**: người dùng yêu cầu mọi ô nhập số tiền hiện dấu phân cách hàng nghìn khi gõ. Đã hỏi lại 1 câu qua `AskUserQuestion` trước khi code vì câu chữ gốc ghi "dấu phẩy" trong khi toàn bộ hệ thống đang hiển thị số tiền (chỉ đọc) bằng `toLocaleString('vi-VN')` — dùng **dấu chấm**. Người dùng làm rõ ý chính là "dấu phân cách" nói chung phải hiện **ngay trong ô nhập lúc đang gõ** (không phải chỉ nơi hiển thị) — đã chốt dùng dấu chấm để đồng bộ toàn hệ thống, không tạo 2 chuẩn khác nhau.
+
+**Quyết định kỹ thuật**: xem chi tiết đầy đủ tại `docs/DESIGN-SYSTEM.md` mục "Ô nhập số tiền có dấu chấm phân cách hàng nghìn (money-input.js)" và `docs/CHANGELOG.md` 2026-08-05.
+
 ## 2026-08-04 — Module "Quản lý dự án": bỏ tab "Công việc" riêng, gộp vào tab "Giai đoạn"; công việc dùng ngày thực tế nhập tay thay `completed_at` tự động
 
 **Bối cảnh**: người dùng muốn bấm vào 1 dòng giai đoạn thì xổ ra danh sách công việc của giai đoạn đó ngay tại chỗ (mỗi công việc 1 dòng, có ô ngày thực tế nhập tay + chọn Trạng thái + nút Lưu cập nhật ngay không cần mở modal), đồng bộ với biểu đồ Gantt (bấm giai đoạn cũng xổ ra danh sách công việc), và "nếu được" bỏ hẳn tab "Công việc" riêng. Đã hỏi 3 câu qua `AskUserQuestion` trước khi code (theo đúng quy trình bắt buộc — đây là thay đổi phạm vi tính năng/schema):
