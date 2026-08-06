@@ -198,9 +198,11 @@ Chuông thông báo nổi ở mọi trang (góc dưới-phải màn hình), mọ
 - **Card "Sinh nhật trong tháng"** ở trang Tổng quan (mở cho mọi tài khoản): liệt kê đối tác có sinh nhật trong tháng hiện tại kèm ngày sinh, tô đỏ khi còn ≤3 ngày nữa tới sinh nhật.
 - **Phân quyền**: không cần module riêng — mọi tài khoản đăng nhập đều xem/đánh dấu đã đọc được thông báo của chính mình; chỉ trang cấu hình đòi quyền `cau_hinh`.
 
-### 4.15 Trả hàng (bổ sung 2026-08-06, theo yêu cầu người dùng — hoàn thành, bổ sung quy trình 2 bước cùng ngày)
+### 4.15 Trả hàng (bổ sung 2026-08-06, theo yêu cầu người dùng — hoàn thành, bổ sung quy trình 2 bước + "Trả hàng nhà cung cấp" cùng ngày)
 
-Ghi nhận khi khách hàng trả lại hàng đã mua (thuộc menu Kho, trang "Trả hàng") — hàng cộng lại vào tồn kho, đồng thời công nợ phải thu của khách hàng đó giảm tương ứng, tách biệt hoàn toàn khỏi danh sách "Phiếu nhập kho" thông thường (mã phiếu riêng, prefix `TH...`).
+Trang "Trả hàng" (menu Kho) quản lý **chung 1 danh sách** cho 2 loại phiếu trả, phân biệt bằng cột "Loại": **"Trả hàng xuất"** (khách hàng trả lại hàng đã mua) và **"Trả hàng nhà cung cấp"** (cửa hàng trả hàng về NCC). Nút "+ Lập phiếu trả hàng" xổ ra dropdown 2 lựa chọn, chọn loại nào mở đúng form loại đó.
+
+**"Trả hàng xuất" (khách hàng)** — hàng cộng lại vào tồn kho, công nợ phải thu của khách hàng giảm tương ứng, tách biệt hoàn toàn khỏi danh sách "Phiếu nhập kho" thông thường (mã phiếu riêng, prefix `TH...`).
 
 - **Thông tin phiếu**: Khách hàng (bắt buộc, cho phép thêm nhanh khách hàng mới ngay tại form giống phiếu nhập/xuất), Công trình (không bắt buộc — **tự động lọc chỉ hiện các công trình của đúng khách hàng đang chọn**, không phải toàn bộ dự án hệ thống), Thời gian trả, Ghi chú.
 - **Từng dòng hàng trả**: Mã SP/Tên SP/ĐVT (tự điền khi chọn sản phẩm qua ô tìm kiếm gợi ý), **Số lượng đã xuất** (hệ thống tự tính — tổng đã xuất cho đúng khách hàng + sản phẩm đó, trừ đi số đã trả ở các phiếu **đã trừ kho** trước đó, khoanh vùng theo đúng công trình nếu có chọn — chỉ hiển thị tham khảo, không nhập tay được), **Số lượng trả lại** (nhập tay), **Giá bán** (tự điền theo giá bán hiện tại của sản phẩm, sửa tay được — dùng để tính số tiền giảm công nợ = Giá bán × Số lượng trả lại).
@@ -208,7 +210,9 @@ Ghi nhận khi khách hàng trả lại hàng đã mua (thuộc menu Kho, trang 
 - Khi trừ kho: tồn kho **cộng thêm đúng "Số lượng trả lại"** (không phải "Số lượng đã xuất"); công nợ khách hàng **giảm** đúng tổng giá trị hàng trả, tự động ghi 1 dòng vào lịch sử giao dịch công nợ (nhãn riêng "Trả hàng", gắn kèm mã phiếu trả); giá vốn của lô hàng trả về kho lấy tự động theo **giá vốn bình quân gia quyền hiện tại** của sản phẩm (không dùng giá bán làm giá vốn, tránh làm lệch giá vốn bình quân).
 - **Tra cứu**: trang danh sách tìm kiếm được theo mã phiếu, tên khách hàng, số điện thoại khách hàng; hiển thị rõ trạng thái "Chờ trừ kho"/"Đã trừ kho" từng phiếu.
 - Phiếu có gắn công trình sẽ tự động xuất hiện trong tab "Vật tư" của dự án đó (mục "Danh sách phiếu nhập/xuất đã gắn dự án"), với nhãn riêng "Trả hàng" để phân biệt với phiếu nhập mua hàng từ NCC.
-- Không thuộc quyền module riêng — dùng chung quyền `kho` như phiếu nhập/xuất kho.
+
+**"Trả hàng nhà cung cấp"** — chiều **ngược lại** "Trả hàng xuất": hàng trả về NCC làm **giảm** tồn kho (giống phiếu xuất), công nợ **phải trả** NCC giảm tương ứng, tách biệt hoàn toàn khỏi danh sách "Phiếu xuất kho" thông thường (mã phiếu riêng, prefix `TN...`). Các trường/hành vi hoàn toàn tương tự "Trả hàng xuất" (thay Khách hàng/Công trình bằng Nhà cung cấp, không có Công trình; "Số lượng đã nhập" tự tính thay "Số lượng đã xuất"; cùng quy trình 2 bước Lưu/Trừ kho) — **riêng 1 điểm khác**: ô "Giá nhập" từng dòng — hệ thống tự tra cứu lịch sử giá đã từng mua sản phẩm đó từ đúng NCC đang chọn: **chỉ 1 giá** thì tự điền luôn; **từ 2 giá trở lên** (từng mua với giá khác nhau ở các lần nhập khác nhau) thì hiện gợi ý liệt kê từng mức giá dạng nút bấm được ngay dưới ô, người dùng chọn giá nào thì giá đó tự điền vào ô.
+- Cả 2 loại phiếu **không thuộc quyền module riêng** — dùng chung quyền `kho` như phiếu nhập/xuất kho.
 
 ## 5. Success Metrics
 

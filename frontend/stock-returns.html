@@ -16,9 +16,15 @@
         <div class="page-header-actions">
           <div class="search-box">
             <span class="input-icon"></span>
-            <input type="text" id="return-search" class="search-input" placeholder="Tìm theo mã phiếu, tên hoặc số điện thoại khách hàng..." autocomplete="off" />
+            <input type="text" id="return-search" class="search-input" placeholder="Tìm theo mã phiếu, tên hoặc số điện thoại..." autocomplete="off" />
           </div>
-          <button type="button" id="btn-add-return" class="btn-add"></button>
+          <div class="action-dropdown" id="return-type-dropdown">
+            <button type="button" id="btn-add-return" class="btn-add"></button>
+            <div class="action-dropdown-menu" id="return-type-menu" hidden>
+              <button type="button" class="action-dropdown-item" id="btn-choose-customer-return"></button>
+              <button type="button" class="action-dropdown-item" id="btn-choose-supplier-return"></button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -32,7 +38,8 @@
           <thead>
             <tr>
               <th>Mã phiếu</th>
-              <th>Khách hàng</th>
+              <th>Loại</th>
+              <th>Đối tác</th>
               <th>Số điện thoại</th>
               <th>Công trình</th>
               <th>Người lập</th>
@@ -64,7 +71,7 @@
               <th>Sản phẩm</th>
               <th>ĐVT</th>
               <th>Số lượng trả lại</th>
-              <th>Giá bán</th>
+              <th>Đơn giá</th>
               <th>Thành tiền</th>
             </tr>
           </thead>
@@ -146,6 +153,68 @@
           <button type="button" id="btn-cancel-return" class="btn-secondary">Hủy</button>
           <button type="button" id="btn-save-draft" class="btn-secondary">Lưu</button>
           <button type="button" id="btn-process-return" class="btn-primary">Trừ kho</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="supplier-return-modal" class="modal-overlay" hidden>
+    <div class="modal-card modal-card-lg">
+      <h3 id="supplier-return-modal-title">Lập phiếu trả hàng nhà cung cấp</h3>
+      <form id="supplier-return-form">
+        <div id="supplier-return-form-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="supplier-return-form-error-text"></span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="supplier-return-partner">Nhà cung cấp</label>
+            <select id="supplier-return-partner"></select>
+          </div>
+          <div class="form-field">
+            <label for="supplier-return-date">Thời gian trả</label>
+            <input type="datetime-local" id="supplier-return-date" />
+          </div>
+        </div>
+
+        <div id="supplier-new-partner-fields" class="form-field" hidden>
+          <label>Nhà cung cấp mới</label>
+          <div class="new-partner-inputs">
+            <input type="text" id="supplier-new-partner-name" placeholder="Tên nhà cung cấp" />
+            <input type="text" id="supplier-new-partner-phone" placeholder="Số điện thoại (không bắt buộc)" />
+            <input type="text" id="supplier-new-partner-address" placeholder="Địa chỉ (không bắt buộc)" />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="supplier-return-note">Ghi chú</label>
+          <input type="text" id="supplier-return-note" placeholder="vd: Trả hàng lỗi cho NCC" autocomplete="off" />
+        </div>
+
+        <div class="form-field">
+          <label>Danh sách hàng trả</label>
+          <div class="item-rows-header">
+            <span>Sản phẩm</span>
+            <span>ĐVT</span>
+            <span>Đã nhập</span>
+            <span>SL trả lại</span>
+            <span>Giá nhập</span>
+            <span>Thành tiền</span>
+            <span></span>
+          </div>
+          <div class="item-rows" id="supplier-item-rows"></div>
+          <button type="button" id="btn-add-supplier-item-row" class="btn-secondary btn-add-row">+ Thêm dòng</button>
+          <div class="receipt-total-row">
+            <span>Tổng tiền giảm công nợ</span>
+            <span id="supplier-return-total-amount">0</span>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-supplier-return" class="btn-secondary">Hủy</button>
+          <button type="button" id="btn-save-supplier-draft" class="btn-secondary">Lưu</button>
+          <button type="button" id="btn-process-supplier-return" class="btn-primary">Trừ kho</button>
         </div>
       </form>
     </div>

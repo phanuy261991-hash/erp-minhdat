@@ -89,8 +89,11 @@ function readItems(rawItems) {
   return { items };
 }
 
+// is_return = 0: an phieu "Tra hang nha cung cap" (migration 034, supplierReturns.routes.js co
+// trang/API rieng) khoi danh sach Phieu xuat kho - tach biet hoan toan, dung pattern da ap dung
+// cho stockReceipts.routes.js voi "Tra hang xuat".
 router.get('/', (req, res) => {
-  const issues = db.prepare(`${SELECT_ISSUE} ORDER BY i.created_at DESC`).all();
+  const issues = db.prepare(`${SELECT_ISSUE} WHERE i.is_return = 0 ORDER BY i.created_at DESC`).all();
   res.json({ issues });
 });
 

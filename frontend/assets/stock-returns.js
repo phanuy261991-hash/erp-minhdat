@@ -1,12 +1,16 @@
-// Logic trang "Tra hang" (migration 032/033, xem docs/DECISIONS.md ly do tai dung stock_receipts
-// thay vi tao bang rieng). Rap khuon dung pattern combobox san pham + "them nhanh" doi tac cua
-// stock-receipts.js/stock-issues.js, chi khac bo cot (khong co chiet khau, co them "Da xuat"
-// tham khao + "Gia ban" thay "Don gia").
+// Logic trang "Tra hang" (migration 032/033/034, xem docs/DECISIONS.md). Gom 2 loai phieu tra
+// dung chung 1 danh sach: "Tra hang xuat" (khach hang tra lai hang da mua - API /stock-returns,
+// tai dung stock_receipts) va "Tra hang nha cung cap" (tra hang ve NCC - API /supplier-returns,
+// tai dung stock_issues, CHIEU NGUOC LAI: giam ton kho + giam cong no phai tra NCC). Moi dong
+// trong returnsCache co them field return_type ('khach_hang'/'nha_cung_cap') tu gan luc tai de
+// biet goi API nao. 2 form lap phieu hoan toan tach biet (rap khuon dung pattern combobox san
+// pham + "them nhanh" doi tac cua stock-receipts.js/stock-issues.js, giong cach 2 file do da tu
+// tach rieng thay vi dung chung).
 //
-// Quy trinh 2 buoc (migration 033): nut "Luu" chi ghi thong tin (POST/PUT khong xu ly), nut
-// "Tru kho" moi thuc su tru kho + tru cong no (tao moi: POST voi process:true; phieu da luu:
-// PUT luu lai sua doi truoc roi goi POST /:id/process). Phieu 'cho_tru_kho' con sua duoc (icon
-// but), phieu 'da_tru_kho' khoa vinh vien (chi con xem chi tiet).
+// Quy trinh 2 buoc (migration 033, ap dung ca 2 loai): nut "Luu" chi ghi thong tin (POST/PUT
+// khong xu ly), nut "Tru kho" moi thuc su tru/cong kho + tru cong no (tao moi: POST voi
+// process:true; phieu da luu: PUT luu lai sua doi truoc roi goi POST /:id/process). Phieu
+// 'cho_tru_kho' con sua duoc (icon but), phieu 'da_tru_kho' khoa vinh vien (chi con xem chi tiet).
 
 let currentUser = null;
 let productsCache = [];
@@ -16,6 +20,15 @@ let returnsCache = [];
 let rowCounter = 0;
 let searchKeyword = '';
 let editingReturnId = null;
+
+let supplierPartnersCache = [];
+let supplierRowCounter = 0;
+let editingSupplierReturnId = null;
+
+// return_type -> tien to API tuong ung, dung chung cho render danh sach + cac thao tac.
+function apiPrefixFor(returnType) {
+  return returnType === 'nha_cung_cap' ? '/supplier-returns' : '/stock-returns';
+}
 
 const returnsTbody = document.getElementById('returns-tbody');
 const returnsErrorBox = document.getElementById('returns-error');
@@ -51,6 +64,35 @@ const detailInfoEl = document.getElementById('return-detail-info');
 const detailItemsEl = document.getElementById('return-detail-items');
 const detailTotalEl = document.getElementById('return-detail-total');
 const btnCloseDetail = document.getElementById('btn-close-return-detail');
+
+// ----- Nut dropdown "+ Lap phieu tra hang" (2 lua chon) -----
+
+const returnTypeDropdown = document.getElementById('return-type-dropdown');
+const returnTypeMenu = document.getElementById('return-type-menu');
+const btnChooseCustomerReturn = document.getElementById('btn-choose-customer-return');
+const btnChooseSupplierReturn = document.getElementById('btn-choose-supplier-return');
+
+// ----- Form "Tra hang nha cung cap" (migration 034) -----
+
+const supplierReturnModal = document.getElementById('supplier-return-modal');
+const supplierReturnModalTitle = document.getElementById('supplier-return-modal-title');
+const supplierReturnForm = document.getElementById('supplier-return-form');
+const supplierReturnFormErrorBox = document.getElementById('supplier-return-form-error');
+const supplierReturnFormErrorText = document.getElementById('supplier-return-form-error-text');
+const btnCancelSupplierReturn = document.getElementById('btn-cancel-supplier-return');
+const btnSaveSupplierDraft = document.getElementById('btn-save-supplier-draft');
+const btnProcessSupplierReturn = document.getElementById('btn-process-supplier-return');
+
+const supplierPartnerSelect = document.getElementById('supplier-return-partner');
+const supplierNewPartnerFields = document.getElementById('supplier-new-partner-fields');
+const supplierNewPartnerNameInput = document.getElementById('supplier-new-partner-name');
+const supplierNewPartnerPhoneInput = document.getElementById('supplier-new-partner-phone');
+const supplierNewPartnerAddressInput = document.getElementById('supplier-new-partner-address');
+const supplierNoteInput = document.getElementById('supplier-return-note');
+const supplierReturnDateInput = document.getElementById('supplier-return-date');
+const supplierItemRowsContainer = document.getElementById('supplier-item-rows');
+const btnAddSupplierItemRow = document.getElementById('btn-add-supplier-item-row');
+const supplierTotalAmountEl = document.getElementById('supplier-return-total-amount');
 
 function nowForDatetimeLocal() {
   const d = new Date();
@@ -92,24 +134,31 @@ function getVisibleReturns() {
   );
 }
 
+const RETURN_TYPE_LABELS = {
+  khach_hang: '<span class="badge badge-inactive">Trả hàng xuất</span>',
+  nha_cung_cap: '<span class="badge badge-inactive">Trả hàng NCC</span>',
+};
+
 function renderReturnRow(r) {
   const isDraft = r.status === 'cho_tru_kho';
   const statusBadge = isDraft
     ? '<span class="badge badge-inactive">Chờ trừ kho</span>'
     : '<span class="badge badge-active">Đã trừ kho</span>';
   // Phieu con 'cho_tru_kho' (chua tru kho) - cho sua + tru kho nhanh ngay tren danh sach; phieu
-  // 'da_tru_kho' da khoa, chi con xem chi tiet (xem docs/DECISIONS.md).
+  // 'da_tru_kho' da khoa, chi con xem chi tiet (xem docs/DECISIONS.md). data-type gan kem de
+  // click handler biet goi API /stock-returns hay /supplier-returns.
   const actions = isDraft
     ? `
-      <button type="button" class="icon-btn" data-action="edit" data-id="${r.id}" title="Sửa phiếu">${icon('pencil', 14)}</button>
-      <button type="button" class="icon-btn" data-action="process" data-id="${r.id}" title="Trừ kho">${icon('check', 14)}</button>
-      <button type="button" class="icon-btn" data-action="view" data-id="${r.id}" title="Xem chi tiết">${icon('eye', 14)}</button>
+      <button type="button" class="icon-btn" data-action="edit" data-id="${r.id}" data-type="${r.return_type}" title="Sửa phiếu">${icon('pencil', 14)}</button>
+      <button type="button" class="icon-btn" data-action="process" data-id="${r.id}" data-type="${r.return_type}" title="Trừ kho">${icon('check', 14)}</button>
+      <button type="button" class="icon-btn" data-action="view" data-id="${r.id}" data-type="${r.return_type}" title="Xem chi tiết">${icon('eye', 14)}</button>
     `
-    : `<button type="button" class="icon-btn" data-action="view" data-id="${r.id}" title="Xem chi tiết">${icon('eye', 14)}</button>`;
+    : `<button type="button" class="icon-btn" data-action="view" data-id="${r.id}" data-type="${r.return_type}" title="Xem chi tiết">${icon('eye', 14)}</button>`;
 
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td>${r.code}</td>
+    <td>${RETURN_TYPE_LABELS[r.return_type]}</td>
     <td>${r.partner_name || '-'}</td>
     <td>${r.partner_phone || '-'}</td>
     <td>${r.project_name || '-'}</td>
@@ -127,10 +176,15 @@ function renderReturns() {
   getVisibleReturns().forEach((r) => returnsTbody.appendChild(renderReturnRow(r)));
 }
 
+// Gop 2 danh sach (khach hang tra hang xuat + tra hang NCC) thanh 1, gan return_type de phan
+// biet, sap xep chung theo ngay lap moi nhat truoc - dung chung 1 giao dien quan ly theo dung
+// yeu cau nguoi dung.
 async function loadReturns() {
   try {
-    const { returns } = await apiFetch('/stock-returns');
-    returnsCache = returns;
+    const [customerRes, supplierRes] = await Promise.all([apiFetch('/stock-returns'), apiFetch('/supplier-returns')]);
+    const customerReturns = customerRes.returns.map((r) => ({ ...r, return_type: 'khach_hang' }));
+    const supplierReturns = supplierRes.returns.map((r) => ({ ...r, return_type: 'nha_cung_cap' }));
+    returnsCache = [...customerReturns, ...supplierReturns].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
     renderReturns();
   } catch (err) {
     renderReturnsError(err.message);
@@ -145,13 +199,17 @@ searchInput.addEventListener('input', (event) => {
 returnsTbody.addEventListener('click', async (event) => {
   const viewBtn = event.target.closest('button[data-action="view"]');
   if (viewBtn) {
-    openDetailModal(viewBtn.dataset.id);
+    openDetailModal(viewBtn.dataset.id, viewBtn.dataset.type);
     return;
   }
 
   const editBtn = event.target.closest('button[data-action="edit"]');
   if (editBtn) {
-    openEditModal(editBtn.dataset.id);
+    if (editBtn.dataset.type === 'nha_cung_cap') {
+      openSupplierEditModal(editBtn.dataset.id);
+    } else {
+      openEditModal(editBtn.dataset.id);
+    }
     return;
   }
 
@@ -161,7 +219,7 @@ returnsTbody.addEventListener('click', async (event) => {
     processBtn.disabled = true;
     returnsErrorBox.hidden = true;
     try {
-      await apiFetch(`/stock-returns/${processBtn.dataset.id}/process`, { method: 'POST' });
+      await apiFetch(`${apiPrefixFor(processBtn.dataset.type)}/${processBtn.dataset.id}/process`, { method: 'POST' });
       await loadReturns();
     } catch (err) {
       renderReturnsError(err.message);
@@ -172,11 +230,12 @@ returnsTbody.addEventListener('click', async (event) => {
 
 // ----- Modal xem chi tiet -----
 
-async function openDetailModal(id) {
+async function openDetailModal(id, returnType) {
   detailErrorBox.hidden = true;
   detailModal.hidden = false;
+  const isSupplier = returnType === 'nha_cung_cap';
   try {
-    const { return: r } = await apiFetch(`/stock-returns/${id}`);
+    const { return: r } = await apiFetch(`${apiPrefixFor(returnType)}/${id}`);
     const infoItem = (label, value, fullWidth) => `
       <div class="detail-info-item${fullWidth ? ' full-width' : ''}">
         <p class="detail-label">${label}</p>
@@ -186,26 +245,30 @@ async function openDetailModal(id) {
     const statusText = r.status === 'cho_tru_kho' ? 'Chờ trừ kho' : 'Đã trừ kho';
     detailInfoEl.innerHTML = [
       infoItem('Mã phiếu', r.code),
+      infoItem('Loại phiếu', isSupplier ? 'Trả hàng nhà cung cấp' : 'Trả hàng xuất'),
       infoItem('Trạng thái', statusText),
-      infoItem('Khách hàng', r.partner_name || '-'),
+      infoItem(isSupplier ? 'Nhà cung cấp' : 'Khách hàng', r.partner_name || '-'),
       infoItem('Số điện thoại', r.partner_phone || '-'),
       infoItem('Công trình', r.project_name || '-'),
       infoItem('Người lập', r.created_by_name),
       infoItem('Ngày lập', formatDate(r.created_at)),
       infoItem('Ghi chú', r.note || '-', true),
     ].join('');
+    // Khach hang: gia luu o cot sale_price. Nha cung cap: gia luu o cot unit_price (xem
+    // supplierReturn.service.js, khong can cot rieng). Chuan hoa ve 1 bien de dung chung markup.
     detailItemsEl.innerHTML = r.items
-      .map(
-        (item) => `
+      .map((item) => {
+        const price = isSupplier ? item.unit_price : item.sale_price;
+        return `
           <tr>
             <td>${item.product_code} - ${item.product_name}</td>
             <td>${item.unit}</td>
             <td>${formatMoney(item.quantity)}</td>
-            <td>${formatMoney(item.sale_price)}</td>
-            <td>${formatMoney(item.quantity * item.sale_price)}</td>
+            <td>${formatMoney(price)}</td>
+            <td>${formatMoney(item.quantity * price)}</td>
           </tr>
-        `
-      )
+        `;
+      })
       .join('');
     detailTotalEl.textContent = formatMoney(r.total_credit);
   } catch (err) {
@@ -508,7 +571,26 @@ function closeReturnModal() {
   returnModal.hidden = true;
 }
 
-btnAddReturn.addEventListener('click', openCreateModal);
+// Nut "+ Lap phieu tra hang" xo ra dropdown 2 lua chon (giong pattern .pt-token-dropdown da co
+// o trang chinh sua mau in) - chon 1 trong 2 se dong menu va mo dung modal tuong ung.
+btnAddReturn.addEventListener('click', (event) => {
+  event.stopPropagation();
+  returnTypeMenu.hidden = !returnTypeMenu.hidden;
+});
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('#return-type-dropdown')) {
+    returnTypeMenu.hidden = true;
+  }
+});
+btnChooseCustomerReturn.addEventListener('click', () => {
+  returnTypeMenu.hidden = true;
+  openCreateModal();
+});
+btnChooseSupplierReturn.addEventListener('click', () => {
+  returnTypeMenu.hidden = true;
+  openSupplierCreateModal();
+});
+
 btnCancelReturn.addEventListener('click', closeReturnModal);
 returnModal.addEventListener('click', (event) => {
   if (event.target === returnModal) closeReturnModal();
@@ -674,16 +756,441 @@ btnProcessReturn.addEventListener('click', async () => {
   }
 });
 
+// ================== "Tra hang nha cung cap" (migration 034) ==================
+// Rap khuon dung cau truc voi phan "Tra hang xuat" o tren (combobox san pham, "them nhanh" doi
+// tac, quy trinh Luu/Tru kho) nhung khong co Cong trinh, va o gia nhap co them "chon gia" khi
+// NCC tung ban nhieu gia khac nhau cho cung 1 san pham (refreshSupplierRowPrice).
+
+async function loadSupplierPartners() {
+  const { partners } = await apiFetch('/partners?type=nha_cung_cap');
+  supplierPartnersCache = partners;
+}
+
+function renderSupplierPartnerOptions() {
+  const options = supplierPartnersCache.map((p) => `<option value="${p.id}">${p.name}</option>`).join('');
+  supplierPartnerSelect.innerHTML = `<option value="">-- Không chọn --</option>${options}<option value="__new__">+ Thêm nhà cung cấp mới</option>`;
+}
+
+supplierPartnerSelect.addEventListener('change', async () => {
+  supplierNewPartnerFields.hidden = supplierPartnerSelect.value !== '__new__';
+  await refreshAllSupplierRowReferences();
+  await refreshAllSupplierRowPrices();
+});
+
+function createSupplierItemRow() {
+  supplierRowCounter += 1;
+  const row = document.createElement('div');
+  row.className = 'item-row';
+  row.dataset.rowId = String(supplierRowCounter);
+  row.dataset.remaining = '';
+  row.innerHTML = `
+    <div class="combobox">
+      <input type="text" class="item-product-search" placeholder="Tìm theo mã hoặc tên..." autocomplete="off" />
+      <input type="hidden" class="item-product-id" />
+      <div class="combobox-suggestions"></div>
+    </div>
+    <div class="item-unit-display"></div>
+    <div class="item-unit-display item-issued-display" title="Số lượng còn có thể trả (đã trừ các lần trả trước)">-</div>
+    <input type="number" class="item-quantity" min="0" step="1" placeholder="SL trả" />
+    <div class="price-picker">
+      <input type="text" class="item-purchase-price money-input" placeholder="Giá nhập" />
+      <div class="price-picker-hint" hidden></div>
+    </div>
+    <div class="item-line-total">0</div>
+    <button type="button" class="icon-btn icon-btn-danger item-row-remove" title="Xóa dòng">${icon('trash', 14)}</button>
+  `;
+  bindMoneyInputs(row);
+  return row;
+}
+
+function addSupplierItemRow() {
+  supplierItemRowsContainer.appendChild(createSupplierItemRow());
+}
+
+function removeSupplierItemRow(row) {
+  if (supplierItemRowsContainer.children.length > 1) {
+    row.remove();
+    updateSupplierTotalAmount();
+  }
+}
+
+function supplierRowLineTotal(row) {
+  const quantity = Number(row.querySelector('.item-quantity').value) || 0;
+  const purchasePrice = getMoneyValue(row.querySelector('.item-purchase-price'));
+  return quantity * purchasePrice;
+}
+
+function updateSupplierTotalAmount() {
+  const rows = Array.from(supplierItemRowsContainer.querySelectorAll('.item-row'));
+  let total = 0;
+
+  rows.forEach((row) => {
+    const lineTotal = supplierRowLineTotal(row);
+    row.querySelector('.item-line-total').textContent = formatMoney(Math.round(lineTotal));
+    total += lineTotal;
+  });
+
+  supplierTotalAmountEl.textContent = formatMoney(Math.round(total));
+}
+
+// "Da nhap" con lai co the tra cho dung NCC + san pham dang chon - doi xung refreshRowReference()
+// o tren nhung goi API /supplier-returns/reference.
+async function refreshSupplierRowReference(row) {
+  const productId = row.querySelector('.item-product-id').value;
+  const display = row.querySelector('.item-issued-display');
+  const partnerId = supplierPartnerSelect.value;
+
+  if (!productId || !partnerId || partnerId === '__new__') {
+    display.textContent = '-';
+    row.dataset.remaining = '';
+    return;
+  }
+
+  const params = new URLSearchParams({ partner_id: partnerId, product_id: productId });
+  try {
+    const { received_quantity: received, remaining_returnable: remaining } = await apiFetch(`/supplier-returns/reference?${params}`);
+    display.textContent = formatMoney(received);
+    display.title = `Số lượng còn có thể trả: ${formatMoney(remaining)}`;
+    row.dataset.remaining = String(remaining);
+  } catch (err) {
+    display.textContent = '-';
+    row.dataset.remaining = '';
+  }
+}
+
+// Tra cuu lich su gia nhap tu dung NCC cho dung san pham (theo yeu cau nguoi dung): 1 gia thi
+// tu dien luon vao o "Gia nhap"; >=2 gia (tung mua khac gia o cac lan nhap khac nhau) thi hien
+// khung goi y ngay duoi o (dinh vi tuyet doi, khong day layout dong) liet ke tung gia dang chip
+// bam duoc - chon chip nao dien gia do. Khong co lich su thi de trong, khong bao loi.
+async function refreshSupplierRowPrice(row) {
+  const productId = row.querySelector('.item-product-id').value;
+  const partnerId = supplierPartnerSelect.value;
+  const hint = row.querySelector('.price-picker-hint');
+  hint.hidden = true;
+  hint.innerHTML = '';
+
+  if (!productId || !partnerId || partnerId === '__new__') return;
+
+  const params = new URLSearchParams({ partner_id: partnerId, product_id: productId });
+  try {
+    const { prices } = await apiFetch(`/supplier-returns/prices?${params}`);
+    const priceInput = row.querySelector('.item-purchase-price');
+    if (prices.length === 1) {
+      setMoneyValue(priceInput, prices[0]);
+    } else if (prices.length >= 2) {
+      hint.innerHTML = `
+        <span class="price-picker-icon">${icon('info', 12)}</span>
+        <span class="price-picker-hint-label">Từng mua nhiều giá, chọn 1:</span>
+        ${prices.map((p) => `<button type="button" class="price-chip" data-price="${p}">${formatMoney(p)}</button>`).join('')}
+      `;
+      hint.hidden = false;
+    }
+  } catch (err) {
+    // Tra cuu loi thi thoi, khong chan nguoi dung tu nhap tay gia.
+  }
+}
+
+async function refreshAllSupplierRowReferences() {
+  const rows = Array.from(supplierItemRowsContainer.querySelectorAll('.item-row'));
+  await Promise.all(rows.map((row) => refreshSupplierRowReference(row)));
+}
+
+async function refreshAllSupplierRowPrices() {
+  const rows = Array.from(supplierItemRowsContainer.querySelectorAll('.item-row'));
+  await Promise.all(rows.map((row) => refreshSupplierRowPrice(row)));
+}
+
+// Khac selectProduct() cua "Tra hang xuat": KHONG tu dien gia theo product.sale_price (khai
+// niem "gia ban" khong lien quan phieu nay) - gia nhap lay tu lich su mua qua refreshSupplierRowPrice().
+function selectSupplierProduct(row, productId, label) {
+  row.querySelector('.item-product-id').value = productId;
+  row.querySelector('.item-product-search').value = label;
+  row.querySelector('.combobox-suggestions').innerHTML = '';
+
+  const product = productsCache.find((p) => String(p.id) === String(productId));
+  row.querySelector('.item-unit-display').textContent = product ? product.unit : '';
+
+  refreshSupplierRowReference(row);
+  refreshSupplierRowPrice(row);
+}
+
+supplierItemRowsContainer.addEventListener('input', (event) => {
+  if (event.target.classList.contains('item-product-search')) {
+    const row = event.target.closest('.item-row');
+    row.querySelector('.item-product-id').value = '';
+    renderSuggestions(row, event.target.value);
+    return;
+  }
+
+  if (event.target.classList.contains('item-quantity') || event.target.classList.contains('item-purchase-price')) {
+    updateSupplierTotalAmount();
+  }
+});
+
+supplierItemRowsContainer.addEventListener('click', (event) => {
+  const option = event.target.closest('.combobox-option');
+  if (option) {
+    const row = option.closest('.item-row');
+    selectSupplierProduct(row, option.dataset.productId, option.dataset.productLabel);
+    return;
+  }
+
+  const chip = event.target.closest('.price-chip');
+  if (chip) {
+    const row = chip.closest('.item-row');
+    setMoneyValue(row.querySelector('.item-purchase-price'), Number(chip.dataset.price));
+    row.querySelector('.price-picker-hint').hidden = true;
+    updateSupplierTotalAmount();
+    return;
+  }
+
+  const removeBtn = event.target.closest('.item-row-remove');
+  if (removeBtn) {
+    removeSupplierItemRow(removeBtn.closest('.item-row'));
+  }
+});
+
+// Dong ca goi y combobox lan khung chon gia khi bam ra ngoai - mo rong handler chung da co san
+// o phan "Tra hang xuat" phia tren.
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.price-picker')) {
+    document.querySelectorAll('.price-picker-hint').forEach((hint) => {
+      hint.hidden = true;
+    });
+  }
+});
+
+btnAddSupplierItemRow.addEventListener('click', addSupplierItemRow);
+
+function resetSupplierReturnForm() {
+  supplierReturnForm.reset();
+  supplierNewPartnerFields.hidden = true;
+  supplierReturnDateInput.value = nowForDatetimeLocal();
+  supplierItemRowsContainer.innerHTML = '';
+  addSupplierItemRow();
+  updateSupplierTotalAmount();
+}
+
+function openSupplierCreateModal() {
+  editingSupplierReturnId = null;
+  supplierReturnModalTitle.textContent = 'Lập phiếu trả hàng nhà cung cấp';
+  resetSupplierReturnForm();
+  supplierReturnFormErrorBox.hidden = true;
+  supplierReturnModal.hidden = false;
+}
+
+async function openSupplierEditModal(id) {
+  supplierReturnFormErrorBox.hidden = true;
+  try {
+    const { return: r } = await apiFetch(`/supplier-returns/${id}`);
+    if (r.status !== 'cho_tru_kho') {
+      renderReturnsError('Phiếu đã trừ kho, không thể sửa');
+      await loadReturns();
+      return;
+    }
+
+    editingSupplierReturnId = id;
+    supplierReturnModalTitle.textContent = 'Sửa phiếu trả hàng nhà cung cấp';
+    supplierReturnForm.reset();
+    supplierNewPartnerFields.hidden = true;
+
+    supplierPartnerSelect.value = String(r.partner_id);
+
+    const iso = r.created_at.replace(' ', 'T') + 'Z';
+    const d = new Date(iso);
+    const pad = (n) => String(n).padStart(2, '0');
+    supplierReturnDateInput.value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    supplierNoteInput.value = r.note || '';
+
+    supplierItemRowsContainer.innerHTML = '';
+    r.items.forEach((item) => {
+      const row = createSupplierItemRow();
+      supplierItemRowsContainer.appendChild(row);
+      const product = productsCache.find((p) => p.id === item.product_id);
+      const label = product ? `${product.code} - ${product.name}` : '';
+      row.querySelector('.item-product-id').value = item.product_id;
+      row.querySelector('.item-product-search').value = label;
+      row.querySelector('.item-unit-display').textContent = product ? product.unit : '';
+      row.querySelector('.item-quantity').value = item.quantity;
+      setMoneyValue(row.querySelector('.item-purchase-price'), item.unit_price);
+      refreshSupplierRowReference(row);
+    });
+    updateSupplierTotalAmount();
+
+    supplierReturnModal.hidden = false;
+  } catch (err) {
+    renderReturnsError(err.message);
+  }
+}
+
+function closeSupplierReturnModal() {
+  supplierReturnModal.hidden = true;
+}
+
+btnCancelSupplierReturn.addEventListener('click', closeSupplierReturnModal);
+supplierReturnModal.addEventListener('click', (event) => {
+  if (event.target === supplierReturnModal) closeSupplierReturnModal();
+});
+
+supplierReturnForm.addEventListener('submit', (event) => event.preventDefault());
+
+async function resolveSupplierPartnerId() {
+  let partnerId = supplierPartnerSelect.value;
+  if (partnerId !== '__new__') return partnerId;
+
+  const name = supplierNewPartnerNameInput.value.trim();
+  if (!name) {
+    throw new Error('Thiếu tên nhà cung cấp mới');
+  }
+  const { partner } = await apiFetch('/partners', {
+    method: 'POST',
+    body: JSON.stringify({
+      type: 'nha_cung_cap',
+      name,
+      phone: supplierNewPartnerPhoneInput.value.trim(),
+      address: supplierNewPartnerAddressInput.value.trim(),
+    }),
+  });
+  return partner.id;
+}
+
+function collectSupplierItems() {
+  const rows = Array.from(supplierItemRowsContainer.querySelectorAll('.item-row'));
+  const items = [];
+
+  for (const row of rows) {
+    const productId = row.querySelector('.item-product-id').value;
+    const quantity = row.querySelector('.item-quantity').value;
+    const priceInput = row.querySelector('.item-purchase-price');
+    const priceRaw = priceInput.value;
+
+    if (!productId && !quantity && priceRaw === '') continue;
+
+    if (!productId || !quantity || priceRaw === '') {
+      return { error: 'Mỗi dòng phải chọn sản phẩm, nhập số lượng trả lại và giá nhập' };
+    }
+
+    const remaining = row.dataset.remaining === '' ? null : Number(row.dataset.remaining);
+    if (remaining !== null && Number(quantity) > remaining) {
+      return { error: `Số lượng trả lại vượt quá số còn có thể trả (còn lại: ${formatMoney(remaining)})` };
+    }
+
+    items.push({
+      product_id: Number(productId),
+      quantity: Number(quantity),
+      unit_price: getMoneyValue(priceInput),
+    });
+  }
+
+  if (items.length === 0) {
+    return { error: 'Phiếu trả hàng phải có ít nhất 1 dòng sản phẩm' };
+  }
+
+  return { items };
+}
+
+function buildSupplierReturnBody(partnerId, items) {
+  return {
+    partner_id: partnerId,
+    note: supplierNoteInput.value.trim(),
+    return_date: supplierReturnDateInput.value ? toSqliteDatetime(supplierReturnDateInput.value) : null,
+    items,
+  };
+}
+
+function validateSupplierFormBeforeSubmit() {
+  supplierReturnFormErrorBox.hidden = true;
+  if (!supplierPartnerSelect.value) {
+    return { error: 'Vui lòng chọn nhà cung cấp' };
+  }
+  return collectSupplierItems();
+}
+
+function setSupplierSubmitButtonsBusy(busy) {
+  btnSaveSupplierDraft.disabled = busy;
+  btnProcessSupplierReturn.disabled = busy;
+}
+
+function showSupplierFormError(message) {
+  supplierReturnFormErrorText.textContent = message;
+  supplierReturnFormErrorBox.hidden = false;
+}
+
+btnSaveSupplierDraft.addEventListener('click', async () => {
+  const { items, error } = validateSupplierFormBeforeSubmit();
+  if (error) {
+    showSupplierFormError(error);
+    return;
+  }
+
+  setSupplierSubmitButtonsBusy(true);
+  btnSaveSupplierDraft.textContent = 'Đang lưu...';
+
+  try {
+    const partnerId = await resolveSupplierPartnerId();
+    const body = buildSupplierReturnBody(partnerId, items);
+
+    if (editingSupplierReturnId) {
+      await apiFetch(`/supplier-returns/${editingSupplierReturnId}`, { method: 'PUT', body: JSON.stringify(body) });
+    } else {
+      await apiFetch('/supplier-returns', { method: 'POST', body: JSON.stringify(body) });
+    }
+
+    closeSupplierReturnModal();
+    await loadReturns();
+  } catch (err) {
+    showSupplierFormError(err.message);
+  } finally {
+    setSupplierSubmitButtonsBusy(false);
+    btnSaveSupplierDraft.textContent = 'Lưu';
+  }
+});
+
+btnProcessSupplierReturn.addEventListener('click', async () => {
+  const { items, error } = validateSupplierFormBeforeSubmit();
+  if (error) {
+    showSupplierFormError(error);
+    return;
+  }
+
+  setSupplierSubmitButtonsBusy(true);
+  btnProcessSupplierReturn.textContent = 'Đang trừ kho...';
+
+  try {
+    const partnerId = await resolveSupplierPartnerId();
+    const body = buildSupplierReturnBody(partnerId, items);
+
+    if (editingSupplierReturnId) {
+      await apiFetch(`/supplier-returns/${editingSupplierReturnId}`, { method: 'PUT', body: JSON.stringify(body) });
+      await apiFetch(`/supplier-returns/${editingSupplierReturnId}/process`, { method: 'POST' });
+    } else {
+      await apiFetch('/supplier-returns', { method: 'POST', body: JSON.stringify({ ...body, process: true }) });
+    }
+
+    closeSupplierReturnModal();
+    await loadReturns();
+  } catch (err) {
+    showSupplierFormError(err.message);
+  } finally {
+    setSupplierSubmitButtonsBusy(false);
+    btnProcessSupplierReturn.textContent = 'Trừ kho';
+  }
+});
+
 (async function init() {
   currentUser = await initLayout('stock-returns');
   if (!currentUser) return;
 
-  btnAddReturn.innerHTML = `${icon('plus', 16)} Lập phiếu trả hàng`;
+  btnAddReturn.innerHTML = `${icon('plus', 16)} Lập phiếu trả hàng ${icon('chevronDown', 14)}`;
+  btnChooseCustomerReturn.innerHTML = `${icon('arrowDownTray', 16)} Trả hàng xuất (khách hàng)`;
+  btnChooseSupplierReturn.innerHTML = `${icon('truck', 16)} Trả hàng nhà cung cấp`;
   document.querySelectorAll('.alert-icon-slot').forEach((slot) => {
     slot.innerHTML = icon('alertCircle', 16);
   });
 
-  await Promise.all([loadProducts(), loadPartners(), loadReturns()]);
+  await Promise.all([loadProducts(), loadPartners(), loadSupplierPartners(), loadReturns()]);
   renderPartnerOptions();
+  renderSupplierPartnerOptions();
   resetReturnForm();
+  resetSupplierReturnForm();
 })();

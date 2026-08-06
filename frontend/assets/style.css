@@ -1853,6 +1853,105 @@ input:focus-visible {
   color: var(--color-muted-foreground);
 }
 
+/* O "Gia nhap" trong dong san pham cua form "Tra hang nha cung cap" (migration 034) - khi NCC
+   dang chon tung mua san pham do voi >=2 gia khac nhau, hien 1 khung goi y noi troi (khong phai
+   loi/canh bao - dung mau xanh --color-primary + icon "info", khac han mau do/cam dung cho loi
+   o noi khac trong he thong) ngay duoi o gia, liet ke tung gia da tung mua dang chip bam duoc.
+   Dinh vi tuyet doi (giong het .combobox-suggestions) de khong day layout dong san pham von da
+   chat (nhieu cot co dinh). */
+.price-picker {
+  position: relative;
+}
+
+.price-picker-hint {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card);
+  font-size: 11px;
+  color: var(--color-primary);
+}
+
+.price-picker-hint svg {
+  flex-shrink: 0;
+}
+
+.price-picker-hint-label {
+  white-space: nowrap;
+}
+
+.price-chip {
+  padding: 2px 8px;
+  border: 1px solid var(--color-primary);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.price-chip:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+/* Nut hanh dong chinh co dropdown 2 lua chon (vd "+ Lap phieu tra hang" -> chon "Tra hang xuat"/
+   "Tra hang nha cung cap") - cung 1 co che voi .pt-token-dropdown/.pt-token-menu da co (toolbar
+   "Chen truong thong tin" o trang chinh sua mau in), doi ten rieng vi day la nut hanh dong chinh
+   cap trang (page-header-actions), khong phai toolbar soan thao. */
+.action-dropdown {
+  position: relative;
+}
+
+.action-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  min-width: 260px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: 6px;
+}
+
+.action-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 9px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-foreground);
+  font-family: var(--font-body);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.action-dropdown-item:hover {
+  background: var(--color-muted);
+}
+
+.action-dropdown-item svg {
+  flex-shrink: 0;
+  color: var(--color-muted-foreground);
+}
+
 .module-option-box svg {
   opacity: 0;
   transform: scale(0.5);

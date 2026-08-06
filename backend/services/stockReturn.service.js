@@ -155,7 +155,7 @@ function applyProcessing(receiptId, partnerId, projectId, createdBy, timestamp) 
   // Giam cong no khach hang tuong ung gia tri hang tra (Gia ban x So luong tra) - bo qua neu
   // =0 (debt_ledger.amount co CHECK > 0, khong the insert dong 0).
   if (totalCredit > 0) {
-    recordReturnCredit({ partnerId, amount: totalCredit, referenceId: receiptId, createdBy, projectId });
+    recordReturnCredit({ partnerId, amount: totalCredit, referenceType: 'receipt', referenceId: receiptId, createdBy, projectId });
   }
 
   db.prepare("UPDATE stock_receipts SET status = 'da_tru_kho' WHERE id = ?").run(receiptId);
