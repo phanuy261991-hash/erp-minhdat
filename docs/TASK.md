@@ -479,6 +479,37 @@
 - [x] Test qua API (Node `fetch`, dùng dữ liệu NCC có sẵn "Cong ty CP Thep Hoa Phat" — 1 sản phẩm có 2 giá nhập lịch sử, 1 sản phẩm chỉ 1 giá): tra giá đúng (1 giá / 2 giá phân biệt); Lưu draft không đụng tồn kho; sửa draft đổi số lượng đúng; Trừ kho làm tồn kho **giảm** đúng + công nợ NCC giảm đúng theo giá đã chọn; `debt_ledger` ghi đúng `type='tra', reference_type='issue'`; chặn đúng đối tác không phải NCC (400); sau khi trừ kho khóa đúng (sửa/trừ kho lại đều 400); xác nhận **không** lẫn trong `GET /stock-issues` (bắt được lỗi thiếu filter, đã sửa)
 - [x] Test qua trình duyệt thật (Chrome headless CDP thô, đóng đúng theo PID cây tiến trình): nút dropdown xổ đúng 2 lựa chọn, chọn "Trả hàng nhà cung cấp" mở đúng modal; chọn NCC + sản phẩm có 2 giá lịch sử → hiện đúng chip `30.000`/`50.000`, bấm chip điền đúng vào ô; chọn sản phẩm chỉ 1 giá lịch sử → tự điền thẳng không hiện chip; "Đã nhập" hiển thị đúng; Lưu → Trừ kho qua icon danh sách → chuyển đúng "Đã trừ kho"; danh sách gộp hiển thị đúng cả 2 loại phiếu (cột "Loại"); trang Công nợ NCC hiện đúng badge "Trả hàng"; không lỗi console
 
+### Thêm nhanh khách hàng ngay trên form "Thêm dự án mới" (ngoài phase, theo yêu cầu người dùng 2026-08-06)
+
+- [x] `frontend/projects.html`: thêm khối `#new-partner-fields` (tái dùng `.new-partner-inputs` có sẵn) dưới select "Khách hàng"
+- [x] `frontend/assets/projects.js`: option `__new__` trong `loadCustomers()`, toggle hiện/ẩn khi đổi select, ép ẩn khi mở modal thêm/sửa, submit handler tạo khách hàng mới qua `POST /partners` trước khi tạo/sửa dự án, tải lại danh sách khách hàng sau khi lưu
+- [x] Phát hiện + sửa lỗi phân quyền: `backend/routes/partners.routes.js#POST /` mở rộng `requireAnyPermission(['kho','cong_no','du_an'])` (trước đó tài khoản chỉ có quyền `du_an` sẽ bị 403) — đã hỏi và người dùng chọn hướng này
+- [x] Test qua trình duyệt thật (CDP thô): mở modal → chọn thêm nhanh → khối nhập hiện đúng → lưu → xác nhận qua API khách hàng mới tạo đúng SĐT/địa chỉ, dự án gắn đúng `partner_id`, không lỗi console. Dữ liệu test đã xóa sạch
+
+### Hạ tầng ghi log chẩn đoán: log server ra file + request chậm + lỗi JS trình duyệt (ngoài phase, theo yêu cầu người dùng 2026-08-06, ngay sau mục điều tra "đơ ứng dụng" bên dưới)
+
+- [x] `backend/utils/logger.js` (mới): ghi `data/logs/server-YYYY-MM-DD.log` song song console, xoay theo ngày, tự dọn >14 ngày
+- [x] `backend/server.js`: đổi `console.*` sang `log.*`; thêm `uncaughtException`/`unhandledRejection` (ghi log rồi thoát); middleware ghi log request ≥2s
+- [x] `backend/routes/clientLogs.routes.js` (mới, `POST /api/client-logs`, không đòi đăng nhập) + mount `server.js`
+- [x] `frontend/assets/api.js`: `window.addEventListener('error'/'unhandledrejection')` gửi về endpoint trên, dedupe theo message+url, đặt ở đây (không phải `layout.js`) vì nạp trên MỌI trang kể cả trước khi đăng nhập
+- [x] `.gitignore`: thêm `data/logs/`
+- [x] Test qua API (curl: POST giả lập lỗi ghi đúng file) + trình duyệt thật (CDP thô, không đăng nhập, ném lỗi JS thật + Promise reject thật trên `login.html` — cả 2 tự động ghi đúng vào log); restart server xác nhận không hồi quy
+- [x] Middleware request chậm: chỉ xác nhận qua đọc code (chưa có cách an toàn giả lập request thật ≥2s để test trực tiếp)
+
+### Điều tra "đơ ứng dụng" báo cáo từ 1 người dùng + sửa vòng lặp Gantt không giới hạn (ngoài phase, theo phản hồi người dùng 2026-08-06)
+
+- [x] Điều tra: đọc `database.js` (WAL/busy_timeout), `layout.js` (polling thông báo), `project-detail.js` (event listener có gán lặp không), `projects.routes.js`/`projectMilestones.routes.js` (N+1/query nặng) — không thấy vấn đề rõ ràng; xác nhận với người dùng chỉ 1 người bị đơ cùng lúc (loại trừ nghẽn server toàn cục)
+- [x] Stress test qua trình duyệt thật (CDP thô): 300 lần mở/đóng modal "Thêm đợt thanh toán" + chuyển tab — không tái hiện lỗi, 0 lỗi console, JS heap không tăng
+- [x] Phát hiện lỗi thật: `renderGanttChart()` chạy lại mỗi lần `loadProjectDetail()` (mọi tab, không riêng "Giai đoạn"), vòng lặp vẽ nhãn tháng không giới hạn — giai đoạn bị nhập nhầm năm sẽ làm khoảng ngày bị thổi phồng, gây đơ cứng tab. Dữ liệu thật hiện tại (18 giai đoạn) chưa có outlier, chưa xác nhận là nguyên nhân gốc của báo cáo cụ thể
+- [x] `frontend/assets/project-detail.js#renderGanttChart()`: thêm chặn an toàn `MAX_MONTH_TICKS = 1000`
+- [x] Test qua trình duyệt thật (CDP thô, dự án test riêng): mô phỏng lỗi (chênh ~7973 năm, trước đây ~95.676 lần lặp) — sau khi sửa tải trang ~1.5s, nút vẫn phản hồi đúng; test lại 300 lần bình thường không hồi quy. Dữ liệu test đã xóa sạch
+- [x] Ghi nhận (chưa xử lý, ngoài phạm vi): `express-session` dùng `MemoryStore` mặc định — không phù hợp production theo khuyến cáo chính thức, cần xem lại ở Phase 5 Go-live
+
+### Sửa lỗi hiển thị: khung chọn giá nhập hiện thừa dù trống (ngoài phase, theo phản hồi người dùng 2026-08-06, ngay sau mục trên)
+
+- [x] `frontend/assets/style.css`: `.price-picker-hint` — tách `display:flex` sang rule riêng `.price-picker-hint:not([hidden])` (cùng dạng lỗi `[hidden]` bị `display` đè đã gặp ở `.alert`/`.form-row`/`.notification-panel`/`.page-header-actions`, lần này bỏ sót khi viết mới)
+- [x] Test qua trình duyệt thật (Chrome headless CDP thô, computed style + geometry): mặc định `display:none`/0×0 đúng, trạng thái ≥2 giá lịch sử vẫn hiện đúng `display:flex` + đủ chip — không hồi quy
+
 ## Open questions cần chốt trước khi code phần liên quan
 
 Xem `docs/DECISIONS.md` mục "Open questions".

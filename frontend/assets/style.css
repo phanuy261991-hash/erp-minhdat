@@ -1869,10 +1869,6 @@ input:focus-visible {
   left: 0;
   right: 0;
   z-index: 20;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 5px;
   padding: 6px 8px;
   background: var(--color-surface);
   border: 1px solid var(--color-primary);
@@ -1880,6 +1876,14 @@ input:focus-visible {
   box-shadow: var(--shadow-card);
   font-size: 11px;
   color: var(--color-primary);
+}
+
+/* :not([hidden]) - tranh lap lai loi display:flex ghi de thuoc tinh hidden (xem .alert),
+   khien khung goi y gia hien ra rong ngay ca khi chua co gia nao de goi y. */
+.price-picker-hint:not([hidden]) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .price-picker-hint svg {

@@ -6,5 +6,9 @@ data/*.db
 data/*.db-shm
 data/*.db-wal
 
+# Log server (them 2026-08-06, xem backend/utils/logger.js) - sinh ra khi chay, tu dong xoay
+# theo ngay + tu don sau 14 ngay, khong can luu vao repo.
+data/logs/
+
 # Cau hinh Claude Code rieng cua tung may, khong dung chung
 .claude/settings.local.json

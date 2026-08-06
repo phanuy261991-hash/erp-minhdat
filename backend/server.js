@@ -31,8 +31,23 @@ const contactsRoutes = require('./routes/contacts.routes');
 const notificationsRoutes = require('./routes/notifications.routes');
 const notificationSettingsRoutes = require('./routes/notificationSettings.routes');
 const printTemplatesRoutes = require('./routes/printTemplates.routes');
+const clientLogsRoutes = require('./routes/clientLogs.routes');
 const { requireAuth } = require('./middleware/auth');
 const { requirePermission } = require('./middleware/requirePermission');
+const log = require('./utils/logger');
+
+// Ghi log server ra file data/logs/ (them 2026-08-06, xem backend/utils/logger.js) - bat loi
+// chua duoc bat (thoat process ngay sau khi ghi, dung hanh vi mac dinh cua Node khi khong co
+// handler nao ca - chi khac la nay co ghi lai duoc ly do truoc khi thoat).
+process.on('uncaughtException', (err) => {
+  log.error(`UNCAUGHT EXCEPTION: ${err.stack || err.message}`);
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason) => {
+  const message = reason instanceof Error ? (reason.stack || reason.message) : String(reason);
+  log.error(`UNHANDLED REJECTION: ${message}`);
+  process.exit(1);
+});
 
 // Tu chay migration khi khoi dong (2026-08-01) - can thiet cho ban dong goi .exe chay tren may
 // nguoi dung: khong co san npm/terminal de tu chay "npm run migrate" truoc, nen server phai tu
@@ -41,7 +56,7 @@ const { requirePermission } = require('./middleware/requirePermission');
 try {
   runMigrations();
 } catch (err) {
-  console.error('[LOI] Khong the khoi tao/cap nhat database:', err.message);
+  log.error(`Khong the khoi tao/cap nhat database: ${err.message}`);
   process.exit(1);
 }
 
@@ -56,7 +71,7 @@ app.use(express.json());
 let sessionSecret = process.env.SESSION_SECRET;
 if (!sessionSecret) {
   sessionSecret = crypto.randomBytes(32).toString('hex');
-  console.warn('[CANH BAO] Chua cau hinh SESSION_SECRET - dang dung secret ngau nhien cho phien lam viec nay.');
+  log.warn('Chua cau hinh SESSION_SECRET - dang dung secret ngau nhien cho phien lam viec nay.');
 }
 
 app.use(session({
@@ -68,6 +83,22 @@ app.use(session({
     maxAge: 8 * 60 * 60 * 1000, // 8 tieng, phu hop 1 ca lam viec
   },
 }));
+
+// Ghi log cac request cham (>=SLOW_REQUEST_MS) - them 2026-08-06 sau khi dieu tra bao cao "dung
+// ung dung thi bi do" nhung khong co gi de doi chieu (server truoc day khong ghi log ra file).
+// Giup phat hien dung duong dan/query nao thuc su gay nghen neu con tai dien trong tuong lai.
+const SLOW_REQUEST_MS = 2000;
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    if (duration >= SLOW_REQUEST_MS) {
+      const user = req.session && req.session.user ? req.session.user.username : '(chua dang nhap)';
+      log.warn(`SLOW REQUEST ${req.method} ${req.originalUrl} - ${duration}ms - status=${res.statusCode} - user=${user}`);
+    }
+  });
+  next();
+});
 
 // Khong gan requireAuth (chua ai dang nhap duoc luc chua thiet lap xong) - tu khoa lai sau khi
 // da co it nhat 1 tai khoan, xem setup.routes.js.
@@ -121,6 +152,9 @@ app.use('/api/notification-settings', requireAuth, notificationSettingsRoutes);
 // Cau hinh mau in (migration 028) - GET mo cho moi tai khoan da dang nhap (trang in phieu that
 // can doc mau de render), PUT rieng kiem tra quyen 'cau_hinh' ben trong file route.
 app.use('/api/print-templates', requireAuth, printTemplatesRoutes);
+// Nhan bao loi JS phia trinh duyet (them 2026-08-06, xem clientLogs.routes.js) - KHONG gan
+// requireAuth vi loi co the xay ra ngay ca truoc khi dang nhap (vd tren login.html).
+app.use('/api/client-logs', clientLogsRoutes);
 
 // Route kiem tra server song - dung de test nhanh khi chay demo.
 app.get('/api/health', (req, res) => {
@@ -136,5 +170,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server dang chay tai http://localhost:${PORT}`);
+  log.info(`Server dang chay tai http://localhost:${PORT}`);
 });

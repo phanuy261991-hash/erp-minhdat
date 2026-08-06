@@ -70,7 +70,10 @@ function resolveAssignedUserId(assignedUserId) {
   return Number(assignedUserId);
 }
 
-router.post('/', requireAnyPermission(['kho', 'cong_no']), (req, res) => {
+// 'du_an' them 2026-08-06: form "Them du an" co nut them nhanh khach hang ngay tai cho (giong
+// pattern da co o stock-issues.html) - tai khoan chi co quyen module 'du_an' (khong co
+// 'kho'/'cong_no') can dung duoc nut nay, xem docs/DECISIONS.md.
+router.post('/', requireAnyPermission(['kho', 'cong_no', 'du_an']), (req, res) => {
   const { type, name, phone, address, category_id: categoryId, assigned_user_id: assignedUserId } = req.body || {};
 
   if (!PARTNER_TYPES.includes(type)) {

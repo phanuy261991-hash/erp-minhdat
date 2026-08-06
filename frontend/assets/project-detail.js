@@ -367,9 +367,17 @@ function renderGanttChart(phases) {
   // duoc (vd "Th6/2026" chong "Th7/2026"). Van ve duong ke luoi (khong bo qua duong ke, chi bo
   // nhan chu) de khong mat moc phan chia thang.
   const MIN_LABEL_GAP = 55;
+  // Chan an toan MAX_MONTH_TICKS (phat hien 2026-08-06, dieu tra bao cao "dung ung dung thi bi
+  // do"): vong lap nay truoc day khong co gioi han - neu 1 giai doan bi nhap nham nam o "Ngay bat
+  // dau/hoan thanh du kien" (vd go "2260" thay vi "2026"), khoang cach ngay bi thoi phong len
+  // hang tram/nghin nam, vong lap chay hang chuc nghin lan dung chuoi SVG khong lo -> dong cung
+  // tab trinh duyet. 1000 thang (~83 nam) du du cho bat ky du an that nao, khong anh huong hien
+  // thi binh thuong.
+  const MAX_MONTH_TICKS = 1000;
   let cursor = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
   let lastLabelX = -Infinity;
-  while (cursor <= maxDate) {
+  let monthTicks = 0;
+  while (cursor <= maxDate && monthTicks < MAX_MONTH_TICKS) {
     const x = Math.max(scaleX(cursor), GANTT_LABEL_WIDTH);
     svgContent += `<line x1="${x}" y1="${GANTT_AXIS_HEIGHT}" x2="${x}" y2="${totalHeight}" stroke="#e4ecfc" stroke-width="1" />`;
     if (x - lastLabelX >= MIN_LABEL_GAP) {
@@ -377,6 +385,7 @@ function renderGanttChart(phases) {
       lastLabelX = x;
     }
     cursor = addMonths(cursor, 1);
+    monthTicks += 1;
   }
 
   let cursorY = GANTT_AXIS_HEIGHT;

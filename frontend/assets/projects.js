@@ -36,6 +36,10 @@ const btnSubmitProject = document.getElementById('btn-submit-project');
 
 const nameInput = document.getElementById('project-name');
 const partnerSelect = document.getElementById('project-partner');
+const newPartnerFields = document.getElementById('new-partner-fields');
+const newPartnerNameInput = document.getElementById('new-partner-name');
+const newPartnerPhoneInput = document.getElementById('new-partner-phone');
+const newPartnerAddressInput = document.getElementById('new-partner-address');
 const contractNoInput = document.getElementById('project-contract-no');
 const contractDateInput = document.getElementById('project-contract-date');
 const contractValueInput = document.getElementById('project-contract-value');
@@ -122,11 +126,19 @@ async function loadCustomers() {
     const { partners } = await apiFetch('/partners?type=khach_hang');
     customersCache = partners;
     partnerSelect.innerHTML = '<option value="">-- Chọn khách hàng --</option>' +
-      partners.map((p) => `<option value="${p.id}">${p.name}</option>`).join('');
+      partners.map((p) => `<option value="${p.id}">${p.name}</option>`).join('') +
+      '<option value="__new__">+ Thêm khách hàng mới</option>';
   } catch (err) {
     renderProjectsError(err.message);
   }
 }
+
+// Them nhanh khach hang ngay tren form them/sua du an - dung chung pattern voi
+// stock-issues.html/.js (combobox "__new__" + khoi .new-partner-inputs) de nguoi lap du an
+// khong phai roi sang trang "Khach hang" tao truoc roi quay lai (theo yeu cau nguoi dung 2026-08-06).
+partnerSelect.addEventListener('change', () => {
+  newPartnerFields.hidden = partnerSelect.value !== '__new__';
+});
 
 async function loadStaff() {
   try {
@@ -205,6 +217,7 @@ function openCreateModal() {
   projectModalTitle.textContent = 'Thêm dự án mới';
   projectForm.reset();
   statusSelect.value = 'chuan_bi';
+  newPartnerFields.hidden = true;
   pickedMembers = [];
   renderMemberList();
   projectFormErrorBox.hidden = true;
@@ -220,6 +233,7 @@ async function openEditModal(projectSummary) {
     projectModalTitle.textContent = 'Sửa dự án';
     nameInput.value = project.name;
     partnerSelect.value = project.partner_id;
+    newPartnerFields.hidden = true;
     contractNoInput.value = project.contract_no || '';
     contractDateInput.value = project.contract_date || '';
     setMoneyValue(contractValueInput, project.contract_value);
@@ -282,29 +296,48 @@ projectForm.addEventListener('submit', async (event) => {
   btnSubmitProject.disabled = true;
   btnSubmitProject.textContent = 'Đang lưu...';
 
-  const body = {
-    name: nameInput.value.trim(),
-    partner_id: partnerSelect.value ? Number(partnerSelect.value) : null,
-    contract_no: contractNoInput.value.trim(),
-    contract_date: contractDateInput.value || null,
-    contract_value: getMoneyValue(contractValueInput),
-    start_date: startDateInput.value || null,
-    planned_end_date: plannedEndDateInput.value || null,
-    manager_id: managerSelect.value ? Number(managerSelect.value) : null,
-    status: statusSelect.value,
-    site_address: siteAddressInput.value.trim(),
-    note: noteInput.value.trim(),
-    members: pickedMembers.map((m) => ({ user_id: m.userId, role_in_project: m.roleInProject })),
-  };
-
   try {
+    let partnerId = partnerSelect.value || null;
+
+    if (partnerId === '__new__') {
+      const name = newPartnerNameInput.value.trim();
+      if (!name) {
+        throw new Error('Thiếu tên khách hàng mới');
+      }
+      const { partner } = await apiFetch('/partners', {
+        method: 'POST',
+        body: JSON.stringify({
+          type: 'khach_hang',
+          name,
+          phone: newPartnerPhoneInput.value.trim(),
+          address: newPartnerAddressInput.value.trim(),
+        }),
+      });
+      partnerId = partner.id;
+    }
+
+    const body = {
+      name: nameInput.value.trim(),
+      partner_id: partnerId ? Number(partnerId) : null,
+      contract_no: contractNoInput.value.trim(),
+      contract_date: contractDateInput.value || null,
+      contract_value: getMoneyValue(contractValueInput),
+      start_date: startDateInput.value || null,
+      planned_end_date: plannedEndDateInput.value || null,
+      manager_id: managerSelect.value ? Number(managerSelect.value) : null,
+      status: statusSelect.value,
+      site_address: siteAddressInput.value.trim(),
+      note: noteInput.value.trim(),
+      members: pickedMembers.map((m) => ({ user_id: m.userId, role_in_project: m.roleInProject })),
+    };
+
     if (editingProjectId === null) {
       await apiFetch('/projects', { method: 'POST', body: JSON.stringify(body) });
     } else {
       await apiFetch(`/projects/${editingProjectId}`, { method: 'PUT', body: JSON.stringify(body) });
     }
     closeProjectModal();
-    await loadProjects();
+    await Promise.all([loadProjects(), loadCustomers()]);
   } catch (err) {
     projectFormErrorText.textContent = err.message;
     projectFormErrorBox.hidden = false;
