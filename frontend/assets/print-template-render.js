@@ -282,9 +282,12 @@ const SAMPLE_STOCK_ISSUE_DATA = {
 
 // ---- Giay de nghi tam ung (migration 030) - mau in THU 2, khong co bang san pham ----
 
+// Bo chu "Chi nhanh" truoc ten chi nhanh (them 2026-08-06, theo yeu cau nguoi dung) - ten chi
+// nhanh cong ty da nhap thuong tu co tien to rieng (vd "PGD ..."), ghi them "Chi nhanh" truoc do
+// bi thua/trung lap.
 function buildBankNameBranchLine(company) {
   if (!company.bank_name) return '';
-  return company.bank_branch ? `${company.bank_name} – Chi nhánh ${company.bank_branch}` : company.bank_name;
+  return company.bank_branch ? `${company.bank_name} – ${company.bank_branch}` : company.bank_name;
 }
 
 // Danh xung "Thong tin phieu in" cua dot thanh toan (migration 031) - khop dung danh sach CHECK
@@ -304,6 +307,7 @@ function buildProjectAdvanceTokenValues(project, milestone, company) {
     advance_number: milestone.sort_order !== null && milestone.sort_order !== undefined ? String(milestone.sort_order) : '',
     advance_percent: milestone.percent !== null && milestone.percent !== undefined ? String(milestone.percent) : '',
     advance_amount: `${formatMoneyVN(Math.round(milestone.amount))} VNĐ`,
+    advance_amount_words: numberToVietnameseWords(milestone.amount),
     bank_account_holder: company.bank_account_holder || '',
     bank_account_number: company.bank_account_number || '',
     bank_name_branch: buildBankNameBranchLine(company),

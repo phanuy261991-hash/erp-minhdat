@@ -87,7 +87,7 @@ function renderIssueRow(issue) {
     <td>${formatDate(issue.created_at)}</td>
     <td>
       <button type="button" class="icon-btn" data-action="view" data-id="${issue.id}" title="Xem chi tiết">${icon('eye', 14)}</button>
-      <a class="icon-btn" href="print-issue.html?id=${issue.id}" target="_blank" title="In phiếu">${icon('printer', 14)}</a>
+      <button type="button" class="icon-btn" data-action="print" data-id="${issue.id}" title="In phiếu">${icon('printer', 14)}</button>
     </td>
   `;
   return tr;
@@ -104,9 +104,13 @@ async function loadIssues() {
 }
 
 issuesTbody.addEventListener('click', (event) => {
-  const button = event.target.closest('button[data-action="view"]');
+  const button = event.target.closest('button[data-action]');
   if (!button) return;
-  openIssueDetailModal(button.dataset.id);
+  if (button.dataset.action === 'view') {
+    openIssueDetailModal(button.dataset.id);
+  } else if (button.dataset.action === 'print') {
+    openPrintPreview(`print-issue.html?id=${button.dataset.id}`);
+  }
 });
 
 async function loadProducts() {

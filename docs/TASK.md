@@ -398,6 +398,29 @@
 - [x] `print-template-render.js#renderPrintTable()`: bỏ hậu tố `đ` ở ô `.print-total-value`
 - [x] Test qua trình duyệt thật (chỉ đọc): 3 nút đầu trang cùng cỡ hợp lý, màu/độ đậm thông tin công ty đúng, số tổng cộng không còn "đ", không lỗi console
 
+**Bổ sung: token "Số tiền tạm ứng bằng chữ" + đính kèm hình ảnh tự do (2026-08-06, theo yêu cầu người dùng)**
+- [x] `backend/config/printTemplateTokens.js`/`print-template-render.js`: token mới `advance_amount_words` cho mẫu "Giấy đề nghị tạm ứng" (dùng lại `numberToVietnameseWords()`), không tự chèn sẵn vào mẫu mặc định
+- [x] `backend/db/database.js`: thêm `db.dataDir` (nguồn dùng chung cho file runtime ngoài `data.db`)
+- [x] `backend/routes/printTemplates.routes.js`: `POST /:type/images` (quyền `cau_hinh`, multer memoryStorage ≤3MB, chỉ PNG/JPG/WEBP/GIF) — lưu file vào `data/print-template-uploads/<type>/`, trả URL tĩnh
+- [x] `backend/server.js`: static serve công khai `/uploads/print-templates`; `.gitignore` thêm `data/print-template-uploads/`
+- [x] `frontend/print-template-edit.html`/`.js`: nút "Chèn hình ảnh" (dùng chung mọi loại mẫu) — chụp `Range` con trỏ lúc bấm nút (`pendingImageRange`, giữ đúng vị trí qua lúc hộp thoại chọn file chiếm focus), tải file lên rồi tự chèn `<img class="pt-inline-image">` đúng vị trí đó
+- [x] `frontend/assets/icons.js`: icon `image` mới; `style.css`: `.pt-editable img, .print-sheet img { max-width:100%; height:auto }`
+- [x] Test qua API (curl): upload hợp lệ/sai định dạng/thiếu file/loại mẫu không tồn tại/chưa đăng nhập
+- [x] Test qua trình duyệt thật (Chrome headless, **click thật** qua CDP `Input.dispatchMouseEvent` + `Page.fileChooserOpened` + `DOM.setFileInputFiles` — không bypass code mới): chèn đúng vị trí, hiện đúng khung xem trước, lưu/đọc lại đúng, nút có ở cả 2 loại mẫu in, không lỗi console. Đã khôi phục mẫu mặc định + xóa file test trên đĩa sau khi xong.
+
+**Bổ sung: đậm-nghiêng "Số tiền bằng chữ" + bỏ chữ "Chi nhánh" thừa + popup xem trước khi in (2026-08-06, theo phản hồi người dùng)**
+- [x] `backend/config/printTemplateTokens.js`: chèn token `advance_amount_words` vào `PROJECT_ADVANCE_DEFAULT_HEADER_HTML` (dòng mới, bọc `<strong><em>`); đồng bộ dòng dữ liệu thật trong `print_templates` qua API (xác nhận trước chưa bị người dùng tự sửa)
+- [x] `print-template-render.js#buildBankNameBranchLine()`: bỏ chữ "Chi nhánh " thừa trước tên chi nhánh
+- [x] `style.css`: `.print-advance-amount-words` (mới) + giảm margin-bottom `.print-advance-amount`
+- [x] `frontend/assets/print-preview.js` (mới, dùng chung): `openPrintPreview(url)` (tiêm/mở popup iframe full-screen ngay trên trang hiện tại), `closePrintPreview()`, `goBackFromPrintPage(fallbackUrl)` (cho nút "Quay lại" bên trong 2 trang in tự nhận biết đang chạy trong popup hay mở trực tiếp qua URL)
+- [x] `print-issue.html`/`.js`, `print-project-advance.html`/`.js`: nạp `print-preview.js`, đổi nút "Quay lại" dùng `goBackFromPrintPage()`; `print-issue.html`: đổi `<a href>` thành `<button>`
+- [x] `stock-issues.html`/`.js`, `project-detail.html`/`.js`: nạp `print-preview.js`; nút in đổi từ `<a target="_blank">` sang `<button data-action="print"/"print-milestone">`, gọi `openPrintPreview(...)` trong listener delegated đã có sẵn
+- [x] `style.css`: `.print-preview-modal`/`.print-preview-topbar`/`.print-preview-iframe` (mới, `z-index:200`)
+- [x] Test qua trình duyệt thật (Chrome headless, click thật, dữ liệu có sẵn PX000016 + đợt thanh toán DA000003): xác nhận 0 tab/cửa sổ mới mở (theo dõi `Target.targetCreated`), popup hiện đúng, "Quay lại" đóng popup không điều hướng, tự ẩn đúng khi giả lập `afterprint`, 2 nội dung sửa hiển thị đúng, không lỗi console
+- [x] **Sửa lỗi phát hiện ngay sau đó** (phản hồi người dùng kèm ảnh): `.print-preview-modal` thiếu `:not([hidden])` (đúng lỗi CSS `[hidden]` bị `display` đè đã lặp lại nhiều lần trong dự án) — popup không ẩn được thật sự. Test lại bằng computed style + bounding box qua CDP (không chỉ đọc `.hidden` như lượt đầu)
+- [x] **Sửa lỗi thứ 2 phát hiện ngay sau đó** (2 nút "Quay lại" chồng nhau): bỏ hẳn thanh công cụ riêng của popup, chỉ dùng thanh công cụ có sẵn bên trong trang in được nhúng
+- [x] **Sửa lỗi thứ 3 phát hiện ngay sau đó** (nút B/I/U không tác dụng khi chọn chip token — `execCommand()` bỏ qua nội dung `contenteditable="false"`): `applyFormatCommand()` tự bọc/gỡ `<strong>`/`<em>`/`<u>` quanh chip bằng tay (song song `execCommand()` cho chữ thường); dọn thêm thẻ rỗng khi xóa chip đã bọc
+
 ### Sửa 3 lỗi modal "Ghi nhận thanh toán" — luồng "Ghi nhận đã thu" từ Dự án (ngoài phase, theo phản hồi người dùng 2026-08-05)
 
 - [x] `style.css`: `.form-row > .form-field > label` thêm `min-height:38px` + `display:flex; align-items:flex-end` — sửa lệch hàng 2 ô "Dự án"/"Đợt thanh toán" (áp dụng chung mọi `.form-row`)

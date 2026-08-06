@@ -52,6 +52,9 @@ function renderIssue(issue, company, template, tableColumnsMeta) {
 
 (async function init() {
   document.getElementById('btn-back').innerHTML = `${icon('arrowLeft', 16)} Quay lại`;
+  // Dang chay trong popup (iframe, xem print-preview.js) thi dong popup cua trang cha; neu duoc
+  // mo truc tiep qua URL (vd debug) thi dieu huong ve danh sach nhu truoc.
+  document.getElementById('btn-back').addEventListener('click', () => goBackFromPrintPage('stock-issues.html'));
   document.getElementById('btn-print').innerHTML = `${icon('printer', 16)} In phiếu`;
   document.getElementById('btn-print').addEventListener('click', () => window.print());
   document.querySelectorAll('.alert-icon-slot').forEach((slot) => {

@@ -21,5 +21,8 @@ db.pragma('foreign_keys = ON');
 // Gan kem duong dan file data.db thuc te vao chinh instance db - de cac noi khac (vd
 // scripts/backup.js) dung chung 1 nguon, khong tu ghep lai duong dan.
 db.dataFilePath = DB_PATH;
+// Thu muc data/ (them 2026-08-06) - dung chung cho cac noi can ghi file runtime khac ngoai
+// data.db (vd anh dinh kem mau in, xem backend/routes/printTemplates.routes.js).
+db.dataDir = DATA_DIR;
 
 module.exports = db;

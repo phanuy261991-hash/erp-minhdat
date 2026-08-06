@@ -1069,7 +1069,7 @@ function renderMilestonesTable(milestones) {
         <td>${formatMoney(m.remaining_amount)}</td>
         <td><span class="badge ${MILESTONE_STATUS_BADGE_CLASS[m.status]}">${MILESTONE_STATUS_LABELS[m.status]}</span></td>
         <td>
-          <a class="icon-btn" href="print-project-advance.html?project_id=${projectId}&milestone_id=${m.id}" target="_blank" title="In giấy đề nghị tạm ứng">${icon('printer', 14)}</a>
+          <button type="button" class="icon-btn" data-action="print-milestone" data-id="${m.id}" title="In giấy đề nghị tạm ứng">${icon('printer', 14)}</button>
           <button type="button" class="icon-btn" data-action="collect-milestone" data-id="${m.id}" title="${m.status === 'da_thu_du' ? 'Đợt này đã thu đủ' : 'Ghi nhận đã thu'}" ${m.status === 'da_thu_du' ? 'disabled' : ''}>${icon('check', 14)}</button>
           <button type="button" class="icon-btn" data-action="edit-milestone" data-id="${m.id}" title="Sửa đợt thanh toán">${icon('pencil', 14)}</button>
           <button type="button" class="icon-btn icon-btn-danger" data-action="delete-milestone" data-id="${m.id}" title="Xóa đợt thanh toán">${icon('trash', 14)}</button>
@@ -1140,6 +1140,11 @@ milestonesTbody.addEventListener('click', async (event) => {
 
   if (action === 'collect-milestone') {
     goToRecordPayment(id);
+    return;
+  }
+
+  if (action === 'print-milestone') {
+    openPrintPreview(`print-project-advance.html?project_id=${projectId}&milestone_id=${id}`);
     return;
   }
 

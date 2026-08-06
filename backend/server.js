@@ -164,6 +164,12 @@ app.get('/api/health', (req, res) => {
 // Phuc vu file tinh (HTML/CSS/JS) trong thu muc frontend/, khong qua build step.
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
+// Phuc vu hinh anh dinh kem mau in (2026-08-06, xem printTemplates.routes.js#POST /:type/images)
+// - luu ngoai frontend/ vi la du lieu runtime nguoi dung tai len (giong data/logs/), khong phai
+// asset tinh checked-in nhu frontend/assets/images/. Cong khai khong doi requireAuth, giong cach
+// logo/anh tinh trong frontend/ dang duoc phuc vu (trang in phieu that cung khong dang nhap lai).
+app.use('/uploads/print-templates', express.static(path.join(__dirname, '..', 'data', 'print-template-uploads')));
+
 // Mac dinh vao trang dang nhap khi truy cap trang chu.
 app.get('/', (req, res) => {
   res.redirect('/login.html');

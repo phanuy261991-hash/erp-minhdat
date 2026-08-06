@@ -112,6 +112,7 @@ const PROJECT_ADVANCE_HEADER_TOKENS = [
   { key: 'advance_number', label: 'Lần tạm ứng', hideLineIfEmpty: false },
   { key: 'advance_percent', label: 'Tỉ lệ % tạm ứng', hideLineIfEmpty: false },
   { key: 'advance_amount', label: 'Số tiền tạm ứng', hideLineIfEmpty: false },
+  { key: 'advance_amount_words', label: 'Số tiền tạm ứng bằng chữ', hideLineIfEmpty: false },
   // "Thong tin phieu in" tren dot thanh toan (migration 031, theo yeu cau nguoi dung 2026-08-06) -
   // rieng cho phieu nay, khac customer_name (ten khach hang tren hop dong) vi nguoi nhan phieu
   // tam ung co the la 1 nguoi cu the khac (vd ke toan/dai dien) chu khong phai ten khach hang.
@@ -140,7 +141,8 @@ const PROJECT_ADVANCE_DEFAULT_HEADER_HTML = `<div class="print-advance-header">
 <p>Kính gửi: <strong><span class="pt-token" data-token="customer_name" contenteditable="false">Tên khách hàng</span></strong></p>
 <p>Căn cứ theo hợp đồng Số: <strong><span class="pt-token" data-token="contract_no" contenteditable="false">Số hợp đồng</span></strong> ký ngày <strong><span class="pt-token" data-token="contract_date" contenteditable="false">Ngày ký hợp đồng</span></strong> giữa hai bên về việc cung cấp và lắp đặt các giải pháp điện thông minh tại: <strong><span class="pt-token" data-token="site_address" contenteditable="false">Địa chỉ lắp đặt</span></strong>.</p>
 <p>Đề nghị Quý Công ty tạm ứng lần <strong><span class="pt-token" data-token="advance_number" contenteditable="false">1</span></strong>, tương ứng <strong><span class="pt-token" data-token="advance_percent" contenteditable="false">30</span></strong>% theo giá trị hợp đồng cho chúng tôi số tiền là:</p>
-<p class="print-advance-amount"><strong><span class="pt-token" data-token="advance_amount" contenteditable="false">Số tiền</span></strong></p>`;
+<p class="print-advance-amount"><strong><span class="pt-token" data-token="advance_amount" contenteditable="false">Số tiền</span></strong></p>
+<p class="print-advance-amount-words"><strong><em>(Bằng chữ: <span class="pt-token" data-token="advance_amount_words" contenteditable="false">Số tiền bằng chữ</span>)</em></strong></p>`;
 
 const PROJECT_ADVANCE_DEFAULT_FOOTER_HTML = `<p>Thanh toán bằng chuyển khoản vào tài khoản như sau:</p>
 <p>Tên thụ hưởng: <strong><span class="pt-token" data-token="bank_account_holder" contenteditable="false">Tên tài khoản thụ hưởng</span></strong></p>

@@ -23,6 +23,8 @@ const orientationToggle = document.getElementById('orientation-toggle');
 const previewSheet = document.getElementById('preview-sheet');
 const tokenMenu = document.getElementById('token-menu');
 const btnInsertToken = document.getElementById('btn-insert-token');
+const btnInsertImage = document.getElementById('btn-insert-image');
+const imageFileInput = document.getElementById('image-file-input');
 const btnSave = document.getElementById('btn-save');
 const btnReset = document.getElementById('btn-reset');
 const showAmountWordsCheckbox = document.getElementById('show-amount-words-checkbox');
@@ -38,6 +40,11 @@ let currentOrientation = 'portrait';
 let showAmountInWords = true;
 let hasTable = true; // tu API /tokens - quyet dinh co hien khoi cau hinh bang/checkbox so tien bang chu
 let activeZone = 'header';
+// Vi tri con tro luc bam "Chen hinh anh" (them 2026-08-06) - phai chup lai NGAY luc click, truoc
+// khi mo hop thoai chon file: hop thoai chiem focus lam mat vung chon dang co trong contenteditable,
+// nhung 1 doi tuong Range da tao van con hop le de insertNode() sau khi nguoi dung chon xong file
+// (khac voi doc lai window.getSelection() luc do - se khong con tro dung vi tri nua).
+let pendingImageRange = null;
 
 function showError(message) {
   errorText.textContent = message;
@@ -114,6 +121,66 @@ function insertToken(tokenKey, label) {
   updatePreview();
 }
 
+// Chen 1 the <img> vao dung vi tri con tro da chup luc bam nut (2026-08-06, dung cho hinh anh
+// dinh kem mau in - vd ma QR thanh toan). width mac dinh vua phai (140px, du ro cho ma QR ma
+// khong choan het khung in) - trinh duyet Chrome/Edge tu hien nut keo-giai o goc anh khi bam vao
+// trong vung contenteditable, khong can tu viet co che resize rieng.
+function insertImage(range, url) {
+  const img = document.createElement('img');
+  img.src = url;
+  img.className = 'pt-inline-image';
+  img.style.width = '140px';
+  range.deleteContents();
+  range.insertNode(img);
+  range.setStartAfter(img);
+  range.collapse(true);
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+
+  updatePreview();
+}
+
+async function handleImageFileSelected(event) {
+  const file = event.target.files[0];
+  event.target.value = ''; // cho phep chon lai dung file nay o lan sau
+  const range = pendingImageRange;
+  pendingImageRange = null;
+  if (!file || !range) return;
+
+  if (file.size > 3 * 1024 * 1024) {
+    showError('Hình ảnh vượt quá dung lượng cho phép (3MB)');
+    return;
+  }
+
+  hideMessages();
+  const previousLabel = btnInsertImage.textContent;
+  btnInsertImage.disabled = true;
+  btnInsertImage.textContent = 'Đang tải lên...';
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    // Khong dung apiFetch: no luon gan Content-Type: application/json, se pha hong boundary cua
+    // multipart/form-data ma trinh duyet tu sinh khi gui FormData (giong products.js#import).
+    const response = await fetch(`/api/print-templates/${templateType}/images`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      body: formData,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || 'Tải hình ảnh lên thất bại');
+    }
+    insertImage(range, data.url);
+  } catch (err) {
+    showError(err.message);
+  } finally {
+    btnInsertImage.disabled = false;
+    btnInsertImage.textContent = previousLabel;
+  }
+}
+
 function renderTokenMenu() {
   const list = tokensData ? tokensData[activeZone] || [] : [];
   tokenMenu.innerHTML = list
@@ -131,7 +198,44 @@ function toggleTokenMenu(forceHide) {
 
 // --- Toolbar dinh dang chu (execCommand - du dung cho nhu cau dinh dang don gian, khong can
 // thu vien rich-text ngoai, dung nguyen tac "khong phu thuoc CDN/build step" cua du an) ---
+
+// document.execCommand() KHONG dinh dang duoc noi dung contenteditable="false" (chip token) -
+// day la gioi han chuan cua trinh duyet (bo qua toan bo "dao" khong the sua trong 1 vung
+// contenteditable co the sua), phat hien qua phan hoi nguoi dung 2026-08-06: bam "B" khi da chon
+// dung 1 chip khong co tac dung gi, dù van hoat dong binh thuong voi chu thuong. Vi vay voi 3
+// lenh dinh dang (bold/italic/underline), phai TU boc/go bo the <strong>/<em>/<u> quanh CHINH
+// chip token bang tay (DOM), song song voi goi execCommand nhu cu cho phan chu thuong con lai
+// trong cung vung chon (execCommand van chay binh thuong tren text, khong anh huong gi nhau).
+const CHIP_FORMAT_TAGS = { bold: 'STRONG', italic: 'EM', underline: 'U' };
+const CHIP_FORMAT_TAGS_VALUES = new Set(Object.values(CHIP_FORMAT_TAGS));
+
+// Toggle: neu chip dang duoc boc DUY NHAT boi 1 the dung tagName (khong con chu/token nao khac
+// chung the do) thi go bo (tat dinh dang) - nguoc lai thi boc them 1 lop moi (bat dinh dang).
+function toggleTokenChipFormat(chip, tagName) {
+  const parent = chip.parentElement;
+  if (parent && parent.tagName === tagName && parent.childNodes.length === 1) {
+    parent.replaceWith(chip);
+  } else {
+    const wrapper = document.createElement(tagName);
+    chip.replaceWith(wrapper);
+    wrapper.appendChild(chip);
+  }
+}
+
 function applyFormatCommand(cmd) {
+  const tagName = CHIP_FORMAT_TAGS[cmd];
+  if (tagName) {
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const editable = getActiveEditable();
+      if (editable.contains(range.commonAncestorContainer)) {
+        editable.querySelectorAll('.pt-token').forEach((chip) => {
+          if (range.intersectsNode(chip)) toggleTokenChipFormat(chip, tagName);
+        });
+      }
+    }
+  }
   document.execCommand(cmd, false, null);
   updatePreview();
 }
@@ -340,7 +444,14 @@ footerEditable.addEventListener('focus', () => {
   el.addEventListener('click', (event) => {
     const removeBtn = event.target.closest('.pt-token-remove');
     if (removeBtn) {
-      removeBtn.closest('.pt-token').remove();
+      const chip = removeBtn.closest('.pt-token');
+      const parent = chip.parentElement;
+      chip.remove();
+      // Don luon the <strong>/<em>/<u> rong neu chip vua xoa la con duy nhat cua no (them
+      // 2026-08-06, cung luc voi toggleTokenChipFormat() o tren) - tranh sot lai the rong vo nghia.
+      if (parent && parent !== el && parent.childNodes.length === 0 && CHIP_FORMAT_TAGS_VALUES.has(parent.tagName)) {
+        parent.remove();
+      }
       updatePreview();
     }
   });
@@ -358,6 +469,16 @@ document.getElementById('btn-font-larger').addEventListener('click', () => apply
 
 btnInsertToken.addEventListener('mousedown', (event) => event.preventDefault());
 btnInsertToken.addEventListener('click', () => toggleTokenMenu());
+
+// mousedown preventDefault giu nguyen vung chon dang co trong contenteditable (giong nut Dam/
+// Nghieng/Chen truong thong tin o tren) - can thiet o day de getInsertionRange() chup dung vi tri,
+// truoc khi hop thoai chon file (native, chiem focus toan trang) mo ra.
+btnInsertImage.addEventListener('mousedown', (event) => event.preventDefault());
+btnInsertImage.addEventListener('click', () => {
+  pendingImageRange = getInsertionRange(activeZone);
+  imageFileInput.click();
+});
+imageFileInput.addEventListener('change', handleImageFileSelected);
 
 tokenMenu.addEventListener('mousedown', (event) => {
   if (event.target.closest('.pt-token-menu-item')) event.preventDefault();

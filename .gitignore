@@ -10,5 +10,9 @@ data/*.db-wal
 # theo ngay + tu don sau 14 ngay, khong can luu vao repo.
 data/logs/
 
+# Hinh anh dinh kem mau in (them 2026-08-06, xem backend/routes/printTemplates.routes.js) - nguoi
+# dung tu tai len qua giao dien (vd ma QR thanh toan), khong phai asset tinh cua repo.
+data/print-template-uploads/
+
 # Cau hinh Claude Code rieng cua tung may, khong dung chung
 .claude/settings.local.json

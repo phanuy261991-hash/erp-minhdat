@@ -2244,7 +2244,15 @@ input:focus-visible {
   text-align: center;
   /* Dung dung co chu voi .print-total-value cua Phieu xuat kho (dong tien noi bat). */
   font-size: 15px;
-  margin: 4px 0 20px;
+  margin: 4px 0 4px;
+}
+
+/* Dong "So tien bang chu" (them 2026-08-06) - dam+nghieng qua the <strong><em> ngay trong seed
+   HTML (backend/config/printTemplateTokens.js), CSS chi lo can giua + khoang cach. */
+.print-advance-amount-words {
+  text-align: center;
+  font-size: 13px;
+  margin: 0 0 20px;
 }
 
 .print-advance-signature {
@@ -2258,6 +2266,30 @@ input:focus-visible {
 
 .print-advance-signature-name {
   margin-top: 56px !important;
+}
+
+/* ---- Popup xem truoc/in phieu (them 2026-08-06) - tiem vao document.body qua print-preview.js,
+   phu toan man hinh tren CHINH trang dang dung (khong dieu huong sang URL/tab rieng). z-index cao
+   hon moi lop khac trong he thong (modal-overlay=100, notification-bell=60) de luon noi len tren
+   cung, ke ca khi co modal/toast dang mo san. ---- */
+/* :not([hidden]) - tranh lap lai loi display de thuoc tinh hidden (xem .modal-overlay/.alert...
+   cung dang mac dinh nay trong du an) - thieu no khien modal.hidden=true (JS gan trong
+   closePrintPreview()) khong con tac dung thuc su an di duoc. */
+.print-preview-modal:not([hidden]) {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+}
+
+.print-preview-iframe {
+  flex: 1;
+  width: 100%;
+  border: none;
+  /* Nen trang co dinh doc lap voi theme he thong - trang giay luon phai trang du dark mode. */
+  background: #fff;
 }
 
 /* ---- Trang "Chinh sua mau in" (print-template-edit.html, migration 028) - bo cuc 2 cot: trai
@@ -2448,6 +2480,18 @@ input:focus-visible {
 
 .pt-token-remove:hover {
   background: rgba(37, 99, 235, 0.3);
+}
+
+/* Hinh anh dinh kem chen truc tiep vao vung soan thao/mau in (them 2026-08-06, vd ma QR thanh
+   toan) - max-width:100% chi de phong ho neu do rong luu lai (style="width:...") vuot khung giay,
+   khong gioi han kich thuoc that (nguoi dung tu keo-giai qua nut goc co san cua trinh duyet ngay
+   trong vung contenteditable). Dung 1 selector cho ca 2 boi canh (dang soan thao va ban in/xem
+   truoc that) vi cung 1 the <img> duoc luu nguyen trong header_html/footer_html. */
+.pt-editable img,
+.print-sheet img {
+  max-width: 100%;
+  height: auto;
+  vertical-align: middle;
 }
 
 /* Cau hinh cot bang san pham - danh sach ~9 dong, checkbox bat/tat + mui ten len/xuong sap xep
