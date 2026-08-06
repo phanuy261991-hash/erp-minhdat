@@ -287,6 +287,10 @@ function buildBankNameBranchLine(company) {
   return company.bank_branch ? `${company.bank_name} – Chi nhánh ${company.bank_branch}` : company.bank_name;
 }
 
+// Danh xung "Thong tin phieu in" cua dot thanh toan (migration 031) - khop dung danh sach CHECK
+// o backend (project_payment_milestones.recipient_title), chi hien nhan doc duoc khi in.
+const RECIPIENT_TITLE_LABELS = { anh: 'Anh', chi: 'Chị', cong_ty: 'Công Ty', don_vi: 'Đơn vị' };
+
 // Dung cho ca phieu that (project/milestone/company tu API) lan du lieu mau co dinh trong khung
 // xem truoc. print_date luon la NGAY IN THAT (luc bam in/xem truoc), khong phai ngay tao dot
 // thanh toan trong DB - dung yeu cau nguoi dung.
@@ -304,6 +308,8 @@ function buildProjectAdvanceTokenValues(project, milestone, company) {
     bank_account_number: company.bank_account_number || '',
     bank_name_branch: buildBankNameBranchLine(company),
     print_date: `ngày ${formatDateVNLong(new Date())}`,
+    recipient_title: RECIPIENT_TITLE_LABELS[milestone.recipient_title] || '',
+    recipient_name: milestone.recipient_name || '',
   };
 }
 
@@ -327,6 +333,8 @@ const SAMPLE_PROJECT_ADVANCE_DATA = {
     sort_order: 1,
     percent: 30,
     amount: 78357435,
+    recipient_title: 'anh',
+    recipient_name: 'Nguyễn Văn A',
   },
 };
 

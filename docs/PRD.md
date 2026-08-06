@@ -198,6 +198,18 @@ Chuông thông báo nổi ở mọi trang (góc dưới-phải màn hình), mọ
 - **Card "Sinh nhật trong tháng"** ở trang Tổng quan (mở cho mọi tài khoản): liệt kê đối tác có sinh nhật trong tháng hiện tại kèm ngày sinh, tô đỏ khi còn ≤3 ngày nữa tới sinh nhật.
 - **Phân quyền**: không cần module riêng — mọi tài khoản đăng nhập đều xem/đánh dấu đã đọc được thông báo của chính mình; chỉ trang cấu hình đòi quyền `cau_hinh`.
 
+### 4.15 Trả hàng (bổ sung 2026-08-06, theo yêu cầu người dùng — hoàn thành, bổ sung quy trình 2 bước cùng ngày)
+
+Ghi nhận khi khách hàng trả lại hàng đã mua (thuộc menu Kho, trang "Trả hàng") — hàng cộng lại vào tồn kho, đồng thời công nợ phải thu của khách hàng đó giảm tương ứng, tách biệt hoàn toàn khỏi danh sách "Phiếu nhập kho" thông thường (mã phiếu riêng, prefix `TH...`).
+
+- **Thông tin phiếu**: Khách hàng (bắt buộc, cho phép thêm nhanh khách hàng mới ngay tại form giống phiếu nhập/xuất), Công trình (không bắt buộc — **tự động lọc chỉ hiện các công trình của đúng khách hàng đang chọn**, không phải toàn bộ dự án hệ thống), Thời gian trả, Ghi chú.
+- **Từng dòng hàng trả**: Mã SP/Tên SP/ĐVT (tự điền khi chọn sản phẩm qua ô tìm kiếm gợi ý), **Số lượng đã xuất** (hệ thống tự tính — tổng đã xuất cho đúng khách hàng + sản phẩm đó, trừ đi số đã trả ở các phiếu **đã trừ kho** trước đó, khoanh vùng theo đúng công trình nếu có chọn — chỉ hiển thị tham khảo, không nhập tay được), **Số lượng trả lại** (nhập tay), **Giá bán** (tự điền theo giá bán hiện tại của sản phẩm, sửa tay được — dùng để tính số tiền giảm công nợ = Giá bán × Số lượng trả lại).
+- **Quy trình 2 bước**: nút **"Lưu"** chỉ ghi lại thông tin đã nhập (trạng thái "Chờ trừ kho") — **chưa** đụng tới tồn kho/công nợ, phiếu ở trạng thái này vẫn **sửa được** toàn bộ (icon "Sửa" trên danh sách). Nút **"Trừ kho"** (cả trong form lẫn icon duyệt nhanh ngay trên danh sách) mới thực sự cộng tồn kho + giảm công nợ theo đúng quy trình nghiệp vụ — **chặn cứng** tại bước này nếu "Số lượng trả lại" vượt quá số đã xuất còn có thể trả. Sau khi trừ kho thành công, phiếu chuyển trạng thái "Đã trừ kho" và **khóa vĩnh viễn** (không còn sửa/trừ kho lại được).
+- Khi trừ kho: tồn kho **cộng thêm đúng "Số lượng trả lại"** (không phải "Số lượng đã xuất"); công nợ khách hàng **giảm** đúng tổng giá trị hàng trả, tự động ghi 1 dòng vào lịch sử giao dịch công nợ (nhãn riêng "Trả hàng", gắn kèm mã phiếu trả); giá vốn của lô hàng trả về kho lấy tự động theo **giá vốn bình quân gia quyền hiện tại** của sản phẩm (không dùng giá bán làm giá vốn, tránh làm lệch giá vốn bình quân).
+- **Tra cứu**: trang danh sách tìm kiếm được theo mã phiếu, tên khách hàng, số điện thoại khách hàng; hiển thị rõ trạng thái "Chờ trừ kho"/"Đã trừ kho" từng phiếu.
+- Phiếu có gắn công trình sẽ tự động xuất hiện trong tab "Vật tư" của dự án đó (mục "Danh sách phiếu nhập/xuất đã gắn dự án"), với nhãn riêng "Trả hàng" để phân biệt với phiếu nhập mua hàng từ NCC.
+- Không thuộc quyền module riêng — dùng chung quyền `kho` như phiếu nhập/xuất kho.
+
 ## 5. Success Metrics
 
 | Mục tiêu | Chỉ số | Ngưỡng |

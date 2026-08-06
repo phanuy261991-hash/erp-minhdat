@@ -149,6 +149,8 @@ erDiagram
         int adjusts_id "nullable, ket hop adjusts_type de tro toi phieu goc"
         int project_id "nullable (ke hoach migration 023) - can co de 'da xuat cho du an' tru duoc vat tu tra ve kho"
         datetime created_at "co the chinh khi lap phieu - anh huong thu tu FIFO/binh quan gia quyen"
+        int is_return "migration 032, mac dinh 0 - 1 la phieu 'Tra hang' (khach hang tra lai hang da mua), an khoi danh sach Phieu nhap kho"
+        string status "migration 033, mac dinh da_tru_kho - phieu tra hang: cho_tru_kho (moi Luu, chua dong stock_movements/debt_ledger) hoac da_tru_kho (da Tru kho, khoa vinh vien). Phieu nhap thuong luon da_tru_kho"
     }
 
     STOCK_RECEIPT_ITEMS {
@@ -156,8 +158,9 @@ erDiagram
         int receipt_id FK
         int product_id FK
         real quantity
-        real unit_price "gia goc, chua tru chiet khau - doi chieu hoa don NCC"
+        real unit_price "gia goc, chua tru chiet khau - doi chieu hoa don NCC. Voi dong thuoc phieu is_return=1: la gia von binh quan tu dong tinh, khong phai gia nguoi dung nhap"
         real discount_percent "0-100, gia von thuc te = unit_price * (1 - discount_percent/100)"
+        real sale_price "migration 032, nullable - 'Gia ban' tren dong hang tra (chi co gia tri khi thuoc phieu is_return=1), dung tinh so tien giam cong no"
     }
 
     STOCK_ISSUES {
@@ -346,6 +349,8 @@ erDiagram
         real percent "nullable, neu nhap theo % gia tri hop dong"
         string due_date
         string note
+        string recipient_name "khong bat buoc, 'Gui den' tren phieu in"
+        string recipient_title "khong bat buoc, CHECK anh/chi/cong_ty/don_vi"
         datetime created_at
     }
 

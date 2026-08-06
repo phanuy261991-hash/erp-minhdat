@@ -54,8 +54,21 @@ router.get('/', (req, res) => {
   res.json({ milestones: getMilestonesForProject(projectId) });
 });
 
+// Danh xung "Thong tin phieu in" - danh sach co dinh khop CHECK cua cot recipient_title
+// (migration 031), '' nghia la chua chon (khong bat buoc).
+const RECIPIENT_TITLES = ['', 'anh', 'chi', 'cong_ty', 'don_vi'];
+
 function readMilestoneInput(body) {
-  const { name, sort_order: sortOrder, amount, percent, due_date: dueDate, note } = body || {};
+  const {
+    name,
+    sort_order: sortOrder,
+    amount,
+    percent,
+    due_date: dueDate,
+    note,
+    recipient_name: recipientName,
+    recipient_title: recipientTitle,
+  } = body || {};
   return {
     name: name ? String(name).trim() : '',
     sortOrder: sortOrder !== undefined && sortOrder !== null && sortOrder !== '' ? Number(sortOrder) : 0,
@@ -63,6 +76,8 @@ function readMilestoneInput(body) {
     percent: percent !== undefined && percent !== null && percent !== '' ? Number(percent) : null,
     dueDate: dueDate || null,
     note: note ? String(note).trim() : '',
+    recipientName: recipientName ? String(recipientName).trim() : '',
+    recipientTitle: recipientTitle ? String(recipientTitle).trim() : '',
   };
 }
 
@@ -70,6 +85,7 @@ function validateMilestoneInput(input) {
   if (!input.name) return 'Thiếu tên đợt thanh toán';
   if (!(input.amount > 0)) return 'Số tiền đợt thanh toán phải lớn hơn 0';
   if (input.percent !== null && (input.percent < 0 || input.percent > 100)) return 'Phần trăm phải từ 0 đến 100';
+  if (!RECIPIENT_TITLES.includes(input.recipientTitle)) return 'Danh xưng không hợp lệ';
   return null;
 }
 
@@ -91,8 +107,12 @@ router.post('/', (req, res) => {
     : (maxOrder.maxOrder || 0) + 1;
 
   const result = db
-    .prepare('INSERT INTO project_payment_milestones (project_id, name, sort_order, amount, percent, due_date, note) VALUES (?, ?, ?, ?, ?, ?, ?)')
-    .run(projectId, input.name, sortOrder, input.amount, input.percent, input.dueDate, input.note);
+    .prepare(`
+      INSERT INTO project_payment_milestones
+        (project_id, name, sort_order, amount, percent, due_date, note, recipient_name, recipient_title)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+    .run(projectId, input.name, sortOrder, input.amount, input.percent, input.dueDate, input.note, input.recipientName, input.recipientTitle);
 
   const milestones = getMilestonesForProject(projectId);
   res.status(201).json({ milestone: milestones.find((m) => m.id === result.lastInsertRowid) });
@@ -117,9 +137,20 @@ router.put('/:milestoneId', (req, res) => {
 
   db.prepare(`
     UPDATE project_payment_milestones SET
-      name = ?, sort_order = ?, amount = ?, percent = ?, due_date = ?, note = ?
+      name = ?, sort_order = ?, amount = ?, percent = ?, due_date = ?, note = ?,
+      recipient_name = ?, recipient_title = ?
     WHERE id = ?
-  `).run(input.name, input.sortOrder, input.amount, input.percent, input.dueDate, input.note, milestoneId);
+  `).run(
+    input.name,
+    input.sortOrder,
+    input.amount,
+    input.percent,
+    input.dueDate,
+    input.note,
+    input.recipientName,
+    input.recipientTitle,
+    milestoneId
+  );
 
   const milestones = getMilestonesForProject(projectId);
   res.json({ milestone: milestones.find((m) => m.id === milestoneId) });

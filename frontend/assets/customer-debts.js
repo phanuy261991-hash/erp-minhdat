@@ -186,6 +186,11 @@ async function openHistoryModal(partnerId) {
             : '<span class="badge badge-down">Điều chỉnh: Giảm</span>';
         } else if (e.type === 'no') {
           typeBadge = '<span class="badge badge-inactive">Phát sinh nợ</span>';
+        } else if (e.reference_type === 'receipt') {
+          // to hop type='tra' + reference_type='receipt' + is_adjustment=0 chi phat sinh tu
+          // phieu "Tra hang xuat" (migration 032, xem debt.service.js#recordReturnCredit) -
+          // thanh toan thuong luon co reference_type='payment' nen phan biet duoc bang field nay.
+          typeBadge = '<span class="badge badge-active">Trả hàng</span>';
         } else {
           typeBadge = '<span class="badge badge-active">Thanh toán</span>';
         }

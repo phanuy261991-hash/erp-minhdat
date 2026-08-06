@@ -21,6 +21,7 @@ const NAV_GROUPS = [
       { key: 'products', label: 'Sản phẩm', href: 'products.html', icon: 'package', module: 'kho', enabled: true },
       { key: 'stock-receipts', label: 'Nhập kho', href: 'stock-receipts.html', icon: 'arrowDownTray', module: 'kho', enabled: true },
       { key: 'stock-issues', label: 'Xuất kho', href: 'stock-issues.html', icon: 'arrowUpTray', module: 'kho', enabled: true },
+      { key: 'stock-returns', label: 'Trả hàng', href: 'stock-returns.html', icon: 'undo', module: 'kho', enabled: true },
     ],
   },
   {

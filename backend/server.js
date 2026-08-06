@@ -15,6 +15,7 @@ const warehouseSettingsRoutes = require('./routes/warehouseSettings.routes');
 const productsRoutes = require('./routes/products.routes');
 const stockReceiptsRoutes = require('./routes/stockReceipts.routes');
 const stockIssuesRoutes = require('./routes/stockIssues.routes');
+const stockReturnsRoutes = require('./routes/stockReturns.routes');
 const partnersRoutes = require('./routes/partners.routes');
 const customerCategoriesRoutes = require('./routes/customerCategories.routes');
 const debtsRoutes = require('./routes/debts.routes');
@@ -82,6 +83,7 @@ app.use('/api/warehouse-settings', requireAuth, warehouseSettingsRoutes);
 app.use('/api/products', requireAuth, productsRoutes);
 app.use('/api/stock-receipts', requireAuth, requirePermission('kho'), stockReceiptsRoutes);
 app.use('/api/stock-issues', requireAuth, requirePermission('kho'), stockIssuesRoutes);
+app.use('/api/stock-returns', requireAuth, requirePermission('kho'), stockReturnsRoutes);
 // GET mo cho moi nguoi da dang nhap (chon doi tac luc lap phieu), POST/PUT/DELETE rieng kiem
 // tra quyen ('kho' hoac 'cong_no' cho POST, chi 'cong_no' cho PUT/DELETE) ben trong file route
 // (xem partners.routes.js).

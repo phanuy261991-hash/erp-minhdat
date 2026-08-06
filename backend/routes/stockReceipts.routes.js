@@ -88,8 +88,10 @@ function readReceiptDate(raw) {
   return { receiptDate: raw };
 }
 
+// is_return = 0: an phieu "Tra hang xuat" (migration 032, stockReturns.routes.js co trang/API
+// rieng) khoi danh sach Phieu nhap kho - tach biet hoan toan theo dung quyet dinh da chot.
 router.get('/', (req, res) => {
-  const receipts = db.prepare(`${SELECT_RECEIPT} ORDER BY r.created_at DESC`).all();
+  const receipts = db.prepare(`${SELECT_RECEIPT} WHERE r.is_return = 0 ORDER BY r.created_at DESC`).all();
   res.json({ receipts });
 });
 

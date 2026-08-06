@@ -65,7 +65,7 @@ function getMaterialsForProject(projectId) {
 function getDocumentsForProject(projectId) {
   const receipts = db
     .prepare(`
-      SELECT r.id, r.code, r.created_at, r.payment_status, pa.name AS partner_name
+      SELECT r.id, r.code, r.created_at, r.payment_status, r.is_return, pa.name AS partner_name
       FROM stock_receipts r
       LEFT JOIN partners pa ON pa.id = r.partner_id
       WHERE r.project_id = ?

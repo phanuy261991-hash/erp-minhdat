@@ -421,6 +421,47 @@
 - [x] `style.css`: `.print-advance-*` (dùng `--color-foreground`, không dùng muted — áp dụng bài học lần trước)
 - [x] Test qua API (curl) + trình duyệt thật (CDP thô, dữ liệu thật dự án `DA000001`): token hiện đúng, không chip xanh sót, chữ công ty màu đen. **Hồi quy bắt buộc**: mở lại mẫu `stock_issue` (chỉ đọc, không Save/Reset vì mẫu thật đã bị người dùng tự chỉnh trước đó) — xác nhận không đổi gì, không lỗi console
 
+### Thêm nhóm trường "Thông tin phiếu in" cho Đợt thanh toán (ngoài phase, theo yêu cầu người dùng 2026-08-06)
+
+- [x] Migration `031_project_milestone_recipient.sql`: `project_payment_milestones.recipient_name`/`recipient_title` (không bắt buộc, `recipient_title` có `CHECK` giới hạn 4 giá trị + rỗng)
+- [x] `backend/routes/projectMilestones.routes.js`: đọc/validate/lưu 2 trường mới ở cả `POST`/`PUT`
+- [x] `frontend/project-detail.html`: modal "Thêm/Sửa đợt thanh toán" thêm nhóm `.section-heading` "Thông tin phiếu in" + ô "Gửi đến" + `<select>` "Danh xưng" (Anh/Chị/Công Ty/Đơn vị)
+- [x] `frontend/assets/project-detail.js`: điền lại giá trị khi sửa, gửi lên API khi lưu
+- [x] `backend/config/printTemplateTokens.js`: thêm token `recipient_title`/`recipient_name` vào mẫu "Giấy đề nghị tạm ứng" (`project_payment_advance`)
+- [x] `frontend/assets/print-template-render.js`: `buildProjectAdvanceTokenValues()` tính giá trị 2 token mới (map mã danh xưng → nhãn tiếng Việt), cập nhật dữ liệu mẫu cho khung xem trước
+- [x] `docs/erd.mermaid`: bổ sung 2 cột vào entity `PROJECT_PAYMENT_MILESTONES`
+- [x] Test qua API (Node `fetch`): tạo/sửa/validate `recipient_title` sai bị chặn 400, dữ liệu test đã xóa sạch. Test qua trình duyệt thật (Chrome headless CDP thô): modal hiện đúng nhóm trường + 4 lựa chọn danh xưng; trang chỉnh mẫu in có đủ 2 token mới trong dropdown "Chèn trường thông tin", chèn thử vào đầu trang → khung xem trước hiển thị đúng giá trị mẫu, không lưu đè mẫu in thật đã được người dùng tự tùy chỉnh trước đó
+
+### "Trả hàng xuất" — khách hàng trả lại hàng đã mua (ngoài phase, theo yêu cầu người dùng 2026-08-06)
+
+> Đã lên kế hoạch qua `EnterPlanMode` + chốt 4 quyết định phạm vi qua `AskUserQuestion` trước khi code (Số lượng đã xuất tự tính chỉ đọc, chặn cứng khi trả vượt số còn lại, không cần gắn đích danh phiếu xuất gốc, tách biệt hoàn toàn khỏi danh sách Phiếu nhập kho) — chi tiết đầy đủ `docs/DECISIONS.md`.
+
+- [x] Migration `032_stock_returns.sql`: `stock_receipts.is_return` (mặc định 0), `stock_receipt_items.sale_price` (nullable) — tái dùng cơ chế `stock_receipts`/`stock_movements`/`stock_lots` hiện có, không tạo bảng mới (lý do `CHECK` trên `reference_type` của `stock_movements`/`debt_ledger`, xem `docs/DECISIONS.md`)
+- [x] `backend/services/debt.service.js`: thêm `recordReturnCredit()` (`type='tra', reference_type='receipt'`, không dùng `recordDebtFromDocument()`)
+- [x] `backend/services/stockReturn.service.js` (mới): `createStockReturn()` (transaction đầy đủ: validate khách hàng + công trình, `getReturnReference()` tính "Đã xuất/Đã trả/Còn lại có thể trả" on-the-fly, sinh mã `TH...`, insert phiếu+items+movements+lots với `unit_cost` tự động = giá vốn bình quân gia quyền hiện tại, gọi `recordReturnCredit()`)
+- [x] `backend/routes/stockReturns.routes.js` (mới): `GET /`, `GET /:id`, `GET /reference`, `POST /` — mount `server.js` dùng quyền `kho` có sẵn
+- [x] `backend/routes/stockReceipts.routes.js`: `GET /` thêm `WHERE r.is_return = 0` để ẩn phiếu trả khỏi danh sách Phiếu nhập kho
+- [x] `backend/routes/projectMaterials.routes.js` (`getDocumentsForProject`): SELECT thêm `r.is_return`
+- [x] `frontend/stock-returns.html`/`assets/stock-returns.js` (mới): danh sách + tìm kiếm (mã phiếu/tên/SĐT khách hàng) + modal "Lập phiếu trả hàng" (Khách hàng, Công trình tự lọc theo khách hàng đang chọn, dòng sản phẩm có "Đã xuất" tự tính chỉ đọc + "Số lượng trả lại" + "Giá bán" tự điền) + modal xem chi tiết
+- [x] `frontend/assets/icons.js`: icon `undo` mới; `frontend/assets/layout.js`: mục nav "Trả hàng xuất" (nhóm Kho, sau "Xuất kho")
+- [x] `frontend/assets/customer-debts.js`: badge "Trả hàng" trong lịch sử giao dịch (nhận diện qua `type==='tra' && !is_adjustment && reference_type==='receipt'`)
+- [x] `frontend/assets/project-detail.js`: nhãn "Trả hàng" thay "Nhập kho" trong tab Vật tư khi `is_return=1`
+- [x] `docs/erd.mermaid`, `docs/PRD.md` (mục 4.15 mới)
+- [x] Test qua API (Node `fetch`): tồn kho tăng đúng "Số lượng trả lại" (không phải "Số lượng đã xuất"), công nợ giảm đúng, `debt_ledger` ghi đúng `type='tra', reference_type='receipt'`; chặn đúng khi trả vượt số còn lại (400); chặn đúng đối tác không phải khách hàng (400); không xuất hiện ở `GET /stock-receipts`; "Đã xuất/Còn lại" tính đúng sau khi trả
+- [x] Test qua trình duyệt thật (Chrome headless CDP thô): lập phiếu đầy đủ luồng qua UI thật (chọn khách hàng → công trình tự lọc đúng theo khách hàng → chọn sản phẩm qua combobox thật → "Đã xuất" hiện đúng → nhập số lượng/giá bán → lưu), tìm kiếm đúng theo mã phiếu/tên/SĐT, modal chi tiết hiện đúng, badge "Trả hàng" hiện đúng ở Công nợ khách hàng, nhãn "Trả hàng" hiện đúng ở tab Vật tư dự án (dùng dự án test, không đụng dữ liệu thật "Villa Kỳ Duyên"), trang "Phiếu nhập kho" xác nhận không lẫn mã `TH...`, không lỗi console
+
+### "Trả hàng": quy trình 2 bước Lưu (nháp) / Trừ kho (thực thi) + đổi tên menu (ngoài phase, theo yêu cầu người dùng 2026-08-06, ngay sau khi hoàn thành mục trên)
+
+- [x] Migration `033_stock_return_draft.sql`: `stock_receipts.status` (`cho_tru_kho`/`da_tru_kho`, mặc định `da_tru_kho` — không ảnh hưởng phiếu nhập kho thường)
+- [x] `backend/services/stockReturn.service.js`: viết lại — `validatePartnerAndProject()`/`validateItemsShape()`/`validateRemaining()` tách riêng; `applyProcessing()` (dùng chung, đọc lại items từ DB, validate số lượng còn lại + tính giá vốn bình quân + ghi movements/lots/`recordReturnCredit()` + khóa `status='da_tru_kho')`; `createStockReturn({..., process})` (process=false chỉ lưu, process=true gọi `applyProcessing()` ngay — đúng y hệt hành vi 1 bước cũ); `updateStockReturn()` (sửa phiếu `cho_tru_kho`: thay toàn bộ phiếu+items); `processStockReturn()` ("Trừ kho" cho phiếu đã lưu trước đó); `getReturnReference()` chỉ tính phiếu `da_tru_kho` vào "đã trả"
+- [x] `backend/routes/stockReturns.routes.js`: `SELECT` thêm `r.status`; `POST /` nhận `process` (mặc định false); thêm `PUT /:id` (sửa phiếu nháp) và `POST /:id/process` (trừ kho phiếu đã lưu)
+- [x] `frontend/stock-returns.html`: đổi `<title>`/`<h2>` thành "Trả hàng"; thêm cột "Trạng thái"; modal đổi 1 nút submit thành 2 nút `type="button"` (`#btn-save-draft` "Lưu", `#btn-process-return` "Trừ kho"), tiêu đề modal đổi động qua `#return-modal-title`
+- [x] `frontend/assets/stock-returns.js`: `renderReturnRow()` thêm badge trạng thái + icon Sửa/Trừ kho chỉ hiện khi `cho_tru_kho` (khóa vĩnh viễn sau khi `da_tru_kho`); `openEditModal()` (mới, dựng lại đầy đủ form + item rows từ dữ liệu đã lưu); `resolvePartnerId()`/`buildReturnBody()` tách dùng chung; nút "Lưu" gọi `POST`/`PUT` không `process`; nút "Trừ kho" — tạo mới thì `POST` kèm `process:true` (1 bước), đang sửa thì `PUT` lưu trước rồi mới gọi `POST /:id/process` (tránh mất dữ liệu vừa sửa); icon "Trừ kho" ngoài danh sách gọi thẳng `POST /:id/process` kèm `confirm()`
+- [x] `frontend/assets/layout.js`: đổi nhãn nav từ "Trả hàng xuất" thành "Trả hàng"
+- [x] `docs/erd.mermaid`, `docs/PRD.md` (mục 4.15 cập nhật quy trình 2 bước)
+- [x] Test qua API (Node `fetch`): Lưu không đụng tồn kho/công nợ/`getReturnReference()`; sửa phiếu nháp cập nhật đúng; Trừ kho dùng đúng số liệu MỚI NHẤT sau khi sửa (không phải lúc tạo); sau khi trừ kho — sửa lại bị chặn 400, trừ kho lần 2 bị chặn 400; "Lưu" không chặn vượt số còn lại nhưng "Trừ kho" vẫn chặn đúng 400; tạo mới kèm `process:true` hoạt động y hệt hành vi 1 bước cũ
+- [x] Test qua trình duyệt thật (Chrome headless CDP thô, đóng đúng theo PID cây tiến trình sau khi test): tiêu đề trang/menu đổi đúng "Trả hàng" (không còn "Trả hàng xuất"); tạo phiếu qua UI → Lưu → badge "Chờ trừ kho" đúng → bấm icon Sửa mở đúng modal + đúng dữ liệu → sửa số lượng → Lưu lại → bấm icon "Trừ kho" trên danh sách (có `confirm()`) → badge chuyển "Đã trừ kho" + icon Sửa/Trừ kho biến mất; xác nhận số liệu trừ kho đúng theo giá trị đã sửa (không phải giá trị lúc tạo ban đầu), không lỗi console
+
 ## Open questions cần chốt trước khi code phần liên quan
 
 Xem `docs/DECISIONS.md` mục "Open questions".

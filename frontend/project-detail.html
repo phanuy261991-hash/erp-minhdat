@@ -388,6 +388,24 @@
           <input type="text" id="milestone-note" autocomplete="off" />
         </div>
 
+        <h4 class="section-heading">Thông tin phiếu in</h4>
+        <div class="form-row">
+          <div class="form-field">
+            <label for="milestone-recipient-name">Gửi đến (không bắt buộc)</label>
+            <input type="text" id="milestone-recipient-name" autocomplete="off" placeholder="Tên người nhận phiếu" />
+          </div>
+          <div class="form-field">
+            <label for="milestone-recipient-title">Danh xưng (không bắt buộc)</label>
+            <select id="milestone-recipient-title">
+              <option value="">-- Chọn --</option>
+              <option value="anh">Anh</option>
+              <option value="chi">Chị</option>
+              <option value="cong_ty">Công Ty</option>
+              <option value="don_vi">Đơn vị</option>
+            </select>
+          </div>
+        </div>
+
         <div class="modal-actions">
           <button type="button" id="btn-cancel-milestone" class="btn-secondary">Hủy</button>
           <button type="submit" id="btn-submit-milestone" class="btn-primary">Lưu</button>

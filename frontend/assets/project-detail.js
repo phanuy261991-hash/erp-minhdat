@@ -148,6 +148,8 @@ const milestonePercentInput = document.getElementById('milestone-percent');
 const milestoneSortOrderInput = document.getElementById('milestone-sort-order');
 const milestoneDueDateInput = document.getElementById('milestone-due-date');
 const milestoneNoteInput = document.getElementById('milestone-note');
+const milestoneRecipientNameInput = document.getElementById('milestone-recipient-name');
+const milestoneRecipientTitleSelect = document.getElementById('milestone-recipient-title');
 let editingMilestoneId = null;
 
 const variationsTbody = document.getElementById('variations-tbody');
@@ -834,6 +836,12 @@ taskForm.addEventListener('submit', async (event) => {
 // frontend chi hien thi lai, khong tu tinh (dung nguyen tac da ap dung cho progress_percent/is_late).
 
 const DOCUMENT_TYPE_LABELS = { receipt: 'Nhập kho', issue: 'Xuất kho' };
+// Phieu "Tra hang xuat" (migration 032) van la 1 dong stock_receipts (type='receipt') nhung
+// danh dau is_return=1 - doi nhan rieng de khong nham voi phieu nhap mua hang tu NCC.
+function documentTypeLabel(d) {
+  if (d.type === 'receipt' && d.is_return) return 'Trả hàng';
+  return DOCUMENT_TYPE_LABELS[d.type];
+}
 
 function renderMaterialsTable(materials) {
   const hasRows = materials.length > 0;
@@ -880,7 +888,7 @@ function renderDocumentsTable(documents) {
         : '<span class="badge badge-active">Đã thanh toán/thu</span>';
       return `
         <tr>
-          <td>${DOCUMENT_TYPE_LABELS[d.type]}</td>
+          <td>${documentTypeLabel(d)}</td>
           <td>${d.code}</td>
           <td>${d.partner_name || '-'}</td>
           <td>${paymentBadge}</td>
@@ -1086,6 +1094,8 @@ function openEditMilestoneModal(milestone) {
   milestoneSortOrderInput.value = milestone.sort_order;
   milestoneDueDateInput.value = milestone.due_date || '';
   milestoneNoteInput.value = milestone.note || '';
+  milestoneRecipientNameInput.value = milestone.recipient_name || '';
+  milestoneRecipientTitleSelect.value = milestone.recipient_title || '';
   milestoneFormErrorBox.hidden = true;
   milestoneModal.hidden = false;
   milestoneNameInput.focus();
@@ -1156,6 +1166,8 @@ milestoneForm.addEventListener('submit', async (event) => {
     sort_order: milestoneSortOrderInput.value === '' ? 0 : Number(milestoneSortOrderInput.value),
     due_date: milestoneDueDateInput.value || null,
     note: milestoneNoteInput.value.trim(),
+    recipient_name: milestoneRecipientNameInput.value.trim(),
+    recipient_title: milestoneRecipientTitleSelect.value,
   };
 
   try {

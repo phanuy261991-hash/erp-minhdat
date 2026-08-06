@@ -133,6 +133,18 @@ function recordDebtAdjustment({ partnerId, type, amount, referenceType, referenc
   return db.prepare('SELECT * FROM debt_ledger WHERE id = last_insert_rowid()').get();
 }
 
+// Giam cong no tu 1 phieu tra hang xuat (migration 032, stockReturn.service.js) - KHONG dung
+// recordDebtFromDocument() vi ham do luon ghi type='no' (tang no), sai chieu cho hang tra ve.
+// reference_type='receipt' vi phieu tra hang ve ban chat van la 1 dong stock_receipts (is_return
+// =1) - to hop type='tra' + reference_type='receipt' + is_adjustment=0 truoc gio khong xay ra
+// voi 2 duong ghi con lai (thanh toan luon reference_type='payment', dieu chinh luon
+// is_adjustment=1) nen tu phan biet duoc o lich su giao dich ma khong can them cot moi.
+function recordReturnCredit({ partnerId, amount, referenceId, createdBy, projectId }) {
+  db.prepare(
+    "INSERT INTO debt_ledger (partner_id, type, amount, reference_type, reference_id, created_by, project_id) VALUES (?, 'tra', ?, 'receipt', ?, ?, ?)"
+  ).run(partnerId, amount, referenceId, createdBy, projectId || null);
+}
+
 function getDebtBalance(partnerId) {
   const row = db
     .prepare(`
@@ -144,4 +156,11 @@ function getDebtBalance(partnerId) {
   return row.balance;
 }
 
-module.exports = { recordDebtFromDocument, recordPayment, recordDebtAdjustment, getDebtBalance, ServiceError };
+module.exports = {
+  recordDebtFromDocument,
+  recordPayment,
+  recordDebtAdjustment,
+  recordReturnCredit,
+  getDebtBalance,
+  ServiceError,
+};

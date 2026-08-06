@@ -112,6 +112,11 @@ const PROJECT_ADVANCE_HEADER_TOKENS = [
   { key: 'advance_number', label: 'Lần tạm ứng', hideLineIfEmpty: false },
   { key: 'advance_percent', label: 'Tỉ lệ % tạm ứng', hideLineIfEmpty: false },
   { key: 'advance_amount', label: 'Số tiền tạm ứng', hideLineIfEmpty: false },
+  // "Thong tin phieu in" tren dot thanh toan (migration 031, theo yeu cau nguoi dung 2026-08-06) -
+  // rieng cho phieu nay, khac customer_name (ten khach hang tren hop dong) vi nguoi nhan phieu
+  // tam ung co the la 1 nguoi cu the khac (vd ke toan/dai dien) chu khong phai ten khach hang.
+  { key: 'recipient_title', label: 'Danh xưng người nhận', hideLineIfEmpty: false },
+  { key: 'recipient_name', label: 'Gửi đến (người nhận phiếu)', hideLineIfEmpty: false },
 ];
 
 const PROJECT_ADVANCE_FOOTER_TOKENS = [

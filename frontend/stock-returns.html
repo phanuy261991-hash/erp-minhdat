@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trả hàng - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Kho</p>
+      <div class="page-header">
+        <h2>Trả hàng</h2>
+        <div class="page-header-actions">
+          <div class="search-box">
+            <span class="input-icon"></span>
+            <input type="text" id="return-search" class="search-input" placeholder="Tìm theo mã phiếu, tên hoặc số điện thoại khách hàng..." autocomplete="off" />
+          </div>
+          <button type="button" id="btn-add-return" class="btn-add"></button>
+        </div>
+      </div>
+
+      <div id="returns-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="returns-error-text"></span>
+      </div>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Mã phiếu</th>
+              <th>Khách hàng</th>
+              <th>Số điện thoại</th>
+              <th>Công trình</th>
+              <th>Người lập</th>
+              <th>Ngày lập</th>
+              <th>Số tiền giảm nợ</th>
+              <th>Trạng thái</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="returns-tbody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <div id="return-detail-modal" class="modal-overlay" hidden>
+    <div class="modal-card modal-card-lg">
+      <h3>Chi tiết phiếu trả hàng</h3>
+      <div id="return-detail-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="return-detail-error-text"></span>
+      </div>
+      <div class="detail-info-grid" id="return-detail-info"></div>
+      <h4 class="section-heading">Danh sách hàng trả</h4>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Sản phẩm</th>
+              <th>ĐVT</th>
+              <th>Số lượng trả lại</th>
+              <th>Giá bán</th>
+              <th>Thành tiền</th>
+            </tr>
+          </thead>
+          <tbody id="return-detail-items"></tbody>
+        </table>
+      </div>
+      <div class="receipt-total-row">
+        <span>Tổng tiền giảm công nợ</span>
+        <span id="return-detail-total">0</span>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="btn-close-return-detail" class="btn-secondary">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="return-modal" class="modal-overlay" hidden>
+    <div class="modal-card modal-card-lg">
+      <h3 id="return-modal-title">Lập phiếu trả hàng</h3>
+      <form id="return-form">
+        <div id="return-form-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="return-form-error-text"></span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="return-partner">Khách hàng</label>
+            <select id="return-partner"></select>
+          </div>
+          <div class="form-field">
+            <label for="return-date">Thời gian trả</label>
+            <input type="datetime-local" id="return-date" />
+          </div>
+        </div>
+
+        <div id="new-partner-fields" class="form-field" hidden>
+          <label>Khách hàng mới</label>
+          <div class="new-partner-inputs">
+            <input type="text" id="new-partner-name" placeholder="Tên khách hàng" />
+            <input type="text" id="new-partner-phone" placeholder="Số điện thoại (không bắt buộc)" />
+            <input type="text" id="new-partner-address" placeholder="Địa chỉ (không bắt buộc)" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="return-project">Công trình (không bắt buộc)</label>
+            <select id="return-project">
+              <option value="">-- Không gắn công trình --</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="return-note">Ghi chú</label>
+            <input type="text" id="return-note" placeholder="vd: Khách trả hàng lỗi" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label>Danh sách hàng trả</label>
+          <div class="item-rows-header">
+            <span>Sản phẩm</span>
+            <span>ĐVT</span>
+            <span>Đã xuất</span>
+            <span>SL trả lại</span>
+            <span>Giá bán</span>
+            <span>Thành tiền</span>
+            <span></span>
+          </div>
+          <div class="item-rows" id="item-rows"></div>
+          <button type="button" id="btn-add-item-row" class="btn-secondary btn-add-row">+ Thêm dòng</button>
+          <div class="receipt-total-row">
+            <span>Tổng tiền giảm công nợ</span>
+            <span id="return-total-amount">0</span>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-return" class="btn-secondary">Hủy</button>
+          <button type="button" id="btn-save-draft" class="btn-secondary">Lưu</button>
+          <button type="button" id="btn-process-return" class="btn-primary">Trừ kho</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/money-input.js"></script>
+  <script src="assets/stock-returns.js"></script>
+</body>
+</html>
