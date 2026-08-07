@@ -94,7 +94,7 @@ function renderRow(product) {
     <td>${product.code}</td>
     <td>${product.name}</td>
     <td>${product.unit}</td>
-    <td>${formatMoney(product.cost_price)}</td>
+    <td>${formatMoney(product.current_cost)}</td>
     <td>${formatMoney(product.sale_price)}</td>
     <td>${stockHtml}</td>
     <td>${statusBadge}</td>

@@ -2,6 +2,15 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-07 (Sửa lỗi hiển thị: cột "Giá vốn" trong danh sách Sản phẩm luôn hiện 0)
+
+> Theo phản hồi người dùng: trang chi tiết sản phẩm hiện đúng giá vốn hiện tại, nhưng danh sách Sản phẩm luôn hiện 0.
+
+- **Nguyên nhân**: danh sách hiện `products.cost_price` (giá vốn tham chiếu nhập tay, không bắt buộc, mặc định 0, không tự cập nhật), còn trang chi tiết hiện `current_cost` tính on-the-fly từ `stock_lots` qua `getWeightedAverageCost()` — 2 nguồn dữ liệu khác nhau bị gắn cùng nhãn "Giá vốn". Đã hỏi qua `AskUserQuestion`, người dùng chọn đổi cột danh sách sang giá trị thực tế.
+- **`backend/routes/products.routes.js`**: `GET /api/products` trả thêm `current_cost` cho từng sản phẩm (tái dùng `getWeightedAverageCost()` có sẵn, không viết lại công thức bằng SQL).
+- **`frontend/assets/products.js`**: cột "Giá vốn" trong bảng đổi sang đọc `product.current_cost` thay vì `product.cost_price`. Ô "Giá vốn" nhập tay trên form Thêm/Sửa và cột "Giá vốn" ở Xuất Excel giữ nguyên `cost_price` (ngoài phạm vi đã hỏi).
+- Test qua DB trực tiếp + API thật + trình duyệt thật (Chrome headless CDP thô, đăng nhập session thật): tái hiện đúng kịch bản lỗi gốc (SP020: `cost_price=0`, `current_cost=45.000`) — trước sửa hiện 0, sau sửa hiện đúng 45.000; không lỗi console, không hồi quy tìm kiếm/sắp xếp. Đã restart server.
+
 ## 2026-08-07 (Báo cáo: bộ lọc kỳ theo tháng/khoảng ngày + đổi thẻ "Dự án vượt dự toán vật tư" thành "Tổng số tiền đã thu")
 
 > Theo yêu cầu người dùng, ngay sau khi đổi thẻ "Trễ tiến độ" thành "Tổng giá trị hợp đồng". Đã hỏi 2 câu qua `AskUserQuestion` trước khi code vì câu chữ gốc không nêu rõ phạm vi áp dụng bộ lọc (cả section hay chỉ 1 thẻ) và mốc thời gian tính "đã thu" (ngày hẹn hay ngày thực trả).

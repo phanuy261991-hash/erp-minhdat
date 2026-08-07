@@ -64,7 +64,11 @@ function withBooleanActive(product) {
 
 router.get('/', (req, res) => {
   const products = db.prepare(`${SELECT_PRODUCTS_WITH_STOCK} ORDER BY p.created_at DESC`).all();
-  res.json({ products: products.map(withBooleanActive) });
+  // current_cost: gia von THUC TE (binh quan gia quyen tu stock_lots, dung ham co san giong
+  // trang chi tiet) - khac p.cost_price la "gia von tham chieu" nhap tay o form, thuong = 0
+  // vi khong ai dung dung muc dich, gay nham lan "gia von = 0" o danh sach.
+  const productsWithCost = products.map((p) => ({ ...p, current_cost: getWeightedAverageCost(p.id) }));
+  res.json({ products: productsWithCost.map(withBooleanActive) });
 });
 
 router.post('/', requirePermission('kho'), (req, res) => {
