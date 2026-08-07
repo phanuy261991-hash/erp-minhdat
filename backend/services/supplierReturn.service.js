@@ -182,14 +182,19 @@ function createSupplierReturn({ partnerId, createdBy, note, items, returnDate, p
 
     const timestamp = returnDate || db.prepare("SELECT datetime('now') AS now").get().now;
     const code = generateSupplierReturnCode();
-    const status = process ? 'da_tru_kho' : 'cho_tru_kho';
 
+    // LUON insert voi status='cho_tru_kho', BAT KE process co true hay khong - neu process=true,
+    // applyProcessing() se tu doi thanh 'da_tru_kho' o CUOI (sau khi validate xong, dong 166).
+    // Sua loi 2026-08-06 (nguoi dung bao cao): truoc day insert thang 'da_tru_kho' khi
+    // process=true, khien getSupplierReturnReference() (dieu kien i.status='da_tru_kho') dem
+    // NHAM chinh phieu vua tao vao "da tra", lam remainingReturnable bi tru hut dung bang so
+    // luong dang tao - luon bao "vuot qua so con lai co the tra" du tra bao nhieu cung vay.
     const issueResult = db
       .prepare(`
         INSERT INTO stock_issues (code, partner_id, created_by, note, payment_status, created_at, is_return, status)
-        VALUES (?, ?, ?, ?, 'da_thu_tien', ?, 1, ?)
+        VALUES (?, ?, ?, ?, 'da_thu_tien', ?, 1, 'cho_tru_kho')
       `)
-      .run(code, partnerId, createdBy, note || '', timestamp, status);
+      .run(code, partnerId, createdBy, note || '', timestamp);
     const issueId = issueResult.lastInsertRowid;
 
     const insertItem = db.prepare(

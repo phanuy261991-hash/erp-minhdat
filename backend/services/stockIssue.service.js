@@ -8,8 +8,11 @@ const { recordDebtFromDocument } = require('./debt.service');
 
 class ServiceError extends Error {}
 
+// BAT BUOC loc is_return=0 - stock_issues dung CHUNG bang voi "Tra hang nha cung cap"
+// (is_return=1, ma rieng "TN..."). Neu khong loc, cung loi "PN000NaN" nhu generateReceiptCode()
+// se xay ra o day thanh "PX000NaN" - sua cung luc, 2026-08-07.
 function generateIssueCode() {
-  const row = db.prepare('SELECT code FROM stock_issues ORDER BY id DESC LIMIT 1').get();
+  const row = db.prepare('SELECT code FROM stock_issues WHERE is_return = 0 ORDER BY id DESC LIMIT 1').get();
   const lastNumber = row ? parseInt(row.code.replace('PX', ''), 10) : 0;
   return `PX${String(lastNumber + 1).padStart(6, '0')}`;
 }

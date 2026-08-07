@@ -7,8 +7,13 @@ const { recordDebtFromDocument } = require('./debt.service');
 
 class ServiceError extends Error {}
 
+// BAT BUOC loc is_return=0 - stock_receipts dung CHUNG bang voi "Tra hang xuat" (is_return=1,
+// ma rieng "TH..."). Neu khong loc, phieu "Tra hang xuat" tao gan nhat (id lon hon) se bi lay
+// nham lam "ma gan nhat" o day, parseInt("TH000005") tra ve NaN -> sinh ma hong "PN000NaN".
+// Sua loi 2026-08-07 (phat hien khi dieu tra loi validate "Tra hang nha cung cap") - doi xung
+// cach generateReturnCode()/generateSupplierReturnCode() da loc dung tu dau.
 function generateReceiptCode() {
-  const row = db.prepare('SELECT code FROM stock_receipts ORDER BY id DESC LIMIT 1').get();
+  const row = db.prepare("SELECT code FROM stock_receipts WHERE is_return = 0 ORDER BY id DESC LIMIT 1").get();
   const lastNumber = row ? parseInt(row.code.replace('PN', ''), 10) : 0;
   return `PN${String(lastNumber + 1).padStart(6, '0')}`;
 }

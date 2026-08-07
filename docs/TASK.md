@@ -502,6 +502,14 @@
 - [x] Test qua API (Node `fetch`, dùng dữ liệu NCC có sẵn "Cong ty CP Thep Hoa Phat" — 1 sản phẩm có 2 giá nhập lịch sử, 1 sản phẩm chỉ 1 giá): tra giá đúng (1 giá / 2 giá phân biệt); Lưu draft không đụng tồn kho; sửa draft đổi số lượng đúng; Trừ kho làm tồn kho **giảm** đúng + công nợ NCC giảm đúng theo giá đã chọn; `debt_ledger` ghi đúng `type='tra', reference_type='issue'`; chặn đúng đối tác không phải NCC (400); sau khi trừ kho khóa đúng (sửa/trừ kho lại đều 400); xác nhận **không** lẫn trong `GET /stock-issues` (bắt được lỗi thiếu filter, đã sửa)
 - [x] Test qua trình duyệt thật (Chrome headless CDP thô, đóng đúng theo PID cây tiến trình): nút dropdown xổ đúng 2 lựa chọn, chọn "Trả hàng nhà cung cấp" mở đúng modal; chọn NCC + sản phẩm có 2 giá lịch sử → hiện đúng chip `30.000`/`50.000`, bấm chip điền đúng vào ô; chọn sản phẩm chỉ 1 giá lịch sử → tự điền thẳng không hiện chip; "Đã nhập" hiển thị đúng; Lưu → Trừ kho qua icon danh sách → chuyển đúng "Đã trừ kho"; danh sách gộp hiển thị đúng cả 2 loại phiếu (cột "Loại"); trang Công nợ NCC hiện đúng badge "Trả hàng"; không lỗi console
 
+### Sửa lỗi "Trả hàng nhà cung cấp" báo sai số lượng còn có thể trả + 2 lỗi liên quan (ngoài phase, theo phản hồi người dùng 2026-08-07)
+
+- [x] Điều tra qua agent (chỉ đọc code) — chẩn đoán: `createSupplierReturn({process:true})` ghi `status='da_tru_kho'` ngay lúc INSERT trước khi validate, khiến `validateRemaining()` tự đếm nhầm chính phiếu đang tạo vào "đã trả"
+- [x] `backend/services/supplierReturn.service.js#createSupplierReturn()`: luôn INSERT với `status='cho_tru_kho'`, để `applyProcessing()` tự đổi thành `'da_tru_kho'` ở cuối (sau khi validate) — thống nhất với luồng 2 bước vốn không lỗi
+- [x] **Cùng lỗi phát hiện + sửa ở `backend/services/stockReturn.service.js#createStockReturn()`** ("Trả hàng xuất" khách hàng, đã hỏi và người dùng xác nhận sửa luôn) — cùng cách sửa
+- [x] **Lỗi khác phát hiện tình cờ khi test, đã hỏi và người dùng xác nhận sửa luôn**: `generateReceiptCode()` (`stockReceipt.service.js`)/`generateIssueCode()` (`stockIssue.service.js`) không lọc `is_return` khi lấy "mã gần nhất" — nếu phiếu gần nhất là 1 phiếu Trả hàng (`TH...`/`TN...`) thì `parseInt()` trả về `NaN`, sinh mã hỏng `PN000NaN`/`PX000NaN` cho phiếu thường tiếp theo. Đã xác nhận dữ liệu thật chưa bị dính. Sửa bằng thêm `WHERE is_return = 0`, đúng cách 2 hàm sinh mã Trả hàng đã làm
+- [x] Test qua service trực tiếp (dữ liệu test riêng, xóa sạch sau khi xong): tái hiện đúng kịch bản lỗi gốc (nhập 2, trả 2, Tạo+Trừ kho 1 bước) cho cả 2 chiều NCC/khách hàng — trước sửa lỗi, sau sửa thành công; tái hiện đúng kịch bản mã NaN cho cả PN/PX — trước sửa ra NaN, sau sửa ra mã hợp lệ. Đã restart server sau khi sửa
+
 ### Thêm nhanh khách hàng ngay trên form "Thêm dự án mới" (ngoài phase, theo yêu cầu người dùng 2026-08-06)
 
 - [x] `frontend/projects.html`: thêm khối `#new-partner-fields` (tái dùng `.new-partner-inputs` có sẵn) dưới select "Khách hàng"
