@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Trang chủ - NEXA One</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="NEXA One" />
+  <link rel="apple-touch-icon" href="../assets/images/nexa-one-icon.png" />
+  <link rel="stylesheet" href="assets/m-style.css" />
+</head>
+<body class="m-page">
+  <header id="m-appbar" class="m-appbar"></header>
+
+  <main id="m-content" class="m-content">
+    <div class="m-hero">
+      <p class="m-hero-greeting" id="m-greeting"></p>
+      <p class="m-hero-date" id="m-date"></p>
+    </div>
+
+    <div class="m-stat-tiles">
+      <button type="button" class="m-stat-tile" id="m-tile-products">
+        <div class="m-stat-tile-value" id="m-stat-products">–</div>
+        <div class="m-stat-tile-label">Sản phẩm</div>
+      </button>
+      <button type="button" class="m-stat-tile" id="m-tile-customers">
+        <div class="m-stat-tile-value" id="m-stat-customers">–</div>
+        <div class="m-stat-tile-label">Khách hàng</div>
+      </button>
+      <button type="button" class="m-stat-tile" id="m-tile-suppliers">
+        <div class="m-stat-tile-value" id="m-stat-suppliers">–</div>
+        <div class="m-stat-tile-label">Nhà cung cấp</div>
+      </button>
+    </div>
+
+    <div id="m-birthday-section"></div>
+  </main>
+
+  <nav id="m-tabbar" class="m-tabbar"></nav>
+
+  <script src="../assets/api.js"></script>
+  <script src="../assets/icons.js"></script>
+  <script src="../assets/layout.js"></script>
+  <script src="assets/m-ui.js"></script>
+  <script src="assets/m-layout.js"></script>
+  <script src="assets/m-index.js"></script>
+</body>
+</html>

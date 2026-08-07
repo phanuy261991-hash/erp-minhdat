@@ -50,8 +50,13 @@ function buildCompanyBankLine(company) {
   const parts = [];
   if (company.bank_account_number) {
     let line = `STK: ${company.bank_account_number}`;
-    if (company.bank_name) line += ` - ${company.bank_name}`;
-    if (company.bank_branch) line += ` (${company.bank_branch})`;
+    // Ten ngan hang + chi nhanh dung CHUNG buildBankNameBranchLine() voi mau "Giay de nghi tam ung"
+    // (sua 2026-08-06 theo yeu cau nguoi dung) - truoc day cho chi nhanh trong ngoac don
+    // "Vietcombank (Chi nhanh TP.HCM)", nay thong nhat dang "Vietcombank – PGD An Nhon".
+    // Dung dau gach ngang dai (–) de phan biet voi dau " - " von da dung lam dau phan tach giua
+    // cac doan STK/ngan hang/Chu TK trong cung 1 dong.
+    const nameBranch = buildBankNameBranchLine(company);
+    if (nameBranch) line += ` - ${nameBranch}`;
     parts.push(line);
   }
   if (company.bank_account_holder) parts.push(`Chủ TK: ${company.bank_account_holder}`);
@@ -257,7 +262,7 @@ const SAMPLE_STOCK_ISSUE_DATA = {
     email: 'info@minhdat.vn',
     website: 'www.minhdat.vn',
     bank_name: 'Vietcombank',
-    bank_branch: 'Chi nhánh TP.HCM',
+    bank_branch: 'PGD An Nhơn',
     bank_account_number: '0071001234567',
     bank_account_holder: 'CÔNG TY TNHH MINH ĐẠT',
     print_note: 'Hàng đã xuất kho miễn đổi trả, vui lòng kiểm tra kỹ trước khi ký nhận.',

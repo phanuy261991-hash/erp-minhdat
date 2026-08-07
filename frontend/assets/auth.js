@@ -28,6 +28,15 @@ const EYE_CLOSED_SVG = '<path d="M3 3l18 18"/><path d="M10.6 5.2A10.6 10.6 0 0 1
     // Khong doc duoc trang thai setup (vd loi mang) - van cho hien form dang nhap binh thuong.
   }
 
+  // Dang mo tren dien thoai/tablet nho (2026-08-06, Giao dien di dong) - chuyen sang trang dang
+  // nhap rieng cua ban mobile thay vi form desktop. Dat SAU kiem tra needs_setup (thiet lap lan
+  // dau van uu tien lam tren may tinh du dang mo bang dien thoai, truong hop hiem it lien quan
+  // pham vi Dot 1).
+  if (isMobileDevice()) {
+    window.location.href = 'm/login.html';
+    return;
+  }
+
   try {
     await apiFetch('/auth/me');
     window.location.href = 'dashboard.html';

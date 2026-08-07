@@ -2,6 +2,47 @@
 
 > Ghi lại các quyết định đã chốt để không thảo luận lại trừ khi có lý do mới. Mỗi mục ghi ngày chốt.
 
+## 2026-08-06 — Giao diện di động: bản app RIÊNG tại `frontend/m/`, giữ mô hình MPA, không bật HTTPS (chấp nhận PWA hạn chế)
+
+**Bối cảnh**: người dùng yêu cầu giao diện chạy trên điện thoại/tablet — nói rõ **không phải giao diện web thu nhỏ lại**, mà là "1 giao diện hoàn toàn dùng để chạy trên các thiết bị di động và tablet, bố cục và hiển thị giống như các app native". Đã khảo sát hiện trạng frontend (34 trang HTML, 44 file JS ~10.900 dòng, `style.css` 3.679 dòng, **đúng 1 media query cho mobile** — thực tế là chưa có gì cho di động), phân tích 3 phương án kiến trúc, rồi chốt 4 quyết định qua `AskUserQuestion` trước khi lên kế hoạch. **Chưa viết dòng code nào ở phiên chốt kế hoạch này.**
+
+### Quyết định nghiệp vụ/phạm vi (người dùng chốt)
+
+1. **Phạm vi làm trước: Tra cứu + Dự án tại công trường** (Đợt 1–3). Nghiệp vụ ghi (lập phiếu nhập/xuất/trả hàng, phiếu thu chi sổ quỹ, ghi nhận thanh toán công nợ) **để ngỏ ở Đợt 4** — đánh giá lại sau khi người dùng đã dùng thật bản mobile, không cam kết trước.
+2. **Không bật HTTPS trong LAN** — giữ nguyên ràng buộc "Không tự thêm HTTPS/reverse proxy" của `CLAUDE.md`. **Hệ quả đã được nêu rõ và người dùng chấp nhận**: Service Worker + Web App Manifest "installable" bắt buộc secure context (HTTPS hoặc `localhost`), mà ứng dụng chạy `http://<IP-LAN>:3000` → **iOS/iPadOS**: thêm vào màn hình chính chạy **toàn màn hình, không thanh địa chỉ** (qua meta `apple-mobile-web-app-capable`) — gần như native thật sự; **Android/Chrome**: chỉ tạo được shortcut mở trong tab Chrome, **vẫn còn thanh địa chỉ**; **cả 2 nền tảng**: không có offline/cache, không có push thật. Nếu sau này đổi ý bật HTTPS nội bộ (self-signed + cài root CA lên từng máy) thì **không phải làm lại giao diện** — chỉ thêm `service-worker.js` + hoàn thiện manifest.
+3. **Điện thoại trước** (thiết kế cho 360–430px), tablet **dùng chung khung** với lưới thẻ 2 cột — không thiết kế riêng 2 breakpoint đầy đủ ngay từ đầu. Tối ưu riêng cho tablet (vd bố cục danh sách + chi tiết cạnh nhau) để đợt sau.
+4. **Chỉ truy cập trong LAN** như hiện tại — không làm truy cập từ ngoài qua 4G. Nếu sau này cần, đó là hạng mục **riêng** về bảo mật (VPN/tunnel, HTTPS bắt buộc, xem lại toàn bộ xác thực/session), không thuộc phạm vi làm giao diện di động.
+
+### Quyết định kiến trúc (lý do chọn — cần giữ khi hiện thực hóa)
+
+- **Bản mobile RIÊNG tại `frontend/m/`, KHÔNG sửa frontend desktop đang chạy.** Đã cân nhắc và loại bỏ 2 phương án khác:
+  - *(A) Chỉ thêm media query cho các trang hiện có* — **không đạt yêu cầu**: ~12 màn hình danh sách đang dùng `<table class="data-table">` 6–9 cột, muốn thành thẻ (card) phải đổi **cấu trúc DOM**, không có cách nào cứu bằng CSS; sidebar → thanh tab dưới cũng phải đổi markup. Kết quả tốt nhất chỉ là "web thu nhỏ" — đúng thứ người dùng nói rõ là không muốn.
+  - *(C) Một bộ trang, 2 chế độ render tùy viewport* — đạt yêu cầu về giao diện nhưng **rủi ro không chấp nhận được**: phải mổ vào toàn bộ 44 file JS + 3.679 dòng CSS **đang vận hành với dữ liệu thật** (sổ cái tồn kho + công nợ). Cùng logic đã dùng để từ chối dựng lại bảng `debt_ledger`/`stock_movements` ở các module trước: không đụng vào thứ đang chạy đúng nếu có đường khác.
+  - Phương án đã chọn **(B)** cho rủi ro hồi quy với desktop ≈ 0 (thư mục tách hẳn), triển khai được từng phần (xong màn nào bật màn đó), và tự do bố cục hoàn toàn.
+- **`frontend/m/` KHÔNG cần sửa `backend/server.js`** — `express.static(frontend/)` đã phục vụ sẵn thư mục con, bản mobile tự động chạy tại `/m/`. Dùng chung API `/api/*` và **chung cookie session** (same-origin) — không cần endpoint mới, không cần cơ chế xác thực thứ 2.
+- **Giữ mô hình MPA (mỗi màn hình = 1 file HTML, chuyển trang thật), KHÔNG tự viết SPA router/view-stack.** Lý do: khớp đúng kiến trúc hiện có (không build step, không framework), tránh nguồn lỗi lớn nhất khi hand-roll SPA là tự quản lý history stack/bộ nhớ. Cảm giác "app" tạo bằng: app bar + thanh tab dưới **cố định** (chỉ vùng nội dung cuộn, không phải cả trang), View Transitions API cho hiệu ứng chuyển trang (**progressive enhancement** — trình duyệt không hỗ trợ vẫn chạy bình thường), khôi phục vị trí cuộn qua `sessionStorage`.
+- **Tách CSS token ra `frontend/assets/tokens.css` dùng chung** (`:root` màu/font/shadow/radius + `@font-face`), `style.css` chỉ thêm đúng 1 dòng `@import`. Mục đích: mobile và desktop **không bao giờ lệch màu/font thương hiệu**. Đây là thay đổi cơ học duy nhất chạm vào CSS desktop đang chạy — nhỏ, verify được ngay.
+- **Chỉ dùng chung các file JS thuần, không dính DOM**: `api.js`, `icons.js` (**chỉ THÊM icon mới**, tuyệt đối không sửa key cũ), `money-input.js`, `warranty-calc.js`. **KHÔNG cố tách logic từ 44 file JS desktop hiện có** — chúng trộn lẫn tải dữ liệu với dựng chuỗi HTML, tách ra sẽ phải sửa toàn bộ file đang chạy production. Viết mới gọn cho mobile, gọi thẳng các API đã ổn định — chấp nhận trùng lặp code để đổi lấy rủi ro gần bằng 0.
+- **Phát hiện thiết bị đặt tại `layout.js` (`initLayout()`) + `auth.js`** — 2 file đã được nạp chung sẵn, **không phải sửa 30 file HTML**. Điều kiện dùng `matchMedia('(hover: none) and (pointer: coarse)')` + `innerWidth <= 820`, **không UA sniffing** (UA dễ sai và phải bảo trì mãi). Luôn có đường thoát: cờ `localStorage['erp_force_desktop']` + nút "Dùng bản máy tính" trong bản mobile, và banner "Chuyển sang bản di động" khi mở desktop trên điện thoại.
+- **Thanh tab dưới lọc theo `user.permissions`** — dùng lại đúng cơ chế khai báo của `NAV_GROUPS` (`layout.js`), không hardcode danh sách tab thứ 2. Tối đa 5 mục, mục cuối ("Thêm") mở danh sách các màn còn lại + Thông báo + Đăng xuất + chuyển bản desktop.
+- **Danh sách màn hình KHÔNG làm bản mobile** (chốt để tránh phình phạm vi): 7 trang Cấu hình, Vai trò, Người dùng, Mẫu in + trình soạn thảo mẫu in, Import/Export Excel, Báo cáo đầy đủ (chỉ làm bản tóm tắt ở Trang chủ), 2 trang In phiếu. Lý do: trình soạn thảo WYSIWYG mẫu in hay Import Excel trên màn hình 375px là vô nghĩa; các trang quản trị/cấu hình vốn dùng không thường xuyên và luôn có sẵn máy tính khi cần.
+- **Biểu đồ Gantt KHÔNG đưa lên điện thoại** — không đọc nổi ở 375px. Thay bằng danh sách giai đoạn có thanh tiến độ (dữ liệu giống hệt, chỉ khác cách trình bày). Tablet giữ Gantt dạng cuộn ngang.
+- **10 thành phần giao diện đều là pattern MỚI của dự án** (thanh tab dưới, app bar, thẻ danh sách thay bảng, bottom sheet thay modal, ô tìm kiếm dính đầu trang, segmented control, pull-to-refresh, skeleton, hàng thông tin kiểu Settings, nút hành động chính) → **bắt buộc dùng skill `ui-ux-pro-max`** ở Đợt 0 trước khi viết CSS, và bổ sung vào `docs/DESIGN-SYSTEM.md` — đúng ràng buộc đã có trong `CLAUDE.md`.
+- **3 tính năng chỉ mobile mới có ý nghĩa** (không port ngược về desktop): bấm số điện thoại để gọi (`tel:`), bấm địa chỉ công trình mở ứng dụng bản đồ, chia sẻ nhanh thông tin công nợ.
+- **Hạn chế đã biết, không né được**: rung phản hồi (haptic) không có trên iOS Safari (Vibration API không được hỗ trợ) — không cố mô phỏng bằng cách khác.
+
+### Hạng mục phụ thuộc (đụng backend — cần duyệt riêng trước khi làm)
+
+Phần giao diện **không cần sửa backend dòng nào**, nhưng 2 vấn đề sẵn có sẽ trở nên khó chịu rõ rệt trên điện thoại (máy tính văn phòng thì chịu được vì luôn mở sẵn):
+- **Session `maxAge: 8h`, không `rolling`** → điện thoại phải đăng nhập lại mỗi ngày. Đề xuất: `rolling: true` + kéo dài `maxAge` (2 dòng trong `server.js`).
+- **`express-session` dùng `MemoryStore` mặc định** → **restart server là toàn bộ điện thoại bị đăng xuất**. Vấn đề này `docs/CURRENT.md` đã ghi nhận từ 2026-08-06 cho Phase 5 Go-live; nên xử lý cùng Đợt 1 (đổi sang session store lưu xuống đĩa).
+
+### Rủi ro đã nhận diện + cách kiểm soát
+
+- **2 bản phân kỳ sau vài tháng** (rủi ro lớn nhất của phương án B) → token CSS dùng chung + thêm ràng buộc vào `CLAUDE.md` ("sửa nghiệp vụ ở màn hình nào phải kiểm tra cả 2 bản") + bảng đối chiếu màn hình trong `docs/Plan.md`.
+- **Test không phản ánh được "cảm giác native"** → mỗi đợt nghiệm thu **2 lớp**: Chrome headless CDP (`Emulation.setDeviceMetricsOverride` + `Emulation.setTouchEmulation` + `Input.dispatchTouchEvent` — chạm thật, không phải `.click()`) **và** thiết bị thật của người dùng qua LAN. Lớp thứ 2 mới là nghiệm thu chính.
+- **Thanh tab sai với tài khoản quyền hạn chế** → bắt buộc test bằng `thukho1`/`ketoan1`, không chỉ `admin`.
+
 ## 2026-08-06 — Popup xem trước khi in: nhúng iframe cùng gốc thay vì mở tab mới, giữ nguyên 100% code 2 trang in
 
 **Bối cảnh**: người dùng phản hồi nút "In phiếu" (Phiếu xuất kho) và "In giấy đề nghị tạm ứng" (Dự án) đang mở tab trình duyệt mới (`<a target="_blank">`) — muốn đổi thành popup ngay trên trang đang đứng, "Quay lại" hoặc in xong đều tự ẩn popup, áp dụng cho cả 2 mẫu.

@@ -40,6 +40,17 @@ window.addEventListener('unhandledrejection', (event) => {
   _reportClientError(`Unhandled promise rejection: ${message}`, stack, window.location.href);
 });
 
+// Phat hien thiet bi di dong THAT SU (khong phai UA sniffing - de tranh sai/phai bao tri mai) -
+// dung o layout.js (initLayout, moi trang desktop) va auth.js (checkSession, login.html) de tu
+// chuyen huong sang ban mobile frontend/m/ (2026-08-06, Giao dien di dong Dot 1). Dat o day
+// (api.js) vi day la file DUY NHAT nap tren MOI trang - tranh dinh nghia lap lai o 2 noi.
+// Co thoat: nguoi dung bam "Dung ban may tinh" trong sheet "Them" cua ban mobile se dat
+// localStorage['erp_force_desktop']='true', luon uu tien tren ket qua matchMedia.
+function isMobileDevice() {
+  if (localStorage.getItem('erp_force_desktop') === 'true') return false;
+  return window.matchMedia('(hover: none) and (pointer: coarse)').matches && window.innerWidth <= 820;
+}
+
 async function apiFetch(path, options = {}) {
   const response = await fetch(`/api${path}`, {
     ...options,

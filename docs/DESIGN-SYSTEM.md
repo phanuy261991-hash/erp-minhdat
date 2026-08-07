@@ -236,7 +236,53 @@
 - `cursor: pointer` cho mọi phần tử có thể click.
 - Label rõ ràng cho input (không chỉ dựa vào placeholder).
 - Nút bấm có trạng thái loading/disabled rõ ràng khi xử lý bất đồng bộ.
-- Vì chỉ tối ưu desktop (theo quyết định đã chốt), không bắt buộc responsive mobile, nhưng vẫn cần hoạt động tốt ở nhiều độ phân giải desktop phổ biến (1280px trở lên).
+- Vì chỉ tối ưu desktop (theo quyết định đã chốt), không bắt buộc responsive mobile, nhưng vẫn cần hoạt động tốt ở nhiều độ phân giải desktop phổ biến (1280px trở lên). **Bản mobile riêng biệt** (`frontend/m/`) không nằm trong ràng buộc này — xem mục "Giao diện di động" ngay dưới.
+
+## Giao diện di động (`frontend/m/`) — bổ sung 2026-08-06, thiết kế Đợt 0 (chưa code)
+
+> Nghiệp vụ: `docs/PRD.md` mục 4.16. Quyết định kiến trúc: `docs/DECISIONS.md` mục 2026-08-06 "Giao diện di động". Đây là **hệ thống thiết kế RIÊNG**, sống trong `frontend/m/assets/m-style.css` — không trộn lẫn với các pattern desktop phía trên, nhưng **dùng chung token màu/font/radius/shadow** qua `frontend/assets/tokens.css` (tách từ `style.css`) để 2 bản không lệch thương hiệu.
+
+**Nguyên tắc bao trùm**: bố cục và thao tác giống ứng dụng native thật sự — không phải các trang desktop hiện có thu nhỏ lại. Thiết kế cho điện thoại 360–430px trước, tablet dùng chung khung + lưới thẻ 2 cột. Do không có build step/framework, mọi hiệu ứng đều tự viết bằng CSS/JS thuần — ưu tiên hành vi **đơn giản, đáng tin cậy** hơn hiệu ứng phức tạp dễ vỡ khi hand-roll (vd không làm search bar co giãn theo cuộn kiểu iOS, không ẩn/hiện FAB theo hướng cuộn).
+
+### 1. Thanh tab dưới (Bottom Tab Bar)
+
+Thay thế sidebar. `position: fixed; bottom: 0`, cao 56px + `env(safe-area-inset-bottom)` làm padding (nội dung trang bù `padding-bottom` tương ứng). Tối đa **5 mục cố định**: `Trang chủ · Kho · Khách hàng · Dự án · Thêm` — lọc theo `user.permissions` dùng lại khai báo `NAV_GROUPS`, không hardcode danh sách riêng. Mỗi mục: icon 22px (dùng lại `icons.js`) + nhãn 10px bên dưới, không bao giờ chỉ-icon. Mục đang chọn: icon+chữ màu `var(--color-primary)` + chấm 4px phía trên (không chỉ dựa vào màu). Vùng chạm mỗi tab tối thiểu 56×44px. Nền `var(--color-surface)` + viền trên 1px `var(--color-border)` + shadow nhẹ hướng lên (không dùng `--shadow-card` vì thiết kế đổ bóng xuống). Mục "Thêm" mở Bottom Sheet (#4) chứa các màn còn lại + Thông báo + Đăng xuất + "Dùng bản máy tính".
+
+### 2. App bar + nút quay lại
+
+2 kiểu duy nhất: **màn cấp 1** (5 gốc của tab bar) — tiêu đề trang + chuông thông báo, không có nút quay lại; **màn con** (chi tiết) — nút quay lại thay tiêu đề nhóm. `position: sticky; top: 0`, cao 56px + `env(safe-area-inset-top)`. Nút quay lại: icon 24px, vùng chạm 44×44px, luôn hiển thị (không dựa vào gesture vuốt cạnh màn hình thay thế). Hành vi: `history.back()` nếu có lịch sử điều hướng trong app; nếu vào thẳng qua deep-link thì quay về đúng tab gốc tương ứng, không mặc định về Trang chủ. Tiêu đề 1 dòng + ellipsis nếu dài. Nền `var(--color-surface)` + viền dưới 1px `var(--color-border)`, không gradient. Nút hành động phụ bên phải tối đa 1-2 icon, nhiều hơn thì gộp vào menu "...".
+
+### 3. Thẻ danh sách (thay `.data-table`)
+
+Cấu trúc 3 vùng cố định cho mọi màn: **dòng trên** (tùy chọn) mã/nhãn phụ trái + badge trạng thái phải; **dòng chính** tên/tiêu đề 16px `font-weight:600` `var(--color-foreground)`, 1 dòng + ellipsis; **dòng dưới** tối đa 2 số liệu quan trọng nhất + chevron `>` phải. Toàn bộ thẻ là 1 vùng chạm, tối thiểu cao 64px, padding ngang 16px. Nền `var(--color-surface)`, `border-radius: var(--radius-md)`, viền 1px `var(--color-border)`, cách nhau 8px — **không dùng `--shadow-card`** (quá nặng cho danh sách dài). Chạm vào: nền chuyển `var(--color-muted)` tức thì, không dịch layout. Badge dùng đúng màu ngữ nghĩa có sẵn (`--color-accent`/`--color-destructive`/`--color-warning`), luôn kèm icon/chữ. Không có bulk-select/checkbox ở phạm vi chỉ đọc (Đợt 2-3).
+
+### 4. Bottom sheet (thay `.modal-overlay`)
+
+Trượt từ đáy lên thay modal giữa màn hình. Drag handle 36×4px giữa đầu sheet, tiêu đề + nút `✕` (luôn hiện, không phụ thuộc gesture), nội dung cuộn riêng nếu dài (`max-height: 85vh`), thanh hành động dính đáy nếu cần (+ `env(safe-area-inset-bottom)`). Đóng bằng: nút `✕`, kéo xuống (ngưỡng bắt đầu theo dõi >10px để không nhầm với cuộn nội dung; buông tay <40% chiều cao đã kéo thì bật lại vị trí cũ), hoặc bấm vào scrim. Scrim `rgba(15,23,42,0.5)`, không dùng blur. Bo góc 2 góc trên `var(--radius-lg)`. Animate: trượt lên 250ms ease-out lúc mở, 180ms ease-in lúc đóng (thoát nhanh hơn mở), dùng `transform: translateY()` — không animate `height`. Form có thay đổi chưa lưu (Đợt 4 về sau) cần xác nhận trước khi đóng; Đợt 2-3 (đọc/sửa đơn giản) bỏ qua bước này.
+
+### 5. Ô tìm kiếm dính đầu trang
+
+`position: sticky` ngay dưới app bar (#2), không co giãn theo cuộn kiểu iOS — luôn cố định vị trí để đổi lấy độ tin cậy. Cao 48px, margin ngang 12px, `border-radius: var(--radius-sm)`, nền `var(--color-muted)` (đổi `var(--color-surface)` + viền `var(--color-ring)` khi focus — như input desktop). Icon kính lúp trái 16px; icon `✕` phải chỉ hiện khi có chữ, xóa và giữ focus. `type="search"` để hiện đúng bàn phím. Debounce 250ms trước khi lọc lại danh sách. Không có UI lọc/sắp xếp riêng ở Đợt 2-3, giữ đúng 1 tiêu chí mặc định như bản desktop.
+
+### 6. Segmented control (thay tab ngang `project-detail.html`)
+
+Dùng riêng cho màn Chi tiết dự án (Đợt 3): `[Tổng quan | Giai đoạn | Vật tư | Thanh toán | Phát sinh]`. 5 mục không vừa 360–390px → cho cuộn ngang bên trong chính thanh (không phải cuộn cả trang), mục cuối luôn "hé lộ" ~20% làm dấu hiệu còn nội dung. Chỉ bấm để chuyển tab, **không vuốt ngang trên vùng nội dung** (tránh xung đột với cuộn dọc). `position: sticky` dưới app bar, hình dạng "viên thuốc" nền `var(--color-muted)`, mục chọn nền `var(--color-surface)` + chữ `var(--color-primary)` + shadow rất nhẹ — cố tình khác hẳn ngôn ngữ tab bar dưới (#1) để không lẫn 2 cấp điều hướng. Vùng chạm mỗi mục tối thiểu 44px cao. Nền "viên" trượt 200ms ease-out (`transform`); nội dung bên dưới chuyển tức thì, không cross-fade. Đồng bộ URL qua `?tab=...`.
+
+### 7. Pull-to-refresh
+
+Chỉ bật ở màn danh sách (Đợt 2 + danh sách dự án Đợt 3), **không** bật ở màn chi tiết/form. **Lưu ý kỹ thuật bắt buộc**: phải đặt `overscroll-behavior-y: contain` trên vùng cuộn + tự viết `touchstart/touchmove/touchend` bắt kéo khi `scrollTop === 0`, nếu không trình duyệt di động sẽ tự kích hoạt tải lại toàn trang thay vì hành vi mượt mong muốn. Ngưỡng kích hoạt ≥64px kéo xuống; dưới ngưỡng thì thu lại, không làm gì. Icon xoay theo đúng tỷ lệ khoảng đã kéo trong lúc giữ tay (bám thời gian thực), chuyển sang xoay liên tục khi vượt ngưỡng và đang gọi API, thu lại mượt 200ms khi xong. Dùng `transform: translateY()`, không animate `height`.
+
+### 8. Skeleton loading
+
+Dựng đúng hình dạng nội dung thật (khối ngắn/dài mô phỏng thẻ danh sách #3 hoặc hàng Settings #9) — layout không được nhảy khi dữ liệu tải xong. Chỉ hiện nếu tải lâu hơn ~200ms (delay bằng `setTimeout`, hủy nếu dữ liệu về trước mốc đó — tránh chớp vô nghĩa trên LAN vốn đã nhanh). ~5-6 khối lấp khung nhìn. Shimmer: gradient sáng hơn `var(--color-muted)` di chuyển qua `background-position`, chu kỳ ~1.6s; tôn trọng `prefers-reduced-motion` (đổi sang nhấp nháy opacity 0.6↔1 thay vì tắt hẳn). Dùng ở 3 nơi: lần đầu vào màn danh sách, lần đầu chuyển segmented control (#6) chưa tải, màn chi tiết đang tải — không dùng cho pull-to-refresh (đã có chỉ báo riêng).
+
+### 9. Hàng thông tin kiểu Settings (màn chi tiết)
+
+2 biến thể trong cùng 1 hệ thống: **dòng ngắn** (mã, loại, trạng thái) — nhãn trái muted 14px + giá trị phải cùng dòng `font-weight:500`; **dòng dài** (địa chỉ, ghi chú) — nhãn trên nhỏ muted, giá trị dưới full-width tự xuống dòng, **không ellipsis** cho nội dung cần đọc đủ. Nhóm theo section có tiêu đề (12px, chữ hoa nhẹ, muted), khoảng cách giữa nhóm > khoảng cách giữa dòng trong nhóm. Đường phân cách mảnh 1px giữa các dòng, không viền quanh từng dòng. Dòng có hành động (SĐT → `tel:`, địa chỉ → `geo:`/link bản đồ) thêm icon phải `var(--color-primary)`, toàn dòng là vùng chạm ≥44px. Số liệu nổi bật (số dư công nợ, tồn kho) **không** dùng pattern này — đặt riêng thành khối tóm tắt đầu trang (kế thừa tinh thần `.stat-card`). Không có ô nào sửa inline ở Đợt 2-3 — cần sửa thì mở Bottom Sheet (#4).
+
+### 10. Nút hành động chính (FAB)
+
+Dạng tròn nổi 56×56px, góc dưới-phải, cách tab bar (#1) 16px + `env(safe-area-inset-bottom)`, cách mép phải 16px — không phải nút full-width (vai trò đó thuộc về thanh hành động *trong* Bottom Sheet #4). Nội dung danh sách cần `padding-bottom` dư ~80px để không bị FAB che thẻ cuối. Luôn hiển thị cố định, không ẩn/hiện theo hướng cuộn. Icon `+` trắng 24px không nhãn chữ, có `aria-label="Thêm mới"` bù cho hỗ trợ đọc màn hình. Nền gradient `var(--color-primary)`→`var(--color-primary-dark)` + `var(--shadow-button)` (dùng lại token `.btn-add`). Nhấn: co nhẹ 0.95 scale rồi phục hồi. Mỗi màn chỉ 1 FAB. Phạm vi dùng rất hẹp ở Đợt 1-3: chỉ tab "Phát sinh" (Đợt 3, thêm "vấn đề"); 7 màn Tra cứu (Đợt 2, chỉ đọc) không có FAB; cập nhật trạng thái công việc trong tab "Giai đoạn" dùng nút "Lưu" nhỏ theo từng dòng, không phải FAB.
 
 ## Áp dụng
 
@@ -246,4 +292,5 @@
 - **2026-08-01**: `roles.html`, `company-settings.html`, `warehouse-settings.html`, `sales-settings.html` (Phase 1.6); `print-issue.html` (trang in độc lập, không dùng sidebar), `reports.html` (biểu đồ SVG tự vẽ) (Phase 4); `customers.html`, `customer-debts.html`, `customer-categories.html`, `customer-detail.html` (tách Khách hàng khỏi Đối tác); `warranties.html` (module Bảo hành, modal thêm/sửa); `dashboard.html` (redesign — hero chào + card bento + truy cập nhanh), `about.html` (Thông tin phần mềm); `setup.html` (thiết lập lần đầu qua giao diện, tái dùng CSS `.login-card`).
 - **2026-08-02**: `cash-book.html` (module Sổ quỹ — pattern mới: chọn Tháng/Năm tiếng Việt thay `<input type="month">`, `.form-field-label-row` cho nút "+ Tạo loại mới" ngay trên form; thẻ số liệu tô màu theo ý nghĩa — `.stat-card-value--primary`/`--accent`/`--destructive` mới thêm cạnh `--warning` có sẵn, dùng cho Quỹ đầu kỳ (xanh dương)/Tổng thu (xanh lá)/Tổng chi (đỏ, kèm dấu "-"), Tồn quỹ giữ màu mặc định vì âm đã tự có dấu "-" qua `toLocaleString()`, không cần tô màu riêng để phân biệt), `cash-categories.html` (CRUD "Loại thu chi", rập khuôn `customer-categories.html`).
 - **2026-08-04**: `project-phase-templates.html` (CRUD "Giai đoạn mẫu", rập khuôn `customer-categories.html`); `projects.html` (danh sách + modal thêm/sửa kèm `.member-picker-row`/`.member-list` mới); `project-detail.html` (module Dự án Đợt 1 — pattern mới **trang chi tiết dạng tab** `.detail-tabs`/`.tab-panel`, biểu đồ **Gantt SVG tự vẽ tay** `.gantt-card`/`.gantt-svg`, badge 5 trạng thái `.project-status-badge--*`) — xem 2 mục pattern mới phía trên. **Cập nhật sau đó cùng ngày**: bỏ tab "Công việc" riêng, gộp vào tab "Giai đoạn" dạng dòng bấm mở rộng (`.phase-row`/`.phase-tasks-row`/`.subtask-table`/`.btn-sm`) — xem mục pattern mới "Dòng giai đoạn bấm mở rộng bảng công việc con".
-- Mọi trang mới từ giờ trở đi phải dùng lại đúng biến màu, font, spacing, khung điều hướng, class bảng dữ liệu, các class trang cấu hình, và các pattern form/bảng động ở trên để đồng bộ toàn hệ thống — không tự tạo style riêng cho từng trang.
+- **2026-08-06 — Giao diện di động (Đợt 0, thiết kế, CHƯA CODE)**: 10 thành phần mới cho `frontend/m/` (thanh tab dưới, app bar, thẻ danh sách, bottom sheet, ô tìm kiếm dính đầu trang, segmented control, pull-to-refresh, skeleton, hàng thông tin kiểu Settings, FAB) — xem mục "Giao diện di động" phía trên. Chưa có trang nào áp dụng, chờ Đợt 1 (khung app).
+- Mọi trang mới từ giờ trở đi phải dùng lại đúng biến màu, font, spacing, khung điều hướng, class bảng dữ liệu, các class trang cấu hình, và các pattern form/bảng động ở trên để đồng bộ toàn hệ thống — không tự tạo style riêng cho từng trang. **Riêng `frontend/m/`** dùng bộ pattern mobile ở mục "Giao diện di động" thay vì các pattern desktop phía trên, nhưng vẫn phải dùng chung token màu/font qua `tokens.css`.

@@ -1,0 +1,864 @@
+/* Stylesheet RIENG cho Giao dien di dong (frontend/m/) - KHONG import style.css (ban desktop).
+   Dung chung mau/font/radius/shadow qua m-tokens.css -> tokens.css. Thiet ke day du 10 thanh
+   phan: xem docs/DESIGN-SYSTEM.md muc "Giao dien di dong". Khong co build step/framework -
+   moi hieu ung tu viet CSS/JS thuan, uu tien don gian/dang tin cay hon hieu ung phuc tap de vo. */
+
+@import url('m-tokens.css');
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overscroll-behavior-y: none;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-foreground);
+  background: var(--color-background);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  margin: 0;
+}
+
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===================================================================================
+   Khung trang chung: app bar (#2) tren + noi dung cuon + tab bar (#1) duoi.
+   Trang co tab bar: <body class="m-page"> voi <div id="m-appbar">/#m-content/#m-tabbar">.
+   Trang KHONG co tab bar (mo tu 1 sheet, hoac man con sau nay): bo #m-tabbar, #m-content
+   khong can padding-bottom danh cho tab bar.
+   =================================================================================== */
+
+.m-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.m-content {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior-y: contain; /* bat buoc cho pull-to-refresh (#7) - xem m-ui.js */
+  padding: 12px 12px calc(var(--m-tabbar-height) + var(--m-safe-bottom) + 16px);
+}
+
+.m-content--no-tabbar {
+  padding-bottom: 16px;
+}
+
+/* ---- 2. App bar + nut quay lai ---- */
+
+.m-appbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--m-z-appbar);
+  height: calc(var(--m-appbar-height) + var(--m-safe-top));
+  padding-top: var(--m-safe-top);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 4px;
+  padding-right: 8px;
+}
+
+.m-appbar-back,
+.m-appbar-action {
+  width: var(--m-touch-min);
+  height: var(--m-touch-min);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-foreground);
+  cursor: pointer;
+}
+
+.m-appbar-back:active,
+.m-appbar-action:active {
+  background: var(--color-muted);
+}
+
+.m-appbar-title {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-heading);
+  font-size: 17px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.m-appbar-spacer {
+  width: var(--m-touch-min);
+  flex-shrink: 0;
+}
+
+/* Chuong thong bao trong app bar - badge so luong chua doc */
+.m-appbar-bell {
+  position: relative;
+}
+
+.m-appbar-bell-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--color-destructive);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+.m-appbar-bell-badge:not([hidden]) {
+  display: block;
+}
+.m-appbar-bell-badge[hidden] {
+  display: none;
+}
+
+/* ---- 1. Thanh tab duoi ---- */
+
+.m-tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--m-z-tabbar);
+  height: calc(var(--m-tabbar-height) + var(--m-safe-bottom));
+  padding-bottom: var(--m-safe-bottom);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  box-shadow: 0 -8px 20px rgba(15, 23, 42, 0.06);
+  display: flex;
+}
+
+.m-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: none;
+  border: none;
+  color: var(--color-muted-foreground);
+  min-height: var(--m-touch-min);
+  cursor: pointer;
+  position: relative;
+}
+
+.m-tab:active {
+  opacity: 0.6;
+}
+
+.m-tab-label {
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.m-tab.active {
+  color: var(--color-primary);
+}
+
+.m-tab.active::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+
+/* ---- 3. The danh sach (thay .data-table) ---- */
+
+.m-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.m-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  min-height: 64px;
+  cursor: pointer;
+}
+
+.m-card:active {
+  background: var(--color-muted);
+}
+
+.m-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-muted-foreground);
+  margin-bottom: 2px;
+}
+
+.m-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.m-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-muted-foreground);
+}
+
+.m-card-bottom-values {
+  display: flex;
+  gap: 14px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.m-card-chevron {
+  flex-shrink: 0;
+  color: var(--color-muted-foreground);
+}
+
+/* Badge trang thai - dung mau ngu nghia co san, luon kem chu (khong chi dua vao mau) */
+.m-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.m-badge--accent { color: var(--color-accent); background: #ecfdf5; }
+.m-badge--destructive { color: var(--color-destructive); background: #fef2f2; }
+.m-badge--warning { color: var(--color-warning); background: #fffbeb; }
+.m-badge--muted { color: var(--color-muted-foreground); background: var(--color-muted); }
+
+.m-empty-state {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--color-muted-foreground);
+}
+
+.m-empty-state-icon {
+  color: var(--color-border);
+  margin-bottom: 12px;
+}
+
+/* ---- 4. Bottom sheet (thay .modal-overlay) ---- */
+
+.m-sheet-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--m-z-sheet-scrim);
+  background: rgba(15, 23, 42, 0.5);
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+
+.m-sheet-scrim:not([hidden]) {
+  display: block;
+}
+.m-sheet-scrim[hidden] {
+  display: none;
+}
+
+.m-sheet-scrim.open {
+  opacity: 1;
+}
+
+.m-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--m-z-sheet);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: var(--shadow-card);
+  padding-bottom: var(--m-safe-bottom);
+  transform: translateY(100%);
+  transition: transform 250ms ease-out;
+}
+
+.m-sheet.open {
+  transform: translateY(0);
+  transition: transform 180ms ease-in;
+}
+
+.m-sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--color-border);
+  margin: 10px auto 4px;
+  flex-shrink: 0;
+}
+
+.m-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px 12px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.m-sheet-title {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.m-sheet-close {
+  width: var(--m-touch-min);
+  height: var(--m-touch-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+}
+
+.m-sheet-body {
+  overflow-y: auto;
+  padding: 12px 16px;
+}
+
+.m-sheet-actions {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Danh sach muc trong sheet (vd sheet "Them", sheet "Thong bao") */
+.m-sheet-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: var(--m-touch-min);
+  padding: 10px 4px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 15px;
+  color: var(--color-foreground);
+  text-align: left;
+  cursor: pointer;
+}
+
+.m-sheet-menu-item:last-child {
+  border-bottom: none;
+}
+
+.m-sheet-menu-item:active {
+  background: var(--color-muted);
+}
+
+.m-sheet-menu-item-icon {
+  color: var(--color-muted-foreground);
+  flex-shrink: 0;
+}
+
+.m-sheet-menu-item--destructive {
+  color: var(--color-destructive);
+}
+.m-sheet-menu-item--destructive .m-sheet-menu-item-icon {
+  color: var(--color-destructive);
+}
+
+/* ---- 5. O tim kiem dinh dau trang ---- */
+
+.m-search {
+  position: sticky;
+  top: calc(var(--m-appbar-height) + var(--m-safe-top));
+  z-index: 20;
+  background: var(--color-background);
+  padding: 8px 4px 10px;
+  margin: -12px -12px 4px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.m-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-muted);
+  border: 1px solid transparent;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.m-search-box:focus-within {
+  background: var(--color-surface);
+  border-color: var(--color-ring);
+}
+
+.m-search-icon {
+  color: var(--color-muted-foreground);
+  flex-shrink: 0;
+}
+
+.m-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  font-size: 16px; /* >=16px de iOS khong tu zoom khi focus */
+  font-family: var(--font-body);
+  color: var(--color-foreground);
+  outline: none;
+}
+
+.m-search-clear {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+}
+
+.m-search-clear:not([hidden]) { display: flex; }
+.m-search-clear[hidden] { display: none; }
+
+/* ---- 6. Segmented control (thay tab ngang project-detail.html) ---- */
+
+.m-segmented-wrap {
+  position: sticky;
+  top: calc(var(--m-appbar-height) + var(--m-safe-top));
+  z-index: 20;
+  background: var(--color-background);
+  padding: 8px 0;
+  margin: -12px -12px 8px;
+}
+
+.m-segmented {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 3px;
+  margin: 0 12px;
+  background: var(--color-muted);
+  border-radius: var(--radius-sm);
+}
+
+.m-segmented::-webkit-scrollbar { display: none; }
+
+.m-segment {
+  flex-shrink: 0;
+  min-height: 38px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-muted-foreground);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 200ms ease-out, color 200ms ease-out;
+}
+
+.m-segment.active {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
+/* ---- 7. Pull-to-refresh ---- */
+
+.m-pull-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 0;
+  overflow: hidden;
+  color: var(--color-primary);
+}
+
+.m-pull-indicator-icon {
+  transition: transform 100ms linear;
+}
+
+.m-pull-indicator-icon.spinning {
+  animation: m-spin 0.8s linear infinite;
+}
+
+@keyframes m-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---- 8. Skeleton loading ---- */
+
+.m-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.m-skeleton-card {
+  height: 64px;
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+
+.m-skeleton-block {
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, var(--color-muted) 25%, #e6ecfa 37%, var(--color-muted) 63%);
+  background-size: 400% 100%;
+  animation: m-shimmer 1.6s ease-in-out infinite;
+}
+
+.m-skeleton-block--title { width: 60%; height: 14px; }
+.m-skeleton-block--short { width: 30%; }
+.m-skeleton-block--tiny { width: 18%; }
+
+@keyframes m-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m-skeleton-block {
+    animation: m-skeleton-pulse 1.6s ease-in-out infinite;
+    background: var(--color-muted);
+  }
+}
+
+@keyframes m-skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* ---- 9. Hang thong tin kieu Settings (man chi tiet) ---- */
+
+.m-info-section {
+  margin-bottom: 20px;
+}
+
+.m-info-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-muted-foreground);
+  padding: 0 4px 8px;
+}
+
+.m-info-group {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.m-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: var(--m-touch-min);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.m-info-row:last-child {
+  border-bottom: none;
+}
+
+.m-info-row-label {
+  font-size: 14px;
+  color: var(--color-muted-foreground);
+  flex-shrink: 0;
+}
+
+.m-info-row-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-foreground);
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Dong dai: nhan tren, gia tri duoi full-width, KHONG ellipsis */
+.m-info-row--stacked {
+  display: block;
+}
+
+.m-info-row--stacked .m-info-row-label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.m-info-row--stacked .m-info-row-value {
+  display: block;
+  text-align: left;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+/* Dong co hanh dong (goi dien / mo ban do) - link that (tel:/geo:), toan dong la vung cham */
+a.m-info-row--action {
+  display: flex;
+  cursor: pointer;
+}
+
+a.m-info-row--action:active {
+  background: var(--color-muted);
+}
+
+.m-info-row-action-icon {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+/* Khoi so lieu noi bat dau trang chi tiet - KHONG dung .m-info-row, rieng 1 khoi */
+.m-stat-hero {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 18px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.m-stat-hero-label {
+  font-size: 13px;
+  color: var(--color-muted-foreground);
+  margin-bottom: 4px;
+}
+
+.m-stat-hero-value {
+  font-family: var(--font-heading);
+  font-size: 26px;
+  font-weight: 700;
+}
+
+/* ---- 10. Nut hanh dong chinh (FAB) ---- */
+
+.m-fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--m-tabbar-height) + var(--m-safe-bottom) + 16px);
+  z-index: 25;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: #fff;
+  box-shadow: var(--shadow-button);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 120ms ease-out;
+}
+
+.m-fab:active {
+  transform: scale(0.95);
+}
+
+/* ---- Toast (dung chung voi he thong thong bao) ---- */
+
+.m-toast-stack {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  z-index: var(--m-z-toast);
+  bottom: calc(var(--m-tabbar-height) + var(--m-safe-bottom) + 12px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.m-toast {
+  background: var(--color-foreground);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 14px;
+  box-shadow: var(--shadow-card);
+  pointer-events: auto;
+  animation: m-toast-in 200ms ease-out;
+}
+
+.m-toast--leaving {
+  animation: m-toast-out 200ms ease-in forwards;
+}
+
+@keyframes m-toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes m-toast-out {
+  to { opacity: 0; transform: translateY(8px); }
+}
+
+/* ---- Man "Dung ban may tinh" / hero chao (Trang chu) / trang thai troi ---- */
+
+.m-hero {
+  background: linear-gradient(135deg, #1e3a8a, var(--color-primary) 65%, #4f46e5);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  color: #fff;
+  margin-bottom: 16px;
+}
+
+.m-hero-greeting {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.m-hero-date {
+  font-size: 13px;
+  opacity: 0.85;
+  text-transform: capitalize;
+}
+
+.m-stat-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.m-stat-tile {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 8px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.m-stat-tile:active {
+  background: var(--color-muted);
+}
+
+.m-stat-tile-value {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.m-stat-tile-label {
+  font-size: 11px;
+  color: var(--color-muted-foreground);
+  margin-top: 2px;
+}
+
+.m-section-title {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 600;
+  margin: 20px 0 10px;
+  padding: 0 2px;
+}
+
+/* Man "sap co" (Kho/Khach hang/Du an o Dot 1 - chua co noi dung nghiep vu) */
+.m-coming-soon {
+  text-align: center;
+  padding: 64px 24px;
+  color: var(--color-muted-foreground);
+}
+
+.m-coming-soon-icon {
+  color: var(--color-border);
+  margin-bottom: 16px;
+}
+
+/* Banner "Dang xem ban di dong" tren desktop khi mo tren dien thoai (nguoc lai voi #m-force-desktop) */
+.m-force-desktop-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: var(--m-touch-min);
+  padding: 10px 4px;
+  background: none;
+  border: none;
+  color: var(--color-muted-foreground);
+  font-size: 14px;
+  cursor: pointer;
+}

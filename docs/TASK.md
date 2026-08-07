@@ -533,6 +533,66 @@
 - [x] `frontend/assets/style.css`: `.price-picker-hint` — tách `display:flex` sang rule riêng `.price-picker-hint:not([hidden])` (cùng dạng lỗi `[hidden]` bị `display` đè đã gặp ở `.alert`/`.form-row`/`.notification-panel`/`.page-header-actions`, lần này bỏ sót khi viết mới)
 - [x] Test qua trình duyệt thật (Chrome headless CDP thô, computed style + geometry): mặc định `display:none`/0×0 đúng, trạng thái ≥2 giá lịch sử vẫn hiện đúng `display:flex` + đủ chip — không hồi quy
 
+### Mẫu in Phiếu xuất kho: dạng hiển thị ngân hàng + dòng "Tổng cộng" không căn phải (ngoài phase, theo phản hồi người dùng 2026-08-06)
+
+- [x] `print-template-render.js#buildCompanyBankLine()`: bỏ ngoặc đơn quanh chi nhánh, **dùng chung `buildBankNameBranchLine()`** với mẫu "Giấy đề nghị tạm ứng" → `Vietcombank – PGD An Nhơn` (một nguồn duy nhất cho định dạng tên NH + chi nhánh ở mọi mẫu in)
+- [x] `print-template-render.js`: dữ liệu mẫu khung xem trước đổi `bank_branch` sang `'PGD An Nhơn'` cho khớp định dạng thật
+- [x] `style.css`: sửa lỗi CSS chết lặng — `.print-total-label`/`.print-total-value` (`0,1,0`) bị `.print-table td` (`0,1,1`) ghi đè → dòng "Tổng cộng" luôn căn TRÁI và cỡ chữ 15px chưa bao giờ áp dụng. Đổi sang `.print-table td.print-total-label`/`.print-table td.print-total-value`
+- [x] Test đo hình học thật qua CDP (`Network.setCacheDisabled`) trên 3 nơi: khung xem trước (mép phải khớp 0px), **trang in thật PX000016** (khớp 0px), hồi quy "Giấy đề nghị tạm ứng" (không đổi). Không lỗi console, chỉ đọc — không ghi đè mẫu in thật
+- [ ] *(để ngỏ, chờ người dùng quyết định)* Ô "Tổng cộng" hiện nằm ở cột cuối ("Đơn giá sau CK") chứ không dưới cột "Thành tiền" mà nó cộng tổng — hiện khớp đúng yêu cầu "canh sát qua phải" nên giữ nguyên
+
+### Giao diện di động (ngoài phase, theo yêu cầu người dùng 2026-08-06 — ĐÃ CHỐT KẾ HOẠCH, CHƯA CODE)
+
+> Đã khảo sát hiện trạng frontend + phân tích 3 phương án kiến trúc + chốt 4 quyết định qua `AskUserQuestion` trước khi lên kế hoạch. Nghiệp vụ: `docs/PRD.md` mục 4.16. Kiến trúc + 2 phương án đã loại bỏ: `docs/DECISIONS.md` mục 2026-08-06 "Giao diện di động". Kỹ thuật chi tiết theo đợt: `docs/Plan.md` mục 4 "Giao diện di động".
+>
+> **Nguyên tắc xuyên suốt**: bản app RIÊNG tại `frontend/m/` — **không sửa frontend desktop đang chạy production**; giữ MPA (không tự viết SPA router); dùng chung API + cookie session; **không thêm API, không sửa `server.js`** cho phần giao diện.
+>
+> **Phạm vi đã chốt**: Tra cứu + Dự án làm trước (Đợt 1–3); nghiệp vụ ghi để ngỏ (Đợt 4). Không bật HTTPS → iOS toàn màn hình gần native, Android còn thanh địa chỉ, cả 2 không có offline/push. Điện thoại trước, tablet dùng chung khung. Chỉ LAN.
+
+**Đợt 0 — Thiết kế (không code) — ĐÃ XONG 2026-08-06**
+- [x] Dùng skill `ui-ux-pro-max` thiết kế 10 thành phần mới: thanh tab dưới, app bar + nút quay lại, thẻ danh sách (thay `.data-table`), bottom sheet kéo-để-đóng (thay `.modal-overlay`), ô tìm kiếm dính đầu trang, segmented control, pull-to-refresh, skeleton, hàng thông tin kiểu Settings, nút hành động chính — mỗi thành phần đã trình bày riêng và được người dùng duyệt từng cái trước khi sang cái tiếp theo
+- [x] Bổ sung mục "Giao diện di động" vào `docs/DESIGN-SYSTEM.md` (đủ 10 thành phần + token tái sử dụng cho từng cái)
+
+**Đợt 1 — Khung app — ĐÃ XONG PHẦN CODE 2026-08-06** *(chưa có màn nghiệp vụ nào, chỉ có Trang chủ/Đăng nhập/3 tab "sắp có")*
+- [x] Tách `frontend/assets/tokens.css` từ `style.css` (`:root` + `@font-face`) + `style.css` thêm 1 dòng `@import` — thay đổi DUY NHẤT chạm CSS desktop
+- [x] `frontend/m/assets/m-tokens.css` + `m-style.css` (import `tokens.css`, KHÔNG import `style.css`) — đủ 10 thành phần đã thiết kế Đợt 0
+- [x] `frontend/m/assets/m-layout.js`: app bar + thanh tab dưới cố định (`env(safe-area-inset-bottom)`), lọc theo `user.permissions` **đọc lại `NAV_GROUPS`** qua `_mTabModule(groupLabel)` (tìm nhóm theo label, lấy `module` của item đầu — không hardcode danh sách tab thứ 2, tự động khớp nếu desktop đổi module_key sau này); chuông thông báo (badge + sheet liệt kê, polling 20s); sheet "Thêm" (Dùng bản máy tính/Đăng xuất)
+- [x] `frontend/m/assets/m-ui.js`: bottom sheet (kéo-để-đóng có ngưỡng chống nhầm), pull-to-refresh, skeleton, toast, debounce, khôi phục vị trí cuộn (`sessionStorage`)
+- [x] Phát hiện thiết bị: hàm `isMobileDevice()` đặt tại `frontend/assets/api.js` (dùng chung 1 định nghĩa, gọi từ cả `layout.js`/`auth.js` — khác dự tính ban đầu định viết riêng ở 2 file) — `matchMedia('(hover: none) and (pointer: coarse)')` + `innerWidth <= 820`, không UA sniffing; cờ thoát `localStorage['erp_force_desktop']`
+- [x] `frontend/m/login.html`/`m-login.js` + `frontend/m/index.html`/`m-index.js` (Trang chủ: hero chào + 3 thẻ số liệu + sinh nhật trong tháng)
+- [x] `frontend/m/coming-soon.html`/`m-coming-soon.js` (dùng chung, đọc `?section=` — placeholder cho 3 tab Kho/Khách hàng/Dự án tới khi có Đợt 2/3)
+- [x] `manifest.json` + `apple-touch-icon` (tự tạo icon vuông 192/512px từ logo hiện có qua Pillow, đệm nền trắng — file gốc không vuông) + meta `apple-mobile-web-app-capable`/`theme-color` — không làm `service-worker.js` (cần HTTPS)
+- [x] `frontend/assets/icons.js`: thêm 6 icon mới (`moreHorizontal`/`refresh`/`phone`/`mapPin`/`chevronRight`/`monitor`), không sửa key cũ
+- [x] Test qua CDP (Chrome headless, `Emulation.setDeviceMetricsOverride(mobile:true)` + `setTouchEmulationEnabled` — **phát hiện lỗi CDP**: bật thêm `setEmitTouchEventsForMouse` cùng lúc làm `Input.dispatchMouseEvent` treo vĩnh viễn, đã bỏ, chỉ giữ `setTouchEmulationEnabled`): redirect thiết bị đúng, đăng nhập mobile đúng, Trang chủ hiện đúng số liệu, bấm chuông/đóng sheet/chuyển tab **bằng click thật qua CDP Input** (không gọi `.click()` JS) đều đúng, "Dùng bản máy tính" đặt cờ + điều hướng đúng và cờ được tôn trọng ở lần mở sau, **lọc quyền đúng với `thukho1`** (chỉ còn Trang chủ/Kho/Thêm, không có Khách hàng/Dự án) — không lỗi console
+- [x] **Hồi quy desktop**: mở lại `dashboard.html` sau khi tắt giả lập — không bị chuyển hướng nhầm, sidebar hiện đúng, biến màu `--color-primary` không đổi
+- [x] **Chưa test được trên điện thoại thật qua LAN** (môi trường hiện tại không có thiết bị vật lý) — người dùng cần tự kiểm tra bước này, đặc biệt cảm giác "an toàn" của vùng chạm/safe-area trên iPhone có notch
+- [x] **Hạng mục phụ thuộc đã hỏi và xử lý ngay** (khác dự tính "để riêng"): `backend/server.js` thêm `rolling: true` + `maxAge` từ 8 tiếng lên **7 ngày** (người dùng chọn làm luôn) — đã restart server + verify qua `curl` (cookie `Expires` đúng +7 ngày). **Đổi `MemoryStore` sang store lưu đĩa: người dùng chọn ĐỂ SAU**, gộp vào Phase 5 Go-live như dự tính ban đầu — restart server hiện tại vẫn làm mất toàn bộ phiên đăng nhập (kể cả mobile)
+
+**Đợt 2 — Tra cứu** *(7 màn, chỉ đọc)*
+- [ ] Sản phẩm + chi tiết (tồn kho, giá vốn, lịch sử nhập/xuất)
+- [ ] Khách hàng + chi tiết (kèm thẻ Bảo hành), Nhà cung cấp
+- [ ] Công nợ khách hàng, Công nợ NCC (số dư + lịch sử giao dịch)
+- [ ] Đối tác (danh bạ), Bảo hành
+- [ ] 3 tính năng chỉ mobile: `tel:` gọi trực tiếp, mở bản đồ theo địa chỉ công trình, chia sẻ nhanh thông tin công nợ
+- [ ] Tìm kiếm theo tên/mã/SĐT giữ đúng hành vi lọc như desktop
+
+**Đợt 3 — Dự án tại công trường**
+- [ ] Danh sách dự án (thẻ có thanh tiến độ, lọc theo trạng thái)
+- [ ] Chi tiết dự án với segmented control `[Tổng quan | Giai đoạn | Vật tư | Thanh toán | Phát sinh]`
+- [ ] Giai đoạn: mở ra công việc con, cập nhật trạng thái + ngày thực tế ngay tại chỗ (**không đụng sổ cái tồn kho/công nợ**)
+- [ ] Phát sinh: thêm "vấn đề" ngay tại công trường
+- [ ] **KHÔNG đưa Gantt lên điện thoại** — thay bằng danh sách giai đoạn có thanh tiến độ; tablet giữ Gantt cuộn ngang
+- [ ] Vật tư + Thanh toán: chỉ đọc
+
+**Đợt 4 — Nghiệp vụ ghi** *(ĐỂ NGỎ, đánh giá lại sau Đợt 3 — chưa cam kết)*
+- [ ] Lập phiếu nhập/xuất/trả hàng, ghi nhận thanh toán công nợ, phiếu thu/chi sổ quỹ
+
+**Hạng mục phụ thuộc (đụng backend — cần duyệt riêng)**
+- [ ] `server.js`: `rolling: true` + kéo dài `maxAge` (nếu không, điện thoại phải đăng nhập lại mỗi 8 tiếng)
+- [ ] `server.js`: đổi `express-session` từ `MemoryStore` sang store lưu xuống đĩa — **restart server hiện đang làm đăng xuất toàn bộ**; đã ghi nhận sẵn cho Phase 5, nên gộp làm cùng Đợt 1
+
+**Không làm bản mobile** (chốt để tránh phình phạm vi): 7 trang Cấu hình, Vai trò, Người dùng, Mẫu in + trình soạn thảo, Import/Export Excel, Báo cáo đầy đủ (chỉ có bản tóm tắt ở Trang chủ), 2 trang In phiếu.
+
 ## Open questions cần chốt trước khi code phần liên quan
 
 Xem `docs/DECISIONS.md` mục "Open questions".

@@ -1,6 +1,6 @@
 # PRD: Hệ thống Quản lý Kho & Công nợ nội bộ
 
-**Version**: v1.6 — cập nhật 2026-08-04 (bổ sung 4.12 Quản lý dự án)
+**Version**: v1.7 — cập nhật 2026-08-06 (bổ sung 4.16 Giao diện di động — đã chốt kế hoạch, chưa code)
 **Trạng thái**: Phase 1 → 4 đã hoàn thành toàn bộ (nền tảng, kho, công nợ, in phiếu, báo cáo) + nhiều mở rộng ngoài phase (Bảo hành, tách Khách hàng, Điều chỉnh công nợ, đóng gói portable, Sổ quỹ, Import/Export Excel sản phẩm). Phase 5 (Vận hành & Go-live) đang làm; **module Quản lý dự án (4.12) đã chốt kế hoạch 2026-08-04, chưa bắt đầu code** — xem trạng thái chính xác tại `docs/CURRENT.md`. Các mục 4.x vẫn có thể bổ sung khi phát sinh nhu cầu mới (xem `docs/DECISIONS.md`).
 
 > Tên dự án là working title. Đổi tên theo tên công ty/thương hiệu thực tế khi cần.
@@ -213,6 +213,37 @@ Trang "Trả hàng" (menu Kho) quản lý **chung 1 danh sách** cho 2 loại ph
 
 **"Trả hàng nhà cung cấp"** — chiều **ngược lại** "Trả hàng xuất": hàng trả về NCC làm **giảm** tồn kho (giống phiếu xuất), công nợ **phải trả** NCC giảm tương ứng, tách biệt hoàn toàn khỏi danh sách "Phiếu xuất kho" thông thường (mã phiếu riêng, prefix `TN...`). Các trường/hành vi hoàn toàn tương tự "Trả hàng xuất" (thay Khách hàng/Công trình bằng Nhà cung cấp, không có Công trình; "Số lượng đã nhập" tự tính thay "Số lượng đã xuất"; cùng quy trình 2 bước Lưu/Trừ kho) — **riêng 1 điểm khác**: ô "Giá nhập" từng dòng — hệ thống tự tra cứu lịch sử giá đã từng mua sản phẩm đó từ đúng NCC đang chọn: **chỉ 1 giá** thì tự điền luôn; **từ 2 giá trở lên** (từng mua với giá khác nhau ở các lần nhập khác nhau) thì hiện gợi ý liệt kê từng mức giá dạng nút bấm được ngay dưới ô, người dùng chọn giá nào thì giá đó tự điền vào ô.
 - Cả 2 loại phiếu **không thuộc quyền module riêng** — dùng chung quyền `kho` như phiếu nhập/xuất kho.
+
+### 4.16 Giao diện di động (bổ sung 2026-08-06, theo yêu cầu người dùng — đã chốt kế hoạch, CHƯA CODE)
+
+Một **giao diện riêng dành cho điện thoại và tablet**, bố cục và cách thao tác giống ứng dụng native — **không phải** bản web hiện tại thu nhỏ lại. Truy cập cùng địa chỉ máy chủ trong LAN, tự nhận diện thiết bị và chuyển hướng, dùng chung tài khoản/phiên đăng nhập với bản máy tính (đăng nhập 1 lần, không có hệ thống tài khoản thứ 2).
+
+**Đối tượng & tình huống sử dụng**: nhân viên đứng tại kho hoặc tại công trường cần tra cứu nhanh (tồn kho, công nợ, thông tin khách hàng, liên hệ) và cập nhật tiến độ dự án ngay tại chỗ, thay vì phải quay về máy tính.
+
+**Phạm vi giai đoạn đầu (đã chốt)** — làm trước 2 nhóm, nhóm nghiệp vụ ghi để ngỏ đánh giá lại sau khi dùng thật:
+
+- **Tra cứu (chỉ đọc)**: Sản phẩm + chi tiết tồn kho, Khách hàng + chi tiết, Nhà cung cấp, Công nợ khách hàng, Công nợ NCC, Đối tác (danh bạ), Bảo hành. Tìm kiếm theo tên/mã/số điện thoại như bản máy tính.
+- **Dự án tại công trường**: danh sách dự án kèm tiến độ; trang chi tiết đủ các nhóm thông tin (Tổng quan / Giai đoạn / Vật tư / Thanh toán / Phát sinh); **cập nhật trạng thái và ngày thực tế của công việc ngay tại chỗ**; **ghi nhận phát sinh (vấn đề) ngay khi xảy ra**. Vật tư và Thanh toán chỉ đọc.
+- **Chung**: Trang chủ tóm tắt, Thông báo (dùng chung hệ thống thông báo 4.14), Đăng nhập.
+- **Chưa làm ở giai đoạn này** (đánh giá lại sau): lập phiếu nhập/xuất/trả hàng, phiếu thu chi sổ quỹ, ghi nhận thanh toán công nợ.
+
+**Không có bản di động** (luôn dùng máy tính khi cần): các trang Cấu hình, Vai trò, Người dùng, Mẫu in và trình soạn thảo mẫu in, Import/Export Excel, Báo cáo đầy đủ (chỉ có bản tóm tắt ở Trang chủ), trang In phiếu.
+
+**Yêu cầu về trải nghiệm**:
+- Thanh điều hướng dạng **tab cố định phía dưới màn hình** (thay sidebar), tự lọc theo quyền của tài khoản đang đăng nhập.
+- Mọi danh sách hiển thị dạng **thẻ** (mỗi bản ghi 1 thẻ, hiện 3–4 thông tin quan trọng, bấm vào mở chi tiết) — **không dùng bảng nhiều cột cuộn ngang**.
+- Form nhập liệu mở dạng **tấm trượt từ đáy màn hình**, kéo xuống để đóng (thay popup giữa màn hình).
+- Vùng chạm tối thiểu 44×44px; kéo danh sách xuống để làm mới; giữ nguyên vị trí đang xem khi quay lại danh sách.
+- Tính năng chỉ có trên bản di động: **bấm số điện thoại để gọi trực tiếp**, bấm địa chỉ công trình để mở ứng dụng bản đồ, chia sẻ nhanh thông tin công nợ.
+- Luôn có nút **"Dùng bản máy tính"** để thoát về giao diện đầy đủ khi cần.
+
+**Giới hạn đã biết và được chấp nhận** (do hệ thống chạy trong LAN không có HTTPS — xem `docs/DECISIONS.md`):
+- **iPhone/iPad**: thêm vào màn hình chính sẽ mở **toàn màn hình, không thanh địa chỉ** — gần như ứng dụng thật.
+- **Android**: vẫn mở trong trình duyệt Chrome, **còn thanh địa chỉ** phía trên.
+- **Cả hai**: không chạy được khi mất kết nối (không có chế độ offline), không có thông báo đẩy ngoài ứng dụng. Có thể bổ sung sau nếu chấp nhận bật HTTPS nội bộ, **không phải làm lại giao diện**.
+- Thiết bị phải kết nối WiFi cùng mạng LAN với máy chủ — không dùng được qua mạng 4G ngoài văn phòng.
+
+**Phân quyền**: không có module quyền mới — bản di động dùng đúng quyền module hiện có của tài khoản (`kho`, `cong_no`, `du_an`...), chỉ hiển thị đúng những mục người dùng vốn đã được phép xem trên bản máy tính.
 
 ## 5. Success Metrics
 

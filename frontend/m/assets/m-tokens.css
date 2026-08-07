@@ -1,0 +1,25 @@
+/* Token rieng cho Giao dien di dong - kich thuoc/khoang cach dac thu mobile (app bar, tab bar,
+   vung an toan, z-index). Mau/font/radius/shadow lay tu tokens.css DUNG CHUNG voi desktop -
+   KHONG import style.css (chi import dung tokens.css) de tranh nap toan bo CSS desktop khong
+   lien quan. Xem docs/DESIGN-SYSTEM.md muc "Giao dien di dong". */
+
+@import url('../../assets/tokens.css');
+
+:root {
+  --m-appbar-height: 56px;
+  --m-tabbar-height: 56px;
+  --m-touch-min: 44px;
+
+  /* env(safe-area-inset-*) tra ve 0px tren thiet bi khong co notch/vach home - an toan dung
+     truc tiep lam padding cong them, khong can kiem tra dieu kien. */
+  --m-safe-top: env(safe-area-inset-top, 0px);
+  --m-safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Thang z-index rieng cho mobile, tach biet voi desktop (modal-overlay=100, chuong=60) vi
+     2 the gioi CSS khong giao nhau (m-style.css khong import style.css). */
+  --m-z-appbar: 30;
+  --m-z-tabbar: 40;
+  --m-z-sheet-scrim: 100;
+  --m-z-sheet: 101;
+  --m-z-toast: 110;
+}

@@ -56,6 +56,14 @@ const ICONS = {
   alignRight: '<line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="12" x2="9" y2="12"/><line x1="21" y1="18" x2="7" y2="18"/>',
   // Nut "Chen hinh anh" o toolbar "Chinh sua mau in" (them 2026-08-06).
   image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5.5-5.5a1.5 1.5 0 0 0-2.1 0L4 19"/>',
+  // 6 icon moi cho Giao dien di dong (frontend/m/, Dot 1, them 2026-08-06) - CHI THEM, khong sua
+  // key cu nao o tren (dung chung file nay giua 2 ban desktop/mobile).
+  moreHorizontal: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+  refresh: '<path d="M3 12a9 9 0 0 1 15.4-6.4L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.4 6.4L3 16"/><path d="M3 21v-5h5"/>',
+  phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/>',
+  mapPin: '<path d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.4"/>',
+  chevronRight: '<path d="M9 6l6 6-6 6"/>',
+  monitor: '<rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M8 20h8"/><path d="M12 17v3"/>',
 };
 
 function icon(name, size) {

@@ -1,0 +1,15 @@
+{
+  "name": "NEXA One - Quản lý Kho & Công nợ",
+  "short_name": "NEXA One",
+  "start_url": "index.html",
+  "scope": "/m/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "orientation": "portrait",
+  "lang": "vi",
+  "icons": [
+    { "src": "../assets/images/nexa-one-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "../assets/images/nexa-one-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

@@ -103,7 +103,7 @@ project-root/
 │  ├─ projects.html                    (kế hoạch, Đợt 1) danh sách dự án + modal thêm/sửa (kèm người tham gia)
 │  ├─ project-detail.html              (kế hoạch, Đợt 1-4) chi tiết dự án dạng 6 tab — pattern giao diện MỚI, phải dùng skill ui-ux-pro-max
 │  ├─ project-phase-templates.html     (kế hoạch, Đợt 1) danh mục "Giai đoạn mẫu", thuộc menu Cấu hình
-│  └─ assets/
+│  ├─ assets/
 │     ├─ style.css                     (đã có) design system (xem docs/DESIGN-SYSTEM.md)
 │     ├─ api.js                        (đã có) helper gọi API dùng chung
 │     ├─ auth.js                       (đã có) logic riêng trang login
@@ -134,7 +134,24 @@ project-root/
 │     ├─ reports.js                    (đã có) logic trang reports.html (bieu do cot SVG tu ve)
 │     ├─ cash-book.js                  (đã có, 2026-08-02) logic trang cash-book.html
 │     ├─ cash-categories.js            (đã có, 2026-08-02) logic trang cash-categories.html
+│     ├─ tokens.css                    (kế hoạch, Mobile Đợt 1) TÁCH từ style.css: :root (màu/font/shadow/radius) + @font-face — DÙNG CHUNG desktop + mobile, tránh lệch thương hiệu
 │     └─ fonts/                        (đã có) file .woff2 host offline + fonts.css
+│  └─ m/                               (kế hoạch, Giao diện di động — xem mục 4 "Giao diện di động" và docs/DECISIONS.md 2026-08-06)
+│     │                                Bản app RIÊNG cho điện thoại/tablet. KHÔNG cần sửa server.js: express.static(frontend/)
+│     │                                đã phục vụ sẵn thư mục con → tự chạy tại /m/. Dùng chung API + cookie session với desktop.
+│     ├─ index.html                    (Đợt 1) Trang chủ mobile — thẻ tóm tắt + sinh nhật + thông báo
+│     ├─ login.html                    (Đợt 1) đăng nhập bản mobile
+│     ├─ products.html · product-detail.html          (Đợt 2)
+│     ├─ customers.html · customer-detail.html        (Đợt 2)
+│     ├─ partners.html · customer-debts.html · debts.html (Đợt 2)
+│     ├─ contacts.html · warranties.html              (Đợt 2)
+│     ├─ projects.html · project-detail.html          (Đợt 3)
+│     └─ assets/
+│        ├─ m-style.css                (Đợt 1) toàn bộ CSS bản mobile — import tokens.css dùng chung, KHÔNG import style.css
+│        ├─ m-tokens.css               (Đợt 1) token riêng mobile: chiều cao app bar/tab bar, safe-area, cỡ vùng chạm
+│        ├─ m-layout.js                (Đợt 1) app bar + thanh tab dưới (lọc theo user.permissions, dùng lại khai báo NAV_GROUPS)
+│        ├─ m-ui.js                    (Đợt 1) bottom sheet, pull-to-refresh, skeleton, toast, khôi phục vị trí cuộn
+│        └─ m-<màn>.js                 (Đợt 2-3) logic từng màn, viết mới gọn — KHÔNG tách logic từ 44 file JS desktop đang chạy
 ├─ data/
 │  └─ data.db                          (đã có) file SQLite
 ├─ scripts/
@@ -470,6 +487,53 @@ Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân qu
 **Đợt 5 — Báo cáo dự án (tùy chọn)**
 - [ ] Thêm phần "Dự án" vào `reports.html`: tiến độ, công nợ, chênh lệch vật tư của toàn bộ dự án
 
+### Giao diện di động (ngoài phase, theo yêu cầu người dùng 2026-08-06 — đã chốt kế hoạch, CHƯA CODE)
+
+> Nghiệp vụ: `docs/PRD.md` mục 4.16. Quyết định kiến trúc đầy đủ (gồm 2 phương án đã cân nhắc và loại bỏ): `docs/DECISIONS.md` mục 2026-08-06 "Giao diện di động".
+> **Nguyên tắc nền tảng**: bản app RIÊNG tại `frontend/m/`, **không sửa frontend desktop đang chạy production**; giữ mô hình MPA (không tự viết SPA router); dùng chung API + cookie session; **không có API mới, không sửa backend** cho phần giao diện.
+
+**API**: dùng lại 100% endpoint hiện có (mục 3 của tài liệu này). Không thêm route mới. Không sửa `server.js` — `express.static(frontend/)` đã phục vụ sẵn `frontend/m/` tại `/m/`.
+
+**Đợt 0 — Thiết kế (không code)**
+- [ ] Dùng skill `ui-ux-pro-max` thiết kế **10 thành phần giao diện mới**: thanh tab dưới, app bar + nút quay lại, thẻ danh sách (thay `.data-table`), bottom sheet kéo-để-đóng (thay `.modal-overlay`), ô tìm kiếm dính đầu trang, segmented control (thay tab trang chi tiết dự án), pull-to-refresh, skeleton đang tải, hàng thông tin kiểu Settings, nút hành động chính
+- [ ] Bổ sung mục "Giao diện di động" vào `docs/DESIGN-SYSTEM.md` (bắt buộc trước khi viết CSS, theo ràng buộc `CLAUDE.md`)
+
+**Đợt 1 — Khung app** *(nặng nhất, chưa có màn nghiệp vụ nào — nền tảng cho mọi đợt sau)*
+- [ ] Tách `frontend/assets/tokens.css` từ `style.css` (`:root` + `@font-face`), `style.css` thêm đúng 1 dòng `@import` — **thay đổi duy nhất chạm vào CSS desktop**, verify ngay bằng cách so sánh trang desktop trước/sau
+- [ ] `frontend/m/assets/m-tokens.css` + `m-style.css` (import `tokens.css`, **không** import `style.css`)
+- [ ] `frontend/m/assets/m-layout.js`: app bar + thanh tab dưới cố định (`position:fixed` + `env(safe-area-inset-bottom)`), lọc mục theo `user.permissions` — **dùng lại khai báo `NAV_GROUPS` của `layout.js`, không hardcode danh sách tab thứ 2**. Tab: `Trang chủ · Kho · Khách hàng · Dự án · Thêm` (mục "Thêm" chứa các màn còn lại + Thông báo + Đăng xuất + "Dùng bản máy tính")
+- [ ] `frontend/m/assets/m-ui.js`: bottom sheet, pull-to-refresh, skeleton, toast, khôi phục vị trí cuộn qua `sessionStorage`
+- [ ] Phát hiện thiết bị + chuyển hướng: sửa `frontend/assets/layout.js` (`initLayout()`) và `auth.js` — điều kiện `matchMedia('(hover: none) and (pointer: coarse)')` + `innerWidth <= 820`, **không UA sniffing**; cờ thoát `localStorage['erp_force_desktop']`; banner "Chuyển sang bản di động" khi mở desktop trên điện thoại
+- [ ] `frontend/m/login.html` + `index.html` (Trang chủ: thẻ tóm tắt + sinh nhật trong tháng + thông báo)
+- [ ] `manifest.json`, `apple-touch-icon`, meta `apple-mobile-web-app-capable`/`theme-color` — **không** làm `service-worker.js` (cần HTTPS, xem `docs/DECISIONS.md`)
+- [ ] `frontend/assets/icons.js`: **chỉ THÊM** icon mới cho tab bar/app bar, tuyệt đối không sửa key cũ
+- [ ] Nghiệm thu: **điện thoại thật qua LAN** (không chỉ headless) + test bằng tài khoản quyền hạn chế (`thukho1`/`ketoan1`), xác nhận tab bar lọc đúng
+
+**Đợt 2 — Tra cứu** *(7 màn, chỉ đọc → rủi ro thấp nhất, giá trị cao nhất)*
+- [ ] Sản phẩm (danh sách + tìm kiếm) + chi tiết (tồn kho, giá vốn, lịch sử nhập/xuất)
+- [ ] Khách hàng + chi tiết (kèm thẻ Bảo hành), Nhà cung cấp
+- [ ] Công nợ khách hàng, Công nợ NCC (số dư + lịch sử giao dịch)
+- [ ] Đối tác (danh bạ), Bảo hành
+- [ ] 3 tính năng **chỉ mobile**: bấm SĐT gọi trực tiếp (`tel:`), bấm địa chỉ công trình mở bản đồ, chia sẻ nhanh thông tin công nợ
+- [ ] Tìm kiếm theo tên/mã/số điện thoại — giữ đúng hành vi lọc như bản desktop
+
+**Đợt 3 — Dự án tại công trường** *(1 màn nhưng phức tạp nhất)*
+- [ ] Danh sách dự án (thẻ có thanh tiến độ, lọc theo trạng thái)
+- [ ] Chi tiết dự án với segmented control `[Tổng quan | Giai đoạn | Vật tư | Thanh toán | Phát sinh]`
+- [ ] Giai đoạn: mở ra công việc con, **cập nhật trạng thái + ngày thực tế ngay tại chỗ** (ghi dữ liệu nhưng **không đụng sổ cái tồn kho/công nợ** → rủi ro thấp)
+- [ ] Phát sinh: thêm "vấn đề" ngay tại công trường
+- [ ] **KHÔNG đưa biểu đồ Gantt lên điện thoại** — thay bằng danh sách giai đoạn có thanh tiến độ (cùng dữ liệu, khác cách trình bày). Tablet giữ Gantt cuộn ngang
+- [ ] Vật tư (Dự toán/Đã xuất/Còn lại) và Thanh toán: chỉ đọc
+
+**Đợt 4 — Nghiệp vụ ghi** *(ĐỂ NGỎ — đánh giá lại sau khi người dùng dùng thật Đợt 1-3, chưa cam kết)*
+- [ ] Lập phiếu nhập/xuất/trả hàng, ghi nhận thanh toán công nợ, phiếu thu/chi sổ quỹ
+
+**Hạng mục phụ thuộc (đụng backend — cần duyệt riêng trước khi làm)**
+- [ ] `server.js`: `rolling: true` + kéo dài `maxAge` — nếu không, điện thoại phải đăng nhập lại mỗi 8 tiếng
+- [ ] `server.js`: đổi `express-session` từ `MemoryStore` sang store lưu xuống đĩa — nếu không, **restart server là toàn bộ điện thoại bị đăng xuất**. Vấn đề này đã ghi nhận sẵn cho Phase 5 Go-live, nên gộp làm cùng Đợt 1
+
+**Không làm bản mobile** (chốt để tránh phình phạm vi): 7 trang Cấu hình, Vai trò, Người dùng, Mẫu in + trình soạn thảo, Import/Export Excel, Báo cáo đầy đủ (chỉ có bản tóm tắt ở Trang chủ), 2 trang In phiếu.
+
 ## 5. Kiểm thử cơ bản mỗi phase
 
 - Phase 1: đăng nhập sai/đúng, truy cập route không đúng role bị chặn.
@@ -481,3 +545,5 @@ Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân qu
 - Phase 5: tắt máy chủ giữa chừng, bật lại → xác nhận PM2 tự chạy app mà không cần thao tác thủ công.
 - Module Dự án — Đợt 3 (nhạy cảm nhất): lập phiếu nhập/xuất **không** gắn dự án → kết quả phải y hệt trước khi sửa (tồn kho, giá vốn, công nợ); gây lỗi giữa transaction → rollback đúng, phiếu lẫn dòng công nợ đều không được ghi; xuất vật tư cho dự án rồi nhập trả lại một phần → "Đã xuất cho dự án" giảm đúng.
 - Module Dự án — Đợt 4: 1 khách hàng có **2 dự án** cùng lúc, ghi nhận thanh toán cho từng dự án → số dư tổng của khách hàng và "Còn phải thu" của **từng** dự án đều đúng, không lẫn sang nhau; chọn dự án của khách hàng khác qua API bị chặn.
+- Giao diện di động — **nghiệm thu 2 lớp mỗi đợt**: (1) Chrome headless CDP với `Emulation.setDeviceMetricsOverride` + `Emulation.setTouchEmulation` + `Input.dispatchTouchEvent` (**chạm thật**, không phải `.click()`); (2) **thiết bị thật của người dùng qua LAN** — lớp này mới là nghiệm thu chính, vì "cảm giác native" không đo được bằng headless. Bắt buộc test bằng tài khoản quyền hạn chế (`thukho1`/`ketoan1`) để xác nhận thanh tab lọc đúng, không chỉ `admin`.
+- Giao diện di động — **hồi quy bắt buộc với bản desktop**: sau khi tách `tokens.css` và sửa `layout.js`/`auth.js` (phát hiện thiết bị), mở lại bản desktop trên máy tính xác nhận không đổi gì về màu/font/bố cục và **không bị chuyển hướng nhầm** sang `/m/`.

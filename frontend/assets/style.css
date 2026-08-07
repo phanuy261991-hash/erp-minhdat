@@ -1,38 +1,14 @@
-/* Bien mau va style dung chung cho toan bo giao dien.
+/* Bien mau va style dung chung cho toan bo giao dien (BAN DESKTOP).
    Design system: xem docs/DESIGN-SYSTEM.md (tao bang skill ui-ux-pro-max).
    Style: Soft UI Evolution - hien dai, chuyen nghiep, than thien.
    Font host offline tai frontend/assets/fonts/ (Be Vietnam Pro, Open Sans) - dam bao
-   hien thi dung dau tieng Viet tren moi may du khong co internet. */
+   hien thi dung dau tieng Viet tren moi may du khong co internet.
 
-@import url('fonts/fonts.css');
+   Bien mau/font/radius/shadow (:root) da TACH sang tokens.css (2026-08-06, Giao dien di dong
+   Dot 1) - dung CHUNG voi ban mobile (frontend/m/assets/m-style.css) de khong bao gio lech
+   thuong hieu giua 2 ban. Sua mau/font thuong hieu thi sua o tokens.css, KHONG sua o day. */
 
-:root {
-  --color-primary: #2563eb;
-  --color-primary-dark: #1d4ed8;
-  --color-secondary: #3b82f6;
-  --color-accent: #059669;
-  --color-destructive: #dc2626;
-  --color-background: #f8fafc;
-  --color-foreground: #0f172a;
-  --color-surface: #ffffff;
-  --color-muted: #f1f5fd;
-  --color-muted-foreground: #64748b;
-  --color-border: #e4ecfc;
-  --color-ring: #2563eb;
-  --color-warning: #b45309;
-
-  --font-heading: 'Be Vietnam Pro', 'Segoe UI', Roboto, Arial, sans-serif;
-  --font-body: 'Open Sans', 'Segoe UI', Roboto, Arial, sans-serif;
-
-  --radius-lg: 20px;
-  --radius-md: 12px;
-  --radius-sm: 8px;
-
-  --shadow-card: 0 20px 45px rgba(37, 99, 235, 0.18), 0 4px 12px rgba(15, 23, 42, 0.06);
-  --shadow-button: 0 8px 20px rgba(37, 99, 235, 0.25);
-
-  --transition-fast: 180ms ease-out;
-}
+@import url('tokens.css');
 
 * {
   box-sizing: border-box;
@@ -2112,12 +2088,19 @@ input:focus-visible {
   text-align: right;
 }
 
-.print-total-label {
+/* BAT BUOC viet dang ".print-table td.<class>" chu KHONG phai ".<class>" tran: rule
+   ".print-table td" o tren co do uu tien (0,1,1) CAO HON class tran (0,1,0) nen se de len
+   text-align/font-size - loi nay khien 2 rule duoi day chet lang trong thoi gian dai (dong
+   "Tong cong" bi can trai theo mac dinh cua td, co chu 15px khong bao gio duoc ap dung, trong
+   khi cac o so cung cot lai can phai dung nho ".print-table td.print-num" (0,2,1) o tren).
+   Phat hien 2026-08-06 khi do computed style that qua CDP, khong nhin ra duoc bang mat thuong
+   vi so tien mau gan lap day o nen lech chi ~2px. */
+.print-table td.print-total-label {
   text-align: right;
   font-weight: 600;
 }
 
-.print-total-value {
+.print-table td.print-total-value {
   text-align: right;
   font-weight: 700;
   font-size: 15px;

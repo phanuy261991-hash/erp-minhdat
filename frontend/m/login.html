@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Đăng nhập - NEXA One</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="NEXA One" />
+  <link rel="apple-touch-icon" href="../assets/images/nexa-one-icon.png" />
+  <link rel="stylesheet" href="assets/m-style.css" />
+  <style>
+    /* CSS rieng cho dung 1 trang nay (khong du de tach file - man Dang nhap khong dung app
+       bar/tab bar chung nhu cac man khac). */
+    body { display: flex; align-items: center; justify-content: center; padding: 24px 16px; min-height: 100dvh; }
+    .m-login-card { width: 100%; max-width: 360px; }
+    .m-login-brand { text-align: center; margin-bottom: 28px; }
+    .m-login-logo { height: 40px; margin-bottom: 14px; }
+    .m-login-brand h1 { font-size: 18px; }
+    .m-login-subtitle { font-size: 13px; color: var(--color-muted-foreground); margin-top: 4px; }
+    .m-field { margin-bottom: 16px; }
+    .m-field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+    .m-input-wrap { position: relative; }
+    .m-input-wrap input {
+      width: 100%; height: 48px; padding: 0 42px 0 14px; border-radius: var(--radius-sm);
+      border: 1px solid var(--color-border); background: var(--color-muted); font-size: 16px;
+      font-family: var(--font-body); color: var(--color-foreground);
+      transition: border-color var(--transition-fast), background var(--transition-fast);
+    }
+    .m-input-wrap input:focus { outline: none; border-color: var(--color-ring); background: var(--color-surface); }
+    .m-password-toggle {
+      position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+      width: 36px; height: 36px; border: none; background: none; color: var(--color-muted-foreground);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .m-login-submit {
+      width: 100%; min-height: 48px; border: none; border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+      color: #fff; font-family: var(--font-heading); font-size: 15px; font-weight: 600;
+      box-shadow: var(--shadow-button); cursor: pointer; margin-top: 4px;
+    }
+    .m-login-submit:disabled { opacity: 0.7; }
+    .m-alert-error {
+      display: flex; gap: 8px; align-items: center; background: #fef2f2; color: var(--color-destructive);
+      border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; margin-bottom: 16px;
+    }
+    .m-force-desktop { text-align: center; margin-top: 20px; }
+    .m-force-desktop button {
+      background: none; border: none; color: var(--color-muted-foreground); font-size: 13px;
+      text-decoration: underline; min-height: 44px; padding: 0 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="m-login-card">
+    <div class="m-login-brand">
+      <img class="m-login-logo" src="../assets/images/nexa-one-logo.png" alt="NEXA One" />
+      <h1>Quản lý Kho &amp; Công nợ</h1>
+      <p class="m-login-subtitle">Đăng nhập để tiếp tục</p>
+    </div>
+
+    <form id="m-login-form" autocomplete="on">
+      <div id="m-login-error" class="m-alert-error" hidden>
+        <span id="m-login-error-icon"></span>
+        <span id="m-login-error-text"></span>
+      </div>
+
+      <div class="m-field">
+        <label for="m-username">Tên đăng nhập</label>
+        <div class="m-input-wrap">
+          <input type="text" id="m-username" name="username" required autocomplete="username" />
+        </div>
+      </div>
+
+      <div class="m-field">
+        <label for="m-password">Mật khẩu</label>
+        <div class="m-input-wrap">
+          <input type="password" id="m-password" name="password" required autocomplete="current-password" />
+          <button type="button" id="m-password-toggle" class="m-password-toggle" aria-label="Hiện mật khẩu" aria-pressed="false">
+            <span id="m-eye-icon"></span>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" id="m-login-submit" class="m-login-submit">
+        <span id="m-login-submit-text">Đăng nhập</span>
+      </button>
+    </form>
+
+    <div class="m-force-desktop">
+      <button type="button" id="m-use-desktop">Dùng bản máy tính</button>
+    </div>
+  </div>
+
+  <script src="../assets/api.js"></script>
+  <script src="../assets/icons.js"></script>
+  <script src="assets/m-login.js"></script>
+</body>
+</html>

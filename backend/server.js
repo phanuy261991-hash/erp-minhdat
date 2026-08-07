@@ -78,9 +78,16 @@ app.use(session({
   secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
+  // rolling:true + maxAge dai (7 ngay) - them 2026-08-06 cho Giao dien di dong: ban desktop
+  // luon mo san ca lam viec nen 8 tieng co dinh khong thanh van de, nhung dien thoai dong app
+  // roi mo lai nhieu lan trong ngay - neu khong "rolling" (tu gia han moi request thay vi dem
+  // co dinh tu luc dang nhap) se bi dang xuat giua chung du dang thao tac. Ap dung chung ca 2
+  // ban vi dung chung 1 co che session. Van dung MemoryStore (chua doi, xem docs/CURRENT.md) -
+  // restart server van lam mat toan bo phien dang hoat dong bat ke maxAge dai bao nhieu.
+  rolling: true,
   cookie: {
     httpOnly: true,
-    maxAge: 8 * 60 * 60 * 1000, // 8 tieng, phu hop 1 ca lam viec
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngay, tu gia han lai moi request (rolling)
   },
 }));
 

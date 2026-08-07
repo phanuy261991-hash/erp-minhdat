@@ -373,6 +373,15 @@ function findNavItem(activeKey) {
 // dung, day chi la cai thien trai nghiem, khong thay the kiem tra quyen o backend.
 // Tra ve Promise<user> de trang co the dung tiep (vd kiem tra quyen truoc khi hien nut thao tac).
 async function initLayout(activeKey) {
+  // Dang mo tren dien thoai/tablet nho (2026-08-06, Giao dien di dong) - chuyen sang ban mobile.
+  // Dot 1 chi co Trang chu + Dang nhap ben /m/, nen moi trang desktop deu ve chung 1 diem vao
+  // (m/index.html) thay vi co gang anh xa dung trang tuong ung (se lam khi Dot 2/3 co du trang
+  // mobile). m/index.html/m-layout.js tu kiem tra lai session, khong can lo mat dang nhap o day.
+  if (isMobileDevice()) {
+    window.location.href = 'm/index.html';
+    return null;
+  }
+
   let user;
   try {
     const data = await apiFetch('/auth/me');
