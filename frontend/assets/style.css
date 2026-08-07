@@ -844,6 +844,66 @@ input:focus-visible {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
+/* Bo loc ky (thang / khoang ngay) cho the "Tong so tien da thu" o reports.html (them 2026-08-07)
+   - CHI anh huong 1 the trong section "Du an dang hoat dong", khong phai bo loc toan trang, nen
+   dat gon ngay tren dau .stat-grid thay vi 1 khoi rieng bat mat. */
+.period-filter-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.period-filter-label {
+  font-size: 13px;
+  color: var(--color-muted-foreground);
+}
+
+.period-mode-toggle {
+  display: inline-flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.period-mode-btn {
+  padding: 7px 14px;
+  border: none;
+  background: var(--color-surface);
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.period-mode-btn + .period-mode-btn {
+  border-left: 1px solid var(--color-border);
+}
+
+.period-mode-btn.active {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.period-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.period-inputs:not([hidden]) {
+  display: flex;
+}
+.period-inputs[hidden] {
+  display: none;
+}
+
+.period-range-separator {
+  color: var(--color-muted-foreground);
+}
+
 /* ---- Cot bang bam duoc de sap xep (vd cot Ton kho) ---- */
 
 .sortable-th {

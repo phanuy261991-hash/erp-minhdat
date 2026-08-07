@@ -255,17 +255,77 @@ function renderProjectMaterialCell(project) {
   return 'Đủ dự toán';
 }
 
+// ---- Bo loc ky cho the "Tong so tien da thu" (2026-08-07) - CHI the nay doi theo ky, 3 the
+// con lai cua section la so du "hien tai" nen khong doi (da chot qua AskUserQuestion). Mac dinh
+// mo "Theo thang" + thang hien tai, dung nguyen pattern 2 <select> Thang/Nam da co o cash-book.js
+// (khong dung <input type="month"> vi hien thi theo locale trinh duyet, khong ep duoc tieng Viet).
+const periodModeMonthBtn = document.getElementById('period-mode-month');
+const periodModeRangeBtn = document.getElementById('period-mode-range');
+const periodMonthInputs = document.getElementById('period-month-inputs');
+const periodRangeInputs = document.getElementById('period-range-inputs');
+const periodMonthSelect = document.getElementById('period-month-select');
+const periodYearSelect = document.getElementById('period-year-select');
+const periodFromDate = document.getElementById('period-from-date');
+const periodToDate = document.getElementById('period-to-date');
+
+let periodMode = 'month';
+
+function populatePeriodMonthYearSelects() {
+  periodMonthSelect.innerHTML = Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}">Tháng ${i + 1}</option>`).join('');
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let y = currentYear - 2; y <= currentYear + 1; y++) years.push(y);
+  periodYearSelect.innerHTML = years.map((y) => `<option value="${y}">Năm ${y}</option>`).join('');
+
+  const now = new Date();
+  periodMonthSelect.value = String(now.getMonth() + 1);
+  periodYearSelect.value = String(now.getFullYear());
+}
+
+function toDateInputValue(date) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function setPeriodMode(mode) {
+  periodMode = mode;
+  periodModeMonthBtn.classList.toggle('active', mode === 'month');
+  periodModeRangeBtn.classList.toggle('active', mode === 'range');
+  periodMonthInputs.hidden = mode !== 'month';
+  periodRangeInputs.hidden = mode !== 'range';
+  loadProjectsReport();
+}
+
+function currentPeriodParams() {
+  if (periodMode === 'range' && periodFromDate.value && periodToDate.value) {
+    return `from=${periodFromDate.value}&to=${periodToDate.value}`;
+  }
+  const month = `${periodYearSelect.value}-${String(periodMonthSelect.value).padStart(2, '0')}`;
+  return `month=${month}`;
+}
+
+periodModeMonthBtn.addEventListener('click', () => setPeriodMode('month'));
+periodModeRangeBtn.addEventListener('click', () => setPeriodMode('range'));
+periodMonthSelect.addEventListener('change', loadProjectsReport);
+periodYearSelect.addEventListener('change', loadProjectsReport);
+periodFromDate.addEventListener('change', () => {
+  if (periodFromDate.value && periodToDate.value) loadProjectsReport();
+});
+periodToDate.addEventListener('change', () => {
+  if (periodFromDate.value && periodToDate.value) loadProjectsReport();
+});
+
 // Chi tinh du an DANG HOAT DONG (Chuan bi/Dang thuc hien/Tam dung) - da chot voi nguoi dung
 // 2026-08-05, xem docs/DECISIONS.md. So lieu tinh truc tiep o backend (reports.routes.js), trang
 // nay chi hien thi lai, khong tu tinh them.
 async function loadProjectsReport() {
-  const { items, summary } = await apiFetch('/reports/projects');
+  const { items, summary } = await apiFetch(`/reports/projects?${currentPeriodParams()}`);
 
   document.getElementById('project-stats').innerHTML = [
     statCard('Dự án đang hoạt động', summary.active_count),
-    statCard('Trễ tiến độ', summary.late_count),
+    statCard('Tổng giá trị hợp đồng', `${formatMoney(summary.total_contract_value)} đ`),
     statCard('Tổng còn phải thu', `${formatMoney(summary.total_receivable)} đ`),
-    statCard('Dự án vượt dự toán vật tư', summary.over_budget_projects_count),
+    statCard('Tổng số tiền đã thu', `${formatMoney(summary.total_collected_amount)} đ`),
   ].join('');
 
   const tbody = document.getElementById('project-report-tbody');
@@ -298,6 +358,13 @@ async function loadProjectsReport() {
   });
   document.getElementById('inventory-prev-page').innerHTML = icon('arrowLeft', 14);
   document.getElementById('inventory-next-page').innerHTML = icon('arrowRight', 14);
+
+  populatePeriodMonthYearSelects();
+  // Gia tri mac dinh cho 2 o ngay khi chuyen sang "Khoang ngay" - dau/cuoi thang hien tai, tien
+  // hon la de trong bat nguoi dung phai tu go het tu dau.
+  const now = new Date();
+  periodFromDate.value = toDateInputValue(new Date(now.getFullYear(), now.getMonth(), 1));
+  periodToDate.value = toDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0));
 
   try {
     await Promise.all([loadInventoryReport(), loadStockMovementsReport(), loadDebtsReport(), loadProjectsReport()]);

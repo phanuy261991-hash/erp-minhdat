@@ -62,6 +62,22 @@
       </div>
 
       <h3 class="section-heading">Dự án đang hoạt động</h3>
+      <div class="period-filter-row" id="collected-period-filter">
+        <span class="period-filter-label">"Tổng số tiền đã thu" tính trong:</span>
+        <div class="period-mode-toggle">
+          <button type="button" class="period-mode-btn active" id="period-mode-month" data-mode="month">Theo tháng</button>
+          <button type="button" class="period-mode-btn" id="period-mode-range" data-mode="range">Khoảng ngày</button>
+        </div>
+        <div class="period-inputs" id="period-month-inputs">
+          <select id="period-month-select" class="month-select"></select>
+          <select id="period-year-select" class="month-select"></select>
+        </div>
+        <div class="period-inputs" id="period-range-inputs" hidden>
+          <input type="date" id="period-from-date" class="filter-select" />
+          <span class="period-range-separator">–</span>
+          <input type="date" id="period-to-date" class="filter-select" />
+        </div>
+      </div>
       <div class="stat-grid" id="project-stats"></div>
       <div class="data-table-wrap">
         <table class="data-table">

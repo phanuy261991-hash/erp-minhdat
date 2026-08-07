@@ -12,6 +12,99 @@ const router = express.Router();
 
 const ACTIVE_PROJECT_STATUSES = ['chuan_bi', 'dang_thuc_hien', 'tam_dung'];
 
+// Gio VN co dinh UTC+7 - dong bo nguyen tac da chot o cashVoucher.service.js/project.service.js
+// (khong dung gio server/UTC tho, vi nguoi dung luon o VN). Dung cho bo loc "Tong so tien da
+// thu" cua the "Du an dang hoat dong" (them 2026-08-07, theo yeu cau nguoi dung).
+const VN_OFFSET_MS = 7 * 60 * 60 * 1000;
+
+function currentMonthVN() {
+  const d = new Date(Date.now() + VN_OFFSET_MS);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+// month: 'YYYY-MM' theo lich VN -> { startUtc, endUtc } dang chuoi 'YYYY-MM-DD HH:MM:SS' (UTC,
+// khong hau to 'Z') - cung dinh dang voi created_at da luu, so sanh truc tiep bang < / >= la
+// dung. Dung y het cach monthBoundsUtc() da lam o cashVoucher.service.js (khong import cheo
+// giua 2 service - dung dung tien le da co: moi noi can tu giu 1 ban VN_OFFSET_MS + ham rieng,
+// xem cac comment tuong tu o project.service.js/notification.service.js/utils/logger.js).
+function monthBoundsUtc(monthStr) {
+  const match = /^(\d{4})-(\d{2})$/.exec(monthStr || '');
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  if (month < 1 || month > 12) return null;
+  const startMs = Date.UTC(year, month - 1, 1, 0, 0, 0);
+  const endMs = Date.UTC(month === 12 ? year + 1 : year, month === 12 ? 0 : month, 1, 0, 0, 0);
+  const toSqlite = (ms) => new Date(ms - VN_OFFSET_MS).toISOString().slice(0, 19).replace('T', ' ');
+  return { startUtc: toSqlite(startMs), endUtc: toSqlite(endMs) };
+}
+
+// from/to: 'YYYY-MM-DD' theo lich VN -> [00:00 VN cua from, 00:00 VN cua NGAY SAU to) quy doi
+// UTC - "to" la ngay CUOI CUNG duoc tinh (bao gom ca ngay do), nen can +1 ngay lam moc ket thuc.
+function dateRangeBoundsUtc(fromStr, toStr) {
+  const fromMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fromStr || '');
+  const toMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(toStr || '');
+  if (!fromMatch || !toMatch) return null;
+  const startMs = Date.UTC(Number(fromMatch[1]), Number(fromMatch[2]) - 1, Number(fromMatch[3]), 0, 0, 0);
+  const endMs =
+    Date.UTC(Number(toMatch[1]), Number(toMatch[2]) - 1, Number(toMatch[3]), 0, 0, 0) + 24 * 60 * 60 * 1000;
+  if (endMs <= startMs) return null;
+  const toSqlite = (ms) => new Date(ms - VN_OFFSET_MS).toISOString().slice(0, 19).replace('T', ' ');
+  return { startUtc: toSqlite(startMs), endUtc: toSqlite(endMs) };
+}
+
+// Tong "gia tri" (project_payment_milestones.amount) cua cac dot thanh toan DA THU DU
+// (SUM(debt_ledger 'tra') >= amount, dung y het dieu kien computeMilestoneStatus() ap dung cho
+// trang thai 'da_thu_du' o project.service.js) VA thoi diem thuc su du tien (ngay cua dong 'tra'
+// lam cumulative vuot/bang amount) roi vao dung khoang [startUtc, endUtc) dang loc. Chi tinh
+// dot thanh toan thuoc cac du an trong projectIds (dang hoat dong - khop pham vi voi 3 the con
+// lai cua section "Du an dang hoat dong", da chot qua AskUserQuestion 2026-08-07).
+function getTotalCollectedInPeriod(projectIds, startUtc, endUtc) {
+  if (projectIds.length === 0) return 0;
+
+  const projectPlaceholders = projectIds.map(() => '?').join(',');
+  const milestones = db
+    .prepare(`SELECT id, amount FROM project_payment_milestones WHERE project_id IN (${projectPlaceholders})`)
+    .all(...projectIds);
+  if (milestones.length === 0) return 0;
+
+  const milestoneIds = milestones.map((m) => m.id);
+  const milestonePlaceholders = milestoneIds.map(() => '?').join(',');
+  const payments = db
+    .prepare(`
+      SELECT milestone_id, amount, created_at
+      FROM debt_ledger
+      WHERE milestone_id IN (${milestonePlaceholders}) AND type = 'tra'
+      ORDER BY milestone_id ASC, created_at ASC, id ASC
+    `)
+    .all(...milestoneIds);
+
+  const paymentsByMilestone = new Map();
+  payments.forEach((p) => {
+    if (!paymentsByMilestone.has(p.milestone_id)) paymentsByMilestone.set(p.milestone_id, []);
+    paymentsByMilestone.get(p.milestone_id).push(p);
+  });
+
+  let total = 0;
+  milestones.forEach((m) => {
+    if (!(m.amount > 0)) return;
+    const list = paymentsByMilestone.get(m.id) || [];
+    let cumulative = 0;
+    let fullyPaidAt = null;
+    for (const p of list) {
+      cumulative += p.amount;
+      if (cumulative >= m.amount) {
+        fullyPaidAt = p.created_at;
+        break;
+      }
+    }
+    if (fullyPaidAt && fullyPaidAt >= startUtc && fullyPaidAt < endUtc) {
+      total += m.amount;
+    }
+  });
+  return total;
+}
+
 // Bao cao ton kho hien tai: tung san pham kem gia von binh quan gia quyen (dung nhat quan de
 // dinh gia TON KHO du costing_method dang chon la gi - khac voi gia XUAT tung phieu, xem
 // costing.service.js) va gia tri ton (SL * gia von).
@@ -126,12 +219,33 @@ router.get('/debts', (req, res) => {
 // an dang hoat dong (khong N+1 query rieng tung du an) - dung y het cong thuc da dung o
 // getProjectFinancials() (projects.routes.js) va getMaterialsForProject() (projectMaterials.routes.js).
 router.get('/projects', (req, res) => {
+  // Bo loc ky cho the "Tong so tien da thu" (them 2026-08-07) - CHI anh huong the nay, 3 the
+  // con lai (So du an/Tong gia tri hop dong/Tong con phai thu) van la so du "hien tai", khong
+  // doi theo ky (da chot qua AskUserQuestion). Uu tien ?from&?to (khoang ngay tuy chinh) neu ca
+  // 2 cung co; nguoc lai dung ?month (YYYY-MM); khong co gi ca thi mac dinh thang hien tai (VN).
+  let periodBounds;
+  let period;
+  if (req.query.from && req.query.to) {
+    periodBounds = dateRangeBoundsUtc(req.query.from, req.query.to);
+    if (!periodBounds) {
+      return res.status(400).json({ error: 'Khoảng ngày không hợp lệ (định dạng YYYY-MM-DD, từ ngày phải trước đến ngày)' });
+    }
+    period = { mode: 'range', from: req.query.from, to: req.query.to };
+  } else {
+    const month = req.query.month || currentMonthVN();
+    periodBounds = monthBoundsUtc(month);
+    if (!periodBounds) {
+      return res.status(400).json({ error: 'Tháng không hợp lệ, định dạng YYYY-MM' });
+    }
+    period = { mode: 'month', month };
+  }
+
   const placeholders = ACTIVE_PROJECT_STATUSES.map(() => '?').join(',');
 
   const projects = db
     .prepare(`
       SELECT pr.id, pr.code, pr.name, pr.status, pr.planned_end_date, pr.actual_end_date,
-             pa.name AS partner_name
+             pr.contract_value, pa.name AS partner_name
       FROM projects pr
       JOIN partners pa ON pa.id = pr.partner_id
       WHERE pr.status IN (${placeholders})
@@ -197,6 +311,7 @@ router.get('/projects', (req, res) => {
       progress_percent: projectService.getProjectProgress(pr.id),
       is_late: delay.is_late,
       late_days: delay.late_days,
+      contract_value: pr.contract_value,
       remaining_debt: remainingDebtMap.get(pr.id) || 0,
       over_budget_count: overBudgetCountMap.get(pr.id) || 0,
     };
@@ -206,10 +321,21 @@ router.get('/projects', (req, res) => {
     items,
     summary: {
       active_count: items.length,
-      late_count: items.filter((i) => i.is_late).length,
+      // The "Tong gia tri hop dong" (2026-08-07, thay the "Tre tien do" cu): tong contract_value
+      // GOC cua cac du an DANG HOAT DONG dang hien trong items o tren (khong gom phat sinh da
+      // duyet, khong gom du an Hoan thanh/Huy - dung pham vi voi 3 the con lai cua section nay).
+      total_contract_value: items.reduce((sum, i) => sum + i.contract_value, 0),
       total_receivable: items.reduce((sum, i) => sum + i.remaining_debt, 0),
-      over_budget_projects_count: items.filter((i) => i.over_budget_count > 0).length,
+      // The "Tong so tien da thu" (2026-08-07, thay the "Du an vuot du toan vat tu" cu - cot
+      // "Vat tu" o bang chi tiet VAN con nguyen, chi doi the tong hop dau trang) - CO loc theo
+      // ky (thang/khoang ngay), 3 the con lai KHONG doi theo ky.
+      total_collected_amount: getTotalCollectedInPeriod(
+        items.map((i) => i.id),
+        periodBounds.startUtc,
+        periodBounds.endUtc
+      ),
     },
+    period,
   });
 });
 

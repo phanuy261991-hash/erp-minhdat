@@ -314,6 +314,20 @@
 - [x] `reports.html`/`.js`: section "Dự án đang hoạt động" — 4 thẻ tổng hợp + bảng chi tiết, link "Vật tư" điều hướng đúng tab
 - [x] Test qua API (curl) + trình duyệt thật (CDP thô): số liệu đúng, link điều hướng đúng tab, không lỗi console — **module "Quản lý dự án" hoàn thành trọn vẹn 5/5 đợt theo kế hoạch gốc**
 
+**Bổ sung: đổi thẻ "Trễ tiến độ" thành "Tổng giá trị hợp đồng" (2026-08-07, theo yêu cầu người dùng)**
+- [x] Đã hỏi 2 câu qua `AskUserQuestion` (phạm vi tính: chỉ dự án đang hoạt động; cột dữ liệu: `contract_value` gốc, không cộng phát sinh) trước khi code
+- [x] `backend/routes/reports.routes.js`: thêm `contract_value` vào SELECT + item, thêm `total_contract_value` vào `summary`, bỏ `late_count` (không còn nơi dùng)
+- [x] `frontend/assets/reports.js`: đổi thẻ thứ 2 từ "Trễ tiến độ" sang "Tổng giá trị hợp đồng"
+- [x] Nhãn "Trễ N ngày" ở bảng chi tiết từng dự án (`renderProjectDelayCell()`) giữ nguyên, không đổi
+- [x] Test qua API (khớp tay: 500.000.000đ/3 dự án) + trình duyệt thật (CDP thô): thẻ đúng vị trí/nội dung, badge trễ ở bảng vẫn hoạt động, không lỗi console
+
+**Bổ sung: bộ lọc kỳ theo tháng/khoảng ngày + đổi thẻ "Dự án vượt dự toán vật tư" thành "Tổng số tiền đã thu" (2026-08-07, theo yêu cầu người dùng)**
+- [x] Đã hỏi 2 câu qua `AskUserQuestion` (phạm vi bộ lọc: chỉ thẻ mới; mốc "đã thu": ngày thực trả, không phải due_date) trước khi code
+- [x] `backend/routes/reports.routes.js`: thêm `monthBoundsUtc()`/`dateRangeBoundsUtc()` (giờ VN cố định, duplicate theo tiền lệ dự án) + `getTotalCollectedInPeriod()` (dò cumulative từng đợt thanh toán theo `created_at`, chỉ tính vào kỳ có lần trả HOÀN TẤT)
+- [x] `GET /reports/projects` nhận `?month=`/`?from=&to=`, mặc định tháng hiện tại; trả thêm `period` + `summary.total_collected_amount`; bỏ `summary.over_budget_projects_count` (giữ nguyên `over_budget_count` từng dự án cho bảng chi tiết)
+- [x] Frontend: khối chuyển đổi "Theo tháng"/"Khoảng ngày" trên `#project-stats` (tái dùng `.month-select`/`.filter-select` có sẵn, không dùng `<input type="month">`), auto-tải lại khi đổi lựa chọn
+- [x] Test qua service trực tiếp (1 đợt trả đủ 1 lần, 1 đợt trả 2 lần khác tháng — chỉ tính đúng kỳ có lần trả hoàn tất) + trình duyệt thật (CDP thô, click thật). Phát hiện + sửa 1 lỗi kịch bản test (viewport headless quá thấp khiến click không trúng nút, không phải lỗi ứng dụng — xác nhận qua gọi hàm JS trực tiếp trước khi sửa test). Đối chiếu số liệu thật khớp đúng 100% (120.000.000đ)
+
 ### Định dạng dấu chấm phân cách hàng nghìn khi nhập số tiền (ngoài phase, theo yêu cầu người dùng 2026-08-05)
 
 - [x] `frontend/assets/money-input.js` (mới): `bindMoneyInputs()`/`getMoneyValue()`/`setMoneyValue()` dùng chung
