@@ -26,17 +26,25 @@ function renderCategoriesError(message) {
   categoriesErrorBox.hidden = false;
 }
 
+// Danh muc he thong (system_key, migration 035 - phieu tu dong tu Cong no/Kho luon gan dung 1
+// trong 5 danh muc nay) khoa Sua/Xoa tuyet doi ca backend lan giao dien - khoa nut thay vi de
+// bam roi nhan loi 400, dung pattern is_protected cua roles.html/js.
 function renderRow(category) {
   const tr = document.createElement('tr');
   const typeBadgeClass = category.type === 'thu' ? 'badge-active' : 'badge-down';
   const typeLabel = category.type === 'thu' ? 'Thu' : 'Chi';
-  tr.innerHTML = `
-    <td>${category.name}</td>
-    <td><span class="badge ${typeBadgeClass}">${typeLabel}</span></td>
-    <td>
+  const isSystem = Boolean(category.system_key);
+  const systemBadge = isSystem ? ' <span class="badge badge-inactive">Hệ thống</span>' : '';
+  const actions = isSystem
+    ? ''
+    : `
       <button type="button" class="icon-btn" data-action="edit" data-id="${category.id}" title="Sửa loại thu chi">${icon('pencil', 14)}</button>
       <button type="button" class="icon-btn icon-btn-danger" data-action="delete" data-id="${category.id}" title="Xóa loại thu chi">${icon('trash', 14)}</button>
-    </td>
+    `;
+  tr.innerHTML = `
+    <td>${category.name}${systemBadge}</td>
+    <td><span class="badge ${typeBadgeClass}">${typeLabel}</span></td>
+    <td>${actions}</td>
   `;
   return tr;
 }

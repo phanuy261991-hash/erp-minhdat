@@ -5,6 +5,7 @@
 
 const db = require('../db/database');
 const notificationService = require('./notification.service');
+const { recordAutoVoucher } = require('./cashVoucher.service');
 
 class ServiceError extends Error {}
 
@@ -52,6 +53,10 @@ function assertProjectAndMilestone(partnerId, projectId, milestoneId) {
 // phan, khong can khop dung 1 khoan no nao (dung nguyen tac so du tong theo doi tac).
 // projectId/milestoneId (tuy chon, migration 025, Dot 4): nhan du an/dot thanh toan cho dong
 // thanh toan - ve ban chat van la 1 dong 'tra' binh thuong, chi gan them nhan de loc theo du an.
+// Tu migration 035: MOI lan thanh toan la 1 khoan tien mat/chuyen khoan THAT vao/ra cong ty - tu
+// dong tao kem 1 phieu thu (khach_hang)/chi (nha_cung_cap) trong SO QUY, CUNG 1 transaction voi
+// dong debt_ledger (xem docs/DECISIONS.md 2026-08-07). Danh muc he thong: 'thu_dot_thanh_toan_du_an'
+// khi co milestoneId (dot thanh toan du an), 'thu_cong_no_kh' khi khong, 'chi_cong_no_ncc' cho NCC.
 function recordPayment({ partnerId, amount, note, createdBy, projectId, milestoneId }) {
   if (!(amount > 0)) {
     throw new ServiceError('So tien thanh toan phai lon hon 0');
@@ -64,12 +69,32 @@ function recordPayment({ partnerId, amount, note, createdBy, projectId, mileston
 
   assertProjectAndMilestone(partnerId, projectId || null, milestoneId || null);
 
-  db.prepare(
-    "INSERT INTO debt_ledger (partner_id, type, amount, reference_type, reference_id, note, created_by, project_id, milestone_id) VALUES (?, 'tra', ?, 'payment', NULL, ?, ?, ?, ?)"
-  ).run(partnerId, amount, note || '', createdBy, projectId || null, milestoneId || null);
+  const run = db.transaction(() => {
+    const debtResult = db.prepare(
+      "INSERT INTO debt_ledger (partner_id, type, amount, reference_type, reference_id, note, created_by, project_id, milestone_id) VALUES (?, 'tra', ?, 'payment', NULL, ?, ?, ?, ?)"
+    ).run(partnerId, amount, note || '', createdBy, projectId || null, milestoneId || null);
+    const debtEntryId = debtResult.lastInsertRowid;
+
+    const isSupplier = partner.type === 'nha_cung_cap';
+    recordAutoVoucher({
+      type: isSupplier ? 'chi' : 'thu',
+      systemKey: isSupplier ? 'chi_cong_no_ncc' : (milestoneId ? 'thu_dot_thanh_toan_du_an' : 'thu_cong_no_kh'),
+      partnerId,
+      counterpartName: partner.name,
+      amount,
+      note: note || '',
+      referenceType: 'debt_payment',
+      referenceId: debtEntryId,
+      createdBy,
+    });
+
+    return debtEntryId;
+  });
+
+  const debtEntryId = run();
 
   // Thong bao (migration 027) - khong de loi ghi thong bao lam hong viec ghi nhan thanh toan
-  // (da ghi vao debt_ledger thanh cong roi), chi log canh bao.
+  // (da ghi vao debt_ledger + So quy thanh cong roi, transaction da commit), chi log canh bao.
   try {
     if (partner.type === 'nha_cung_cap') {
       notificationService.notifySupplierPayment({ partnerId, partnerName: partner.name, amount });
@@ -80,7 +105,7 @@ function recordPayment({ partnerId, amount, note, createdBy, projectId, mileston
     console.error('[CANH BAO] Khong the ghi thong bao thanh toan:', err.message);
   }
 
-  return db.prepare('SELECT * FROM debt_ledger WHERE id = last_insert_rowid()').get();
+  return db.prepare('SELECT * FROM debt_ledger WHERE id = ?').get(debtEntryId);
 }
 
 // Dieu chinh cong no thu cong (migration 016) - sua so du sai (vd nhap nham gia von phieu nhap

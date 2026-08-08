@@ -127,19 +127,27 @@ function renderStats(summary) {
   ].join('');
 }
 
+// Phieu tu dong (reference_type khac null, migration 035) khong xoa duoc (backend cung chan 400)
+// - an han nut xoa thay vi de bam roi nhan loi, kem badge "Tu dong" de phan biet ro voi phieu
+// nhap tay - dung lai class badge-inactive (trung/nhat) de khong lan voi badge mau loai thu/chi.
 function renderRow(voucher) {
   const typeBadgeClass = voucher.type === 'thu' ? 'badge-active' : 'badge-down';
   const amountClass = voucher.type === 'thu' ? 'text-accent' : 'text-destructive';
   const amountSign = voucher.type === 'thu' ? '+' : '-';
+  const isAuto = Boolean(voucher.reference_type);
+  const autoBadge = isAuto ? ' <span class="badge badge-inactive">Tự động</span>' : '';
+  const deleteAction = isAuto
+    ? ''
+    : `<button type="button" class="icon-btn icon-btn-danger" data-action="delete" data-id="${voucher.id}" title="Xóa phiếu">${icon('trash', 14)}</button>`;
 
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td><button type="button" class="table-link-btn" data-action="view" data-id="${voucher.id}">${voucher.code}</button></td>
     <td>${formatDateTime(voucher.created_at)}</td>
-    <td><span class="badge ${typeBadgeClass}">${voucher.category_name}</span></td>
+    <td><span class="badge ${typeBadgeClass}">${voucher.category_name}</span>${autoBadge}</td>
     <td>${voucher.counterpart_name || '-'}</td>
     <td><span class="${amountClass}">${amountSign}${formatMoney(voucher.amount)}</span></td>
-    <td><button type="button" class="icon-btn icon-btn-danger" data-action="delete" data-id="${voucher.id}" title="Xóa phiếu">${icon('trash', 14)}</button></td>
+    <td>${deleteAction}</td>
   `;
   return tr;
 }
@@ -179,8 +187,16 @@ function detailInfoItem(label, value, fullWidth) {
   return `<div class="detail-info-item${fullWidth ? ' full-width' : ''}"><p class="detail-label">${label}</p><p class="detail-value">${value}</p></div>`;
 }
 
+// Nhan nguon goc cho phieu TU DONG (migration 035) - khop dung 3 gia tri reference_type ma
+// cashVoucher.service.js#recordAutoVoucher() dang dung.
+const REFERENCE_TYPE_LABELS = {
+  debt_payment: 'Thanh toán công nợ',
+  stock_issue: 'Xuất hàng bán',
+  stock_receipt: 'Nhập hàng',
+};
+
 function openDetailModal(voucher) {
-  detailInfoEl.innerHTML = [
+  const items = [
     detailInfoItem('Mã phiếu', voucher.code),
     detailInfoItem('Loại phiếu', voucher.type === 'thu' ? 'Phiếu thu' : 'Phiếu chi'),
     detailInfoItem('Loại thu chi', voucher.category_name),
@@ -191,7 +207,24 @@ function openDetailModal(voucher) {
     detailInfoItem('Hạch toán KQKD', voucher.record_business_result ? 'Có' : 'Không'),
     detailInfoItem('Người tạo', voucher.created_by_name),
     detailInfoItem('Ghi chú', voucher.note || '-', true),
-  ].join('');
+  ];
+
+  // Chi hien khoi "nguon goc" khi phieu tu dong tao - phieu thu cong khong co reference_type.
+  if (voucher.reference_type) {
+    items.push(detailInfoItem('Nguồn gốc', REFERENCE_TYPE_LABELS[voucher.reference_type] || voucher.reference_type));
+    if (voucher.partner_name) {
+      items.push(detailInfoItem('Đối tác liên kết', voucher.partner_name));
+    }
+    if (voucher.document_code) {
+      items.push(detailInfoItem('Chứng từ gốc', voucher.document_code));
+    }
+    if (voucher.project_name) {
+      const projectLine = voucher.milestone_name ? `${voucher.project_name} - Đợt: ${voucher.milestone_name}` : voucher.project_name;
+      items.push(detailInfoItem('Dự án', projectLine));
+    }
+  }
+
+  detailInfoEl.innerHTML = items.join('');
   detailModal.hidden = false;
 }
 
@@ -226,8 +259,11 @@ tbody.addEventListener('click', async (event) => {
 
 // ----- Modal tao phieu thu/chi (dung chung, doi nhan theo currentVoucherType) -----
 
+// Bo danh muc he thong (system_key, migration 035) khoi dropdown tao phieu THU CONG - cac danh
+// muc do chi danh cho phieu TU DONG (thanh toan cong no/nhap-xuat kho tra ngay), nhan vien khong
+// tu chon nham gay nham lan/trung so lieu voi luong tu dong.
 function renderCategoryOptions(type) {
-  const options = categoriesCache.filter((c) => c.type === type);
+  const options = categoriesCache.filter((c) => c.type === type && !c.system_key);
   categorySelect.innerHTML = options.map((c) => `<option value="${c.id}">${c.name}</option>`).join('');
 }
 

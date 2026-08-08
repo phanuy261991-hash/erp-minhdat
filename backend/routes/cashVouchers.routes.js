@@ -72,11 +72,18 @@ router.post('/', (req, res) => {
 });
 
 router.delete('/:id', (req, res) => {
-  const deleted = deleteCashVoucher(Number(req.params.id));
-  if (!deleted) {
-    return res.status(404).json({ error: 'Khong tim thay phieu' });
+  try {
+    const deleted = deleteCashVoucher(Number(req.params.id));
+    if (!deleted) {
+      return res.status(404).json({ error: 'Khong tim thay phieu' });
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    if (err instanceof ServiceError) {
+      return res.status(400).json({ error: err.message });
+    }
+    throw err;
   }
-  res.json({ ok: true });
 });
 
 module.exports = router;

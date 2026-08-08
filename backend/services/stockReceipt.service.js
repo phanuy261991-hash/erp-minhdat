@@ -4,6 +4,7 @@
 
 const db = require('../db/database');
 const { recordDebtFromDocument } = require('./debt.service');
+const { recordAutoVoucher } = require('./cashVoucher.service');
 
 class ServiceError extends Error {}
 
@@ -101,6 +102,24 @@ function createStockReceipt({ partnerId, createdBy, note, items, receiptDate, or
         referenceId: receiptId,
         createdBy,
         projectId,
+      });
+    } else {
+      // Thanh toan ngay (khong cong no) - tien mat/chuyen khoan THAT chi ra khoi cong ty ngay
+      // luc nhap hang, tu dong tao 1 phieu Chi trong So quy (migration 035). Day la nhanh se
+      // chay cho HAU HET phieu nhap thuong (da_thanh_toan la gia tri mac dinh) - xem
+      // docs/DECISIONS.md 2026-08-07 ve he qua nay.
+      const partner = partnerId ? db.prepare('SELECT name FROM partners WHERE id = ?').get(partnerId) : null;
+      recordAutoVoucher({
+        type: 'chi',
+        systemKey: 'chi_mua_hang',
+        partnerId,
+        counterpartName: partner ? partner.name : '',
+        amount: totalAmount,
+        note: `Nhập hàng - Phiếu ${code}`,
+        referenceType: 'stock_receipt',
+        referenceId: receiptId,
+        createdBy,
+        voucherDate: timestamp,
       });
     }
 

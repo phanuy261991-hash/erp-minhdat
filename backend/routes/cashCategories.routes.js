@@ -44,9 +44,12 @@ router.post('/', (req, res) => {
 
 router.put('/:id', (req, res) => {
   const id = Number(req.params.id);
-  const existing = db.prepare('SELECT id FROM cash_categories WHERE id = ?').get(id);
+  const existing = db.prepare('SELECT id, system_key FROM cash_categories WHERE id = ?').get(id);
   if (!existing) {
     return res.status(404).json({ error: 'Khong tim thay loai thu chi' });
+  }
+  if (existing.system_key) {
+    return res.status(400).json({ error: 'Day la danh muc he thong (phieu tu dong), khong the sua' });
   }
 
   const { name, type } = req.body || {};
@@ -70,11 +73,17 @@ router.put('/:id', (req, res) => {
 
 // Xoa cung: chan neu dang co phieu thu/chi nao dung loai nay - kiem tra tuong minh truoc (thong
 // bao than thien) thay vi de FK constraint (foreign_keys=ON) nem loi SQLite tho ve client.
+// Danh muc he thong (system_key, migration 035 - phieu tu dong tu Cong no/Kho luon gan dung 1
+// trong 5 danh muc nay) bi chan xoa/sua TUYET DOI, khac kiem tra "dang co phieu dung" o duoi -
+// khong dieu kien, giong is_protected cua roles.routes.js.
 router.delete('/:id', (req, res) => {
   const id = Number(req.params.id);
-  const existing = db.prepare('SELECT id FROM cash_categories WHERE id = ?').get(id);
+  const existing = db.prepare('SELECT id, system_key FROM cash_categories WHERE id = ?').get(id);
   if (!existing) {
     return res.status(404).json({ error: 'Khong tim thay loai thu chi' });
+  }
+  if (existing.system_key) {
+    return res.status(400).json({ error: 'Day la danh muc he thong (phieu tu dong), khong the xoa' });
   }
 
   const inUse = db.prepare('SELECT COUNT(*) AS count FROM cash_vouchers WHERE category_id = ?').get(id);

@@ -1,6 +1,6 @@
 # PRD: Hệ thống Quản lý Kho & Công nợ nội bộ
 
-**Version**: v1.7 — cập nhật 2026-08-06 (bổ sung 4.16 Giao diện di động — đã chốt kế hoạch, chưa code)
+**Version**: v1.8 — cập nhật 2026-08-07 (mục 4.11 Sổ quỹ: tự động ghi nhận dòng tiền thật từ Công nợ + Kho, không còn độc lập hoàn toàn)
 **Trạng thái**: Phase 1 → 4 đã hoàn thành toàn bộ (nền tảng, kho, công nợ, in phiếu, báo cáo) + nhiều mở rộng ngoài phase (Bảo hành, tách Khách hàng, Điều chỉnh công nợ, đóng gói portable, Sổ quỹ, Import/Export Excel sản phẩm). Phase 5 (Vận hành & Go-live) đang làm; **module Quản lý dự án (4.12) đã chốt kế hoạch 2026-08-04, chưa bắt đầu code** — xem trạng thái chính xác tại `docs/CURRENT.md`. Các mục 4.x vẫn có thể bổ sung khi phát sinh nhu cầu mới (xem `docs/DECISIONS.md`).
 
 > Tên dự án là working title. Đổi tên theo tên công ty/thương hiệu thực tế khi cần.
@@ -124,13 +124,20 @@ Web app nội bộ, kiến trúc đơn giản (không microservices, không clou
 - Vô hiệu hóa/mở lại: mọi người có quyền module `cong_no`. **Xóa cứng chỉ Admin** — khác các đối tượng khác trong hệ thống vốn thường cho phép xóa nếu chưa có lịch sử, ở đây xóa luôn bị giới hạn Admin theo đúng yêu cầu.
 - **Giao diện chi tiết khách hàng** (trang mới `customer-detail.html`, chưa có trước đây): hiển thị thông tin cơ bản khách hàng + toàn bộ bản ghi bảo hành của khách hàng đó dưới dạng **Card**, mỗi card hiện "Số ngày còn lại" (số lớn, đổi màu theo mức độ khẩn cấp: còn nhiều — xanh, ≤30 ngày — cam, đã hết hạn — đỏ) và "Ngày hết hạn" cụ thể, lấy trực tiếp từ dữ liệu bảo hành (không lưu số ngày còn lại cố định — luôn tính lại từ ngày hết hạn tại thời điểm xem, đúng nguyên tắc không lưu giá trị suy ra được của dự án).
 
-### 4.11 Sổ quỹ (bổ sung 2026-08-02, theo yêu cầu người dùng)
-- Quản lý dòng tiền mặt của doanh nghiệp qua **phiếu thu** và **phiếu chi**, độc lập hoàn toàn với module Công nợ (mục 4.4) — không tự động ghi/giảm công nợ đối tác nào, không liên kết danh sách Nhà cung cấp/Khách hàng có sẵn (trường "Đối tượng nộp/nhận" chỉ là tên tự do).
-- Mỗi phiếu gồm: mã tự sinh (`PT000001...` cho phiếu thu, `PC000001...` cho phiếu chi, riêng từng loại), thời gian (chỉnh được, quyết định phiếu thuộc tháng nào), Loại thu/chi (chọn từ danh mục "Loại thu chi" — có thể tạo nhanh ngay trên form lập phiếu, không cần rời sang trang riêng), Người thu/chi (chọn 1 tài khoản người dùng, mặc định tài khoản đang đăng nhập), Tên người nộp/nhận (tự do, không bắt buộc), Số tiền, Ghi chú, cờ "Hạch toán kết quả kinh doanh" (hiện chỉ lưu, chưa có báo cáo lãi/lỗ nào dùng đến).
-- **Quỹ đầu kỳ**: nhập 1 lần duy nhất (số dư tiền mặt thực tế lúc bắt đầu dùng module) — các tháng sau tự động cộng dồn từ lịch sử phiếu, không nhập lại từng tháng.
+### 4.11 Sổ quỹ (bổ sung 2026-08-02, theo yêu cầu người dùng; **mở rộng lớn 2026-08-07**: tự động ghi nhận dòng tiền thật từ Công nợ + Kho)
+- Quản lý dòng tiền mặt của doanh nghiệp qua **phiếu thu** và **phiếu chi**. **Từ 2026-08-07, KHÔNG còn độc lập hoàn toàn với Công nợ/Kho** — xem mục "Phiếu tự động" bên dưới. Phiếu thủ công vẫn không liên kết danh sách Nhà cung cấp/Khách hàng có sẵn (trường "Đối tượng nộp/nhận" chỉ là tên tự do).
+- Mỗi phiếu gồm: mã tự sinh (`PT000001...` cho phiếu thu, `PC000001...` cho phiếu chi, riêng từng loại, dùng chung 1 dãy số cho cả phiếu thủ công lẫn tự động), thời gian (chỉnh được với phiếu thủ công, quyết định phiếu thuộc tháng nào), Loại thu/chi (chọn từ danh mục "Loại thu chi"), Người thu/chi (chọn 1 tài khoản người dùng, mặc định tài khoản đang đăng nhập — phiếu tự động không có), Tên người nộp/nhận (tự do với phiếu thủ công; tự điền tên đối tác với phiếu tự động), Số tiền, Ghi chú, cờ "Hạch toán kết quả kinh doanh" (hiện chỉ lưu, chưa có báo cáo lãi/lỗ nào dùng đến).
+- **Quỹ đầu kỳ**: nhập 1 lần duy nhất (số dư tiền mặt thực tế lúc bắt đầu dùng module) — các tháng sau tự động cộng dồn từ lịch sử phiếu (cả thủ công lẫn tự động), không nhập lại từng tháng.
 - Danh sách phiếu mặc định hiển thị **tháng hiện tại** (tự làm mới khi sang tháng mới, không cần thao tác), xem lại tháng cũ qua bộ lọc Tháng/Năm. Thanh tổng hợp Quỹ đầu kỳ/Tổng thu/Tổng chi/Tồn quỹ của đúng tháng đang xem — tất cả tính trực tiếp từ tổng cộng dồn (đúng nguyên tắc ledger xuyên suốt dự án), không lưu số dư cố định.
-- **Phiếu thu/chi không sửa được sau khi tạo, chỉ xóa cứng** (khác nguyên tắc "chỉ tạo phiếu điều chỉnh bù trừ" của Kho/Công nợ — vì module này không có gì tham chiếu ngược, không cần giữ vết như ledger). Quyền tạo/xóa chỉ cần quyền module `so_quy`, không phân biệt theo hành động (đúng triết lý phân quyền theo module, mục 4.1).
-- Danh mục "Loại thu chi": quản lý riêng (thêm/sửa/xóa), mỗi loại gắn cố định 1 chiều (Thu hoặc Chi); không xóa được nếu đã có phiếu dùng loại đó.
+- **Phiếu thu/chi thủ công** không sửa được sau khi tạo, chỉ xóa cứng (khác nguyên tắc "chỉ tạo phiếu điều chỉnh bù trừ" của Kho/Công nợ — vì module này không có gì tham chiếu ngược, không cần giữ vết như ledger). Quyền tạo/xóa chỉ cần quyền module `so_quy`, không phân biệt theo hành động (đúng triết lý phân quyền theo module, mục 4.1).
+- Danh mục "Loại thu chi": quản lý riêng (thêm/sửa/xóa), mỗi loại gắn cố định 1 chiều (Thu hoặc Chi); không xóa được nếu đã có phiếu dùng loại đó. **5 danh mục "hệ thống"** (xem bên dưới) khóa Sửa/Xóa tuyệt đối, không hiện trong dropdown lập phiếu thủ công.
+
+**Phiếu tự động (bổ sung 2026-08-07, theo yêu cầu người dùng)**: mỗi khi có 1 khoản tiền mặt/chuyển khoản THẬT ra/vào công ty, hệ thống tự tạo 1 phiếu thu/chi tương ứng, gắn kèm nguồn gốc (đối tác, chứng từ gốc, dự án/đợt thanh toán nếu có) — **không cần nhân viên tự nhập tay 2 nơi**:
+- **Thu**: thanh toán công nợ khách hàng (danh mục "Thu hồi công nợ khách hàng" hoặc "Thu theo đợt thanh toán dự án" nếu gắn đợt thanh toán dự án), xuất hàng bán đánh dấu thu tiền ngay (không công nợ) — danh mục "Thu bán hàng trả ngay".
+- **Chi**: thanh toán công nợ nhà cung cấp — danh mục "Chi trả công nợ nhà cung cấp"; nhập hàng đánh dấu thanh toán ngay (không công nợ, **là trạng thái mặc định của mọi phiếu nhập kho thường**) — danh mục "Chi mua hàng trả ngay".
+- **"Trả hàng" (mục 4.15) KHÔNG tạo phiếu tự động** — chỉ giảm công nợ, không coi là dòng tiền thật chắc chắn.
+- **Phiếu tự động khóa vĩnh viễn** (không xóa được, kể cả Admin) — muốn điều chỉnh phải sửa đúng ở nghiệp vụ gốc (Công nợ/Kho).
+- Dữ liệu lịch sử trước 2026-08-07 đã được backfill (tạo lại phiếu cho toàn bộ thanh toán công nợ + phiếu nhập/xuất trả tiền ngay đã có từ trước) — "Tồn quỹ" các tháng đã qua có thể khác so với lần đối chiếu tiền mặt thật trước thời điểm này.
 
 ### 4.12 Quản lý dự án (bổ sung 2026-08-04, theo yêu cầu người dùng — đã chốt kế hoạch, chưa code)
 

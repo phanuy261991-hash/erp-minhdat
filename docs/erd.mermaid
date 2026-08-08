@@ -224,25 +224,30 @@ erDiagram
         string name "vd Thu ban hang, Chi mua hang"
         string type "thu hoac chi"
         datetime created_at
+        string system_key "migration 035, UNIQUE (qua index rieng) - NULL = danh muc thu cong; khac NULL = danh muc he thong (khoa Sua/Xoa tuyet doi, phieu tu dong luon gan dung 1 trong 5 gia tri: thu_cong_no_kh, thu_dot_thanh_toan_du_an, thu_ban_hang, chi_cong_no_ncc, chi_mua_hang)"
     }
 
     CASH_VOUCHERS {
         int id PK
-        string code "PT000001... (thu) hoac PC000001... (chi), rieng tung type"
+        string code "PT000001... (thu) hoac PC000001... (chi), rieng tung type - dung chung 1 day so cho ca phieu thu cong lan tu dong"
         string type "thu hoac chi"
         int category_id FK "NOT NULL, phai cung type voi phieu"
-        string counterpart_name "nguoi nop/nhan, ten tu do - KHONG lien ket partners"
+        string counterpart_name "nguoi nop/nhan (thu cong: ten tu do; tu dong: ten doi tac tu dien)"
         int handled_by FK "nguoi thu/chi (nhan vien xu ly), nullable"
         real amount "> 0"
         string note
         boolean record_business_result "1 = hach toan KQKD, chi luu co, chua co bao cao dung"
         int created_by FK "nguoi tao ban ghi trong he thong"
-        datetime created_at "co the chinh khi lap phieu - quyet dinh thuoc thang nao"
+        datetime created_at "co the chinh khi lap phieu thu cong - quyet dinh thuoc thang nao; phieu tu dong = created_at cua su kien goc"
+        string reference_type "migration 035, nullable - 'debt_payment' | 'stock_issue' | 'stock_receipt'. NULL = phieu thu cong (xoa duoc); khac NULL = phieu TU DONG (khoa vinh vien, khong xoa duoc)"
+        int reference_id "migration 035, nullable - id tuong ung debt_ledger/stock_issues/stock_receipts, khong REFERENCES (polymorphic, giong debt_ledger.reference_id)"
+        int partner_id FK "migration 035, nullable - denormalize truc tiep cho phieu tu dong (giong debt_ledger.partner_id), NULL neu la phieu thu cong hoac khach le khong chon doi tac"
     }
 
     CASH_CATEGORIES ||--o{ CASH_VOUCHERS : "phan loai"
     USERS ||--o{ CASH_VOUCHERS : "nguoi thu/chi"
     USERS ||--o{ CASH_VOUCHERS : "nguoi tao"
+    PARTNERS ||--o{ CASH_VOUCHERS : "doi tac lien ket (migration 035, nullable - chi phieu tu dong)"
 
     SCHEMA_MIGRATIONS {
         int version PK

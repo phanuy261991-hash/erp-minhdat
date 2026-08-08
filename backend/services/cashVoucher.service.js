@@ -1,20 +1,40 @@
-// Service Phieu thu/Phieu chi (module "So quy", migration 019). Doc lap hoan toan voi
-// debt_ledger (khong ghi cong no) - xem docs/DECISIONS.md. Khong co ham sua (chi tao + xoa cung,
-// dung quyen module 'so_quy', khong can rang buoc lich su vi khong bang nao tham chieu nguoc).
+// Service Phieu thu/Phieu chi (module "So quy", migration 019). Tu migration 035, KHONG con doc
+// lap hoan toan voi debt_ledger/stock_receipts/stock_issues nua - xem docs/DECISIONS.md muc
+// 2026-08-07 "Sổ quỹ tự động ghi nhận dòng tiền thật": moi lan thanh toan cong no (debt.service.js)
+// hoac phieu nhap/xuat tra tien ngay (stockReceipt/stockIssue.service.js) se goi recordAutoVoucher()
+// o day de tu tao 1 phieu thu/chi, gan reference_type/reference_id de truy vet nguon goc. Phieu
+// thu cong (reference_type=NULL) van chi tao + xoa cung nhu cu; phieu tu dong KHONG cho xoa
+// (xem deleteCashVoucher()).
 
 const db = require('../db/database');
 
 class ServiceError extends Error {}
 
+// SELECT_VOUCHER mo rong (migration 035): LEFT JOIN dieu kien theo reference_type de lay thong
+// tin nguon goc (ma chung tu, doi tac, du an/dot thanh toan) cho phieu tu dong - phieu thu cong
+// (reference_type NULL) cac cot nay tra ve NULL, khong anh huong gi.
 const SELECT_VOUCHER = `
   SELECT v.id, v.code, v.type, v.category_id, c.name AS category_name,
          v.counterpart_name, v.handled_by, h.full_name AS handled_by_name,
          v.amount, v.note, v.record_business_result,
-         v.created_by, u.full_name AS created_by_name, v.created_at
+         v.created_by, u.full_name AS created_by_name, v.created_at,
+         v.reference_type, v.reference_id, v.partner_id, p.name AS partner_name,
+         CASE v.reference_type
+           WHEN 'stock_issue' THEN si.code
+           WHEN 'stock_receipt' THEN sr.code
+           ELSE NULL
+         END AS document_code,
+         proj.name AS project_name, m.name AS milestone_name
   FROM cash_vouchers v
   JOIN cash_categories c ON c.id = v.category_id
   LEFT JOIN users h ON h.id = v.handled_by
   JOIN users u ON u.id = v.created_by
+  LEFT JOIN partners p ON p.id = v.partner_id
+  LEFT JOIN stock_issues si ON v.reference_type = 'stock_issue' AND si.id = v.reference_id
+  LEFT JOIN stock_receipts sr ON v.reference_type = 'stock_receipt' AND sr.id = v.reference_id
+  LEFT JOIN debt_ledger dl ON v.reference_type = 'debt_payment' AND dl.id = v.reference_id
+  LEFT JOIN projects proj ON proj.id = dl.project_id
+  LEFT JOIN project_payment_milestones m ON m.id = dl.milestone_id
 `;
 
 function generateVoucherCode(type) {
@@ -149,9 +169,50 @@ function createCashVoucher({ type, categoryId, counterpartName, handledBy, amoun
   return db.prepare(`${SELECT_VOUCHER} WHERE v.id = ?`).get(voucherId);
 }
 
+// Phieu co reference_type (tu dong tao tu thanh toan cong no/nhap-xuat kho tra tien ngay) khong
+// duoc xoa - giu So quy luon khop voi Cong no/Kho (ban than phieu goc cung khong xoa duoc). Neu
+// can sua sai, dung dung co che dieu chinh cua module goc (Cong no/Kho), khong xoa ben So quy.
 function deleteCashVoucher(id) {
+  const voucher = db.prepare('SELECT reference_type FROM cash_vouchers WHERE id = ?').get(id);
+  if (!voucher) return false;
+  if (voucher.reference_type) {
+    throw new ServiceError('Phiếu tự động không thể xóa - muốn điều chỉnh, sửa ở đúng nghiệp vụ gốc (Công nợ/Kho)');
+  }
+
   const result = db.prepare('DELETE FROM cash_vouchers WHERE id = ?').run(id);
   return result.changes > 0;
+}
+
+// systemKey: 'thu_cong_no_kh' | 'thu_dot_thanh_toan_du_an' | 'thu_ban_hang' | 'chi_cong_no_ncc' |
+// 'chi_mua_hang' (migration 035, seed san trong cash_categories.system_key) - tra ve id danh muc
+// tuong ung, khong phu thuoc ten (ten sua duoc tu do, system_key thi khoa - xem cashCategories.routes.js).
+function getSystemCategoryId(systemKey) {
+  const row = db.prepare('SELECT id FROM cash_categories WHERE system_key = ?').get(systemKey);
+  if (!row) {
+    throw new ServiceError(`Thieu danh muc thu/chi he thong: ${systemKey}`);
+  }
+  return row.id;
+}
+
+// Tao 1 phieu thu/chi TU DONG - goi TU BEN TRONG transaction cua nghiep vu goc (debt.service.js
+// #recordPayment(), stockIssue/stockReceipt.service.js) dung y het pattern recordDebtFromDocument(),
+// KHONG tu mo db.transaction() rieng o day de dam bao cung 1 giao dich voi ban ghi cong no/kho.
+// voucherDate (tuy chon): dung cho script backfill de giu dung created_at goc cua su kien lich su -
+// khi goi tu luong song (recordPayment/createStockIssue/createStockReceipt) khong truyen, mac dinh
+// thoi diem hien tai.
+function recordAutoVoucher({ type, systemKey, partnerId, counterpartName, amount, note, referenceType, referenceId, createdBy, voucherDate }) {
+  const categoryId = getSystemCategoryId(systemKey);
+  const timestamp = voucherDate || db.prepare("SELECT datetime('now') AS now").get().now;
+  const code = generateVoucherCode(type);
+
+  db.prepare(`
+      INSERT INTO cash_vouchers
+        (code, type, category_id, counterpart_name, amount, note, record_business_result, reference_type, reference_id, partner_id, created_by, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)
+    `)
+    .run(code, type, categoryId, counterpartName || '', Number(amount), note || '', referenceType, referenceId, partnerId || null, createdBy, timestamp);
+
+  return db.prepare('SELECT last_insert_rowid() AS id').get().id;
 }
 
 module.exports = {
@@ -161,5 +222,7 @@ module.exports = {
   listVouchers,
   createCashVoucher,
   deleteCashVoucher,
+  getSystemCategoryId,
+  recordAutoVoucher,
   ServiceError,
 };

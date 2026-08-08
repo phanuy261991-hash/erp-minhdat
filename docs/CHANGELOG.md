@@ -2,6 +2,18 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-07 (Sổ quỹ: tự động ghi nhận dòng tiền thật từ Công nợ + Xuất/Nhập kho)
+
+> Theo yêu cầu người dùng — đảo ngược 1 phần quyết định "Sổ quỹ hoàn toàn độc lập với Công nợ" chốt 2026-08-02. Đã lên kế hoạch qua `EnterPlanMode`, chốt 5 quyết định qua `AskUserQuestion`: đối xứng cả 2 chiều thu/chi; "Trả hàng" không tạo phiếu; phiếu tự động không xóa được; cần backfill lịch sử (chấp nhận đổi "Tồn quỹ" các tháng cũ); phân loại theo 5 danh mục hệ thống riêng, thống kê/biểu đồ để sau.
+
+- **Migration `035`**: `cash_vouchers` thêm `reference_type`/`reference_id`/`partner_id`; `cash_categories` thêm `system_key` (UNIQUE qua index riêng — SQLite không cho `ALTER TABLE ADD COLUMN ... UNIQUE` trực tiếp) + seed 5 danh mục hệ thống mới, không đụng 6 danh mục thủ công cũ.
+- **`cashVoucher.service.js`**: `recordAutoVoucher()` (insert trong transaction của nơi gọi, không tự mở transaction riêng — pattern giống `recordDebtFromDocument()`), `getSystemCategoryId()`, `SELECT_VOUCHER` mở rộng LEFT JOIN lấy thông tin nguồn gốc (đối tác/chứng từ/dự án-đợt thanh toán), `deleteCashVoucher()` chặn phiếu có `reference_type`.
+- **Hook 3 nơi**: `debt.service.js#recordPayment()` (bọc thêm `db.transaction()`, chọn category theo `partner.type`/có `milestoneId` hay không), `stockIssue.service.js#createStockIssue()`, `stockReceipt.service.js#createStockReceipt()` (nhánh `else` đối xứng với nhánh `cong_no` sẵn có).
+- **`cashCategories.routes.js`**: PUT/DELETE chặn tuyệt đối 5 danh mục hệ thống (`system_key`), mirror `is_protected` của `roles.routes.js`.
+- **Frontend**: `cash-book.js` (badge "Tự động" + ẩn nút xóa, modal chi tiết hiện nguồn gốc, dropdown tạo phiếu thủ công lọc bỏ danh mục hệ thống), `cash-categories.js` (badge "Hệ thống" + khóa Sửa/Xóa).
+- **`scripts/backfillCashVouchers.js`** (mới, chạy tay 1 lần, KHÔNG qua migration runner): mặc định dry-run, chỉ ghi khi `--apply`, tự chặn chạy lần 2. Đã chạy dry-run khớp đúng 100% với tính tay (30 phiếu Thu = 570.407.600đ, 19 phiếu Chi = 3.806.900đ) rồi `--apply` thật.
+- Test qua script Node (4 luồng + xác nhận công nợ/Trả hàng không tạo phiếu sai + chặn xóa) + API thật (curl) + trình duyệt thật (Chrome headless CDP thô) — không lỗi console, không hồi quy.
+
 ## 2026-08-07 (Sửa lỗi hiển thị: cột "Giá vốn" trong danh sách Sản phẩm luôn hiện 0)
 
 > Theo phản hồi người dùng: trang chi tiết sản phẩm hiện đúng giá vốn hiện tại, nhưng danh sách Sản phẩm luôn hiện 0.

@@ -5,6 +5,7 @@
 const db = require('../db/database');
 const { getCostingMethod, consumeStockForIssue } = require('./costing.service');
 const { recordDebtFromDocument } = require('./debt.service');
+const { recordAutoVoucher } = require('./cashVoucher.service');
 
 class ServiceError extends Error {}
 
@@ -117,6 +118,24 @@ function createStockIssue({ partnerId, createdBy, note, paymentStatus, items, ad
         referenceId: issueId,
         createdBy,
         projectId,
+      });
+    } else {
+      // Thu tien ngay (khong cong no) - tien mat/chuyen khoan THAT vao cong ty ngay luc xuat
+      // hang, tu dong tao 1 phieu Thu trong So quy (migration 035, xem docs/DECISIONS.md
+      // 2026-08-07). partnerId co the null (khach le khong chon doi tac) - van tao phieu, chi
+      // de counterpart_name trong.
+      const partner = partnerId ? db.prepare('SELECT name FROM partners WHERE id = ?').get(partnerId) : null;
+      recordAutoVoucher({
+        type: 'thu',
+        systemKey: 'thu_ban_hang',
+        partnerId,
+        counterpartName: partner ? partner.name : '',
+        amount: totalAmount,
+        note: `Xuất hàng bán - Phiếu ${code}`,
+        referenceType: 'stock_issue',
+        referenceId: issueId,
+        createdBy,
+        voucherDate: timestamp,
       });
     }
 
