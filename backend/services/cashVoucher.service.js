@@ -111,6 +111,29 @@ function listVouchers(month) {
     .all(startUtc, endUtc);
 }
 
+// Thong ke theo tung "Loai thu chi" (danh muc) trong 1 thang - phuc vu khu vuc "Thong ke theo
+// nguon tien" (2026-08-08). Chi tra ve danh muc CO phieu trong thang dang xem (HAVING loc bo
+// danh muc chua dung toi), sap xep tien nhieu nhat truoc de danh sach tu nhien la 1 bang xep hang.
+function getCategoryBreakdown(month) {
+  const { startUtc, endUtc } = monthBoundsUtc(month);
+  const rows = db
+    .prepare(`
+      SELECT c.id AS category_id, c.name AS category_name, c.type, c.system_key,
+             COUNT(v.id) AS voucher_count, COALESCE(SUM(v.amount), 0) AS total
+      FROM cash_categories c
+      LEFT JOIN cash_vouchers v ON v.category_id = c.id AND v.created_at >= ? AND v.created_at < ?
+      GROUP BY c.id
+      HAVING voucher_count > 0
+      ORDER BY total DESC
+    `)
+    .all(startUtc, endUtc);
+
+  return {
+    thu: rows.filter((r) => r.type === 'thu'),
+    chi: rows.filter((r) => r.type === 'chi'),
+  };
+}
+
 // voucherDate (tuy chon, 'YYYY-MM-DD HH:MM:SS'): dung lam created_at that cho phieu - giong
 // receiptDate cua stockReceipt.service.js, quyet dinh phieu thuoc thang nao. Khong truyen thi
 // dung thoi diem hien tai.
@@ -224,5 +247,6 @@ module.exports = {
   deleteCashVoucher,
   getSystemCategoryId,
   recordAutoVoucher,
+  getCategoryBreakdown,
   ServiceError,
 };

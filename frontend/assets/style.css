@@ -610,6 +610,101 @@ input:focus-visible {
   color: var(--color-destructive);
 }
 
+/* ---- Thong ke theo nguon tien (cash-book.html, 2026-08-08) - danh sach xep hang theo danh
+   muc thu/chi trong thang dang xem, kem thanh ngang ti le (thuan CSS width%, khong SVG - khac
+   bieu do cot theo thoi gian cua reports.js). 2 cot canh nhau, cung ratio 1fr/1fr (khac
+   .settings-columns 1.2fr/1fr vi Thu/Chi quan trong ngang nhau). ---- */
+.cash-breakdown-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.breakdown-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+}
+
+.breakdown-panel-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.breakdown-panel-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.breakdown-panel-total {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.breakdown-row + .breakdown-row {
+  margin-top: 14px;
+}
+
+.breakdown-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.breakdown-row-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breakdown-row-amount {
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.breakdown-bar-track {
+  margin-top: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-muted);
+  overflow: hidden;
+}
+
+.breakdown-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.breakdown-bar-fill--thu {
+  background: var(--color-accent);
+}
+
+.breakdown-bar-fill--chi {
+  background: var(--color-destructive);
+}
+
+.breakdown-row-meta {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--color-muted-foreground);
+}
+
 /* ---- Bang du lieu (dung chung cho danh sach o cac trang) ---- */
 
 .data-table-wrap {

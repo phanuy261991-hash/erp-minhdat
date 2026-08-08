@@ -9,6 +9,7 @@ const {
   listVouchers,
   createCashVoucher,
   deleteCashVoucher,
+  getCategoryBreakdown,
   ServiceError,
 } = require('../services/cashVoucher.service');
 
@@ -22,7 +23,8 @@ router.get('/', (req, res) => {
   try {
     const summary = getCashBookSummary(month);
     const vouchers = listVouchers(month);
-    res.json({ vouchers, summary });
+    const breakdown = getCategoryBreakdown(month);
+    res.json({ vouchers, summary, breakdown });
   } catch (err) {
     if (err instanceof ServiceError) {
       return res.status(400).json({ error: err.message });

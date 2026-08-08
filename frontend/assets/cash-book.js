@@ -12,6 +12,7 @@ let currentVoucherType = 'thu';
 const monthSelect = document.getElementById('cash-month-select');
 const yearSelect = document.getElementById('cash-year-select');
 const statsEl = document.getElementById('cash-stats');
+const breakdownEl = document.getElementById('cash-breakdown');
 const tbody = document.getElementById('cash-tbody');
 const errorBox = document.getElementById('cash-error');
 const errorText = document.getElementById('cash-error-text');
@@ -130,6 +131,51 @@ function renderStats(summary) {
 // Phieu tu dong (reference_type khac null, migration 035) khong xoa duoc (backend cung chan 400)
 // - an han nut xoa thay vi de bam roi nhan loi, kem badge "Tu dong" de phan biet ro voi phieu
 // nhap tay - dung lai class badge-inactive (trung/nhat) de khong lan voi badge mau loai thu/chi.
+// "Thong ke theo nguon tien" (2026-08-08) - danh sach xep hang theo danh muc trong 1 nhom
+// (thu/chi), thanh ngang thuan CSS width% the hien ti le so voi danh muc CAO NHAT trong CUNG
+// nhom (khong phai % tren tong nhom - de danh muc lon nhat luon day du 100%, de so sanh truc quan
+// hon la chia deu tren tong khi 1 danh muc chiem gan het).
+function breakdownPanel(title, rows, groupType) {
+  const total = rows.reduce((sum, r) => sum + r.total, 0);
+  const maxTotal = rows.reduce((max, r) => Math.max(max, r.total), 0) || 1;
+  const totalClass = groupType === 'thu' ? 'stat-card-value--accent' : 'stat-card-value--destructive';
+  const barClass = groupType === 'thu' ? 'breakdown-bar-fill--thu' : 'breakdown-bar-fill--chi';
+
+  const rowsHtml = rows.length
+    ? rows.map((r) => {
+        const barPercent = Math.round((r.total / maxTotal) * 100);
+        const systemBadge = r.system_key ? ' <span class="badge badge-inactive">Hệ thống</span>' : '';
+        return `
+          <div class="breakdown-row">
+            <div class="breakdown-row-head">
+              <span class="breakdown-row-name">${r.category_name}${systemBadge}</span>
+              <span class="breakdown-row-amount">${formatMoney(r.total)}</span>
+            </div>
+            <div class="breakdown-bar-track"><div class="breakdown-bar-fill ${barClass}" style="width:${barPercent}%"></div></div>
+            <p class="breakdown-row-meta">${r.voucher_count} phiếu</p>
+          </div>
+        `;
+      }).join('')
+    : '<p class="breakdown-row-meta">Chưa có phiếu nào trong tháng này.</p>';
+
+  return `
+    <div class="breakdown-panel">
+      <div class="breakdown-panel-header">
+        <h4 class="breakdown-panel-title">${title}</h4>
+        <p class="breakdown-panel-total ${totalClass}">${formatMoney(total)}</p>
+      </div>
+      ${rowsHtml}
+    </div>
+  `;
+}
+
+function renderBreakdown(breakdown) {
+  breakdownEl.innerHTML = [
+    breakdownPanel('Nguồn thu', breakdown.thu, 'thu'),
+    breakdownPanel('Nguồn chi', breakdown.chi, 'chi'),
+  ].join('');
+}
+
 function renderRow(voucher) {
   const typeBadgeClass = voucher.type === 'thu' ? 'badge-active' : 'badge-down';
   const amountClass = voucher.type === 'thu' ? 'text-accent' : 'text-destructive';
@@ -159,10 +205,11 @@ function renderVouchers() {
 
 async function loadCashBook() {
   try {
-    const { vouchers, summary } = await apiFetch(`/cash-vouchers?month=${selectedMonthStr()}`);
+    const { vouchers, summary, breakdown } = await apiFetch(`/cash-vouchers?month=${selectedMonthStr()}`);
     vouchersCache = vouchers;
     renderVouchers();
     renderStats(summary);
+    renderBreakdown(breakdown);
   } catch (err) {
     renderError(err.message);
   }

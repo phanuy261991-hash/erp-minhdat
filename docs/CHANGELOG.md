@@ -2,6 +2,15 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-08 (Sổ quỹ: khu vực "Thống kê theo nguồn tiền")
+
+> Làm nốt phần đã hoãn ("thống kê làm sau") khi làm phiếu tự động ngày 2026-08-07, theo yêu cầu người dùng.
+
+- **`cashVoucher.service.js#getCategoryBreakdown(month)`** (mới): `GROUP BY category_id` trên `cash_vouchers` trong đúng khoảng tháng đang xem, `HAVING voucher_count > 0` để ẩn danh mục chưa dùng tới, tách `thu`/`chi`, sắp xếp tổng tiền giảm dần.
+- **`GET /api/cash-vouchers`** trả thêm `breakdown: {thu:[], chi:[]}`.
+- **Frontend** (`cash-book.html`/`.js`/`style.css`, thiết kế qua skill `ui-ux-pro-max`): khu vực mới `.cash-breakdown-columns` (2 khối Nguồn thu/Nguồn chi) dưới 4 thẻ tổng hợp — mỗi dòng danh mục có thanh ngang tỉ lệ thuần CSS (`width%`, không SVG), tính theo danh mục cao nhất trong nhóm (không phải % trên tổng) để dễ so sánh trực quan; badge "Hệ thống" cho 5 danh mục tự động; tiêu đề khối hiện tổng nhóm.
+- Test qua API thật (đối chiếu đúng số liệu) + trình duyệt thật (Chrome headless CDP thô, đo `getBoundingClientRect()` xác nhận % CSS thật khớp đúng tính toán) — không lỗi console.
+
 ## 2026-08-07 (Sổ quỹ: tự động ghi nhận dòng tiền thật từ Công nợ + Xuất/Nhập kho)
 
 > Theo yêu cầu người dùng — đảo ngược 1 phần quyết định "Sổ quỹ hoàn toàn độc lập với Công nợ" chốt 2026-08-02. Đã lên kế hoạch qua `EnterPlanMode`, chốt 5 quyết định qua `AskUserQuestion`: đối xứng cả 2 chiều thu/chi; "Trả hàng" không tạo phiếu; phiếu tự động không xóa được; cần backfill lịch sử (chấp nhận đổi "Tồn quỹ" các tháng cũ); phân loại theo 5 danh mục hệ thống riêng, thống kê/biểu đồ để sau.

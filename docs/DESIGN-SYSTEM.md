@@ -116,6 +116,16 @@
 - `.stat-delta`/`.stat-delta--up`/`.stat-delta--down`: nhãn % tăng/giảm so với kỳ trước, luôn kèm icon mũi tên (`chevronUp`/`chevronDown`) — không dựa màu sắc đơn thuần (đúng nguyên tắc accessibility, xem skill `dataviz`).
 - Màu cột lấy trực tiếp từ CSS variable đã có (`var(--color-primary)` cho "mua hàng", `var(--color-accent)` cho "bán hàng") qua thuộc tính `fill` — không định nghĩa màu biểu đồ riêng, để đổi theme sau này (nếu có) tự động áp dụng.
 
+## Danh sách xếp hạng theo danh mục (cash-book.html) — thanh ngang tỉ lệ thuần CSS, không SVG
+
+> Bổ sung 2026-08-08, thiết kế qua skill `ui-ux-pro-max`, khi làm khu vực "Thống kê theo nguồn tiền" cho Sổ quỹ. Khác biểu đồ cột SVG ở mục trên (trục thời gian, 1 chuỗi) — đây là **bảng xếp hạng theo danh mục** (không có trục thời gian), nên chọn cách trình bày khác hẳn: danh sách dòng kèm thanh ngang, không vẽ SVG.
+
+- `.cash-breakdown-columns`: 2 khối cạnh nhau tỉ lệ **1fr/1fr bằng nhau** (khác `.settings-columns` 1.2fr/1fr) — vì 2 nhóm Thu/Chi quan trọng ngang nhau, không có nhóm nào là "chính".
+- Mỗi khối (`.breakdown-panel`) là 1 card thường (`--color-surface`/border/radius-md), tiêu đề đi kèm **tổng số tiền của cả nhóm** ngay trong header (không phải chỉ là nhãn) — người xem thấy tổng trước khi đọc từng dòng.
+- Thanh ngang tỉ lệ (`.breakdown-bar-track`/`.breakdown-bar-fill`) **thuần CSS `width%` tính sẵn ở JS**, không dùng SVG — đơn giản hơn nhiều so với biểu đồ cột (chỉ 1 chiều, không cần trục/nhãn phức tạp). **Tỉ lệ tính theo danh mục CAO NHẤT trong cùng nhóm, không phải % trên tổng nhóm** — cố ý: nếu chia trên tổng, danh mục chiếm đa số sẽ luôn gần lấp đầy còn các danh mục nhỏ gần như không thấy thanh; chia theo max giúp so sánh trực quan giữa các danh mục với nhau tốt hơn.
+- Màu thanh dùng đúng `--color-accent` (Thu)/`--color-destructive` (Chi) — không phát minh màu mới, nhất quán với `.stat-card-value--accent`/`--destructive` đã có ở 4 thẻ tổng hợp phía trên.
+- Badge "Hệ thống" (`.badge.badge-inactive`) cho danh mục tự động (`system_key` khác null) — dùng đúng cặp class đã có, không tạo màu badge riêng.
+
 ## Trang cấu hình (settings) — vd Thông tin công ty, Cấu hình kho
 
 > Mọi trang cấu hình mới trong tương lai phải dùng lại đúng các class dưới đây, không tự vẽ layout riêng (đã chốt với người dùng 2026-08-01 sau khi lặp lại nhiều lần trên `warehouse-settings.html`).
