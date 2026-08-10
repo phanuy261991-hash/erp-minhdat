@@ -132,8 +132,9 @@ app.use('/api/partners', requireAuth, partnersRoutes);
 // kiem tra quyen 'cau_hinh' ben trong file route (xem customerCategories.routes.js).
 app.use('/api/customer-categories', requireAuth, customerCategoriesRoutes);
 app.use('/api/debts', requireAuth, requirePermission('cong_no'), debtsRoutes);
-// Thuoc menu Khach hang, dung chung quyen 'cong_no' (xem warranties.routes.js).
-app.use('/api/warranties', requireAuth, requirePermission('cong_no'), warrantiesRoutes);
+// Module rieng 'bao_hanh' (migration 036, 2026-08-08) - truoc do dung chung quyen 'cong_no',
+// da tach de chon rieng duoc o trang "Vai tro" (xem warranties.routes.js).
+app.use('/api/warranties', requireAuth, requirePermission('bao_hanh'), warrantiesRoutes);
 app.use('/api/reports', requireAuth, requirePermission('bao_cao'), reportsRoutes);
 // Module "So quy" - doc lap hoan toan voi Cong no (khong ghi debt_ledger, xem docs/DECISIONS.md).
 // cash-book-settings: GET mo cho moi nguoi da dang nhap, PUT rieng kiem tra quyen 'so_quy' ben

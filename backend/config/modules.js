@@ -7,7 +7,11 @@
 // module 'so_quy' (Sổ quỹ) nen o giao dien "Vai tro" khong hien checkbox chon duoc, dan toi mat
 // quyen 'so_quy' khoi vai tro moi khi luu (checkbox khong ton tai thi khong the gui len). Tu nay
 // frontend goi GET /api/roles/modules de lay dong danh sach nay, khong con hardcode trung lap.
-const MODULE_KEYS = ['kho', 'cong_no', 'bao_cao', 'nguoi_dung', 'cau_hinh', 'so_quy', 'du_an', 'doi_tac'];
+// bao_hanh (2026-08-08): tach rieng khoi 'cong_no' theo yeu cau nguoi dung - truoc day module
+// "Bao hanh" dung chung quyen 'cong_no' (gan voi nhom menu Khach hang), nay co checkbox rieng o
+// trang "Vai tro". Migration 036 backfill role_permissions: vai tro nao dang co 'cong_no' duoc
+// cap luon 'bao_hanh' de khong mat quyen dang co ngay sau khi trien khai - xem docs/DECISIONS.md.
+const MODULE_KEYS = ['kho', 'cong_no', 'bao_cao', 'nguoi_dung', 'cau_hinh', 'so_quy', 'du_an', 'doi_tac', 'bao_hanh'];
 
 const MODULE_LABELS = {
   kho: 'Kho',
@@ -18,6 +22,7 @@ const MODULE_LABELS = {
   so_quy: 'Sổ quỹ',
   du_an: 'Dự án',
   doi_tac: 'Đối tác',
+  bao_hanh: 'Bảo hành',
 };
 
 module.exports = { MODULE_KEYS, MODULE_LABELS };

@@ -2,6 +2,14 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-08 (Danh xưng đợt thanh toán + tách quyền module "Bảo hành")
+
+- **`project-detail.html`**: dropdown "Danh xưng" bỏ "Anh"/"Chị", thay bằng "Khách hàng" — tái dùng giá trị lưu trữ `'anh'` (không đổi CHECK constraint DB, tránh rebuild bảng). `print-template-render.js#RECIPIENT_TITLE_LABELS` đổi nhãn tương ứng.
+- **Module `bao_hanh`** (mới, `backend/config/modules.js`) tách khỏi `cong_no`. Migration `036` backfill `role_permissions` (vai trò có `cong_no` được cấp thêm `bao_hanh`, giữ nguyên quyền truy cập hiện tại). Sửa `server.js` (mount `/api/warranties`), `layout.js` (nav item "Bảo hành").
+- **Sửa hồi quy phát sinh từ thay đổi trên**: `customer-detail.js` tách riêng fetch thông tin khách hàng và bảo hành (trước gộp `Promise.all`, lỗi 403 bảo hành sẽ sập cả trang) — nay ẩn gọn card bảo hành nếu thiếu quyền `bao_hanh`, không ảnh hưởng phần còn lại.
+- **Sửa lỗi CSS `[hidden]` bị `display` đè** trên `.btn-add` (phát hiện khi ẩn nút "+ Thêm bảo hành" theo quyền) — thêm `:not([hidden])`.
+- Test qua migration + API thật (`thukho1` bị chặn 403, `admin` bình thường) + trình duyệt thật (Chrome headless CDP thô, đo cả `getComputedStyle` xác nhận CSS fix hoạt động đúng) — không lỗi console.
+
 ## 2026-08-08 (Sổ quỹ: khu vực "Thống kê theo nguồn tiền")
 
 > Làm nốt phần đã hoãn ("thống kê làm sau") khi làm phiếu tự động ngày 2026-08-07, theo yêu cầu người dùng.

@@ -56,6 +56,10 @@ router.get('/', (req, res) => {
 
 // Danh xung "Thong tin phieu in" - danh sach co dinh khop CHECK cua cot recipient_title
 // (migration 031), '' nghia la chua chon (khong bat buoc).
+// 2026-08-08: giao dien (project-detail.html) khong con cho chon 'anh'/'chi' rieng biet nua -
+// gop thanh 1 lua chon "Khach hang" dung chung gia tri 'anh' (xem print-template-render.js).
+// Gia tri 'chi' van de trong danh sach nay + CHECK o DB de KHONG chan du lieu cu (neu co) va
+// tranh phai rebuild bang chi de xoa 1 gia tri enum khong con dung - xem docs/DECISIONS.md.
 const RECIPIENT_TITLES = ['', 'anh', 'chi', 'cong_ty', 'don_vi'];
 
 function readMilestoneInput(body) {

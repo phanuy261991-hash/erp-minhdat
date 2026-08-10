@@ -297,7 +297,11 @@ function buildBankNameBranchLine(company) {
 
 // Danh xung "Thong tin phieu in" cua dot thanh toan (migration 031) - khop dung danh sach CHECK
 // o backend (project_payment_milestones.recipient_title), chi hien nhan doc duoc khi in.
-const RECIPIENT_TITLE_LABELS = { anh: 'Anh', chi: 'Chị', cong_ty: 'Công Ty', don_vi: 'Đơn vị' };
+// 2026-08-08 (theo yeu cau nguoi dung): bo 2 lua chon "Anh"/"Chi" tren giao dien, thay bang
+// "Khach hang" - TAI SU DUNG gia tri luu tru 'anh' de gan nhan moi (khong doi CHECK constraint
+// o DB, tranh phai rebuild bang - xem docs/DECISIONS.md). 'chi' giu lai nhan cu de tuong thich
+// nguoc voi du lieu cu (neu co), du giao dien khong con cho chon gia tri nay nua.
+const RECIPIENT_TITLE_LABELS = { anh: 'Khách hàng', chi: 'Chị', cong_ty: 'Công Ty', don_vi: 'Đơn vị' };
 
 // Dung cho ca phieu that (project/milestone/company tu API) lan du lieu mau co dinh trong khung
 // xem truoc. print_date luon la NGAY IN THAT (luc bam in/xem truoc), khong phai ngay tao dot

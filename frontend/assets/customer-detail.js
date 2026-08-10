@@ -104,18 +104,31 @@ function renderWarranties(warranties) {
   }
 
   try {
-    const [{ partners }, { warranties }] = await Promise.all([
-      apiFetch('/partners?type=khach_hang'),
-      apiFetch(`/warranties?partner_id=${customerId}`),
-    ]);
-
+    const { partners } = await apiFetch('/partners?type=khach_hang');
     const customer = partners.find((p) => String(p.id) === String(customerId));
     if (!customer) {
       renderDetailError('Không tìm thấy khách hàng');
       return;
     }
-
     renderCustomerInfo(customer);
+  } catch (err) {
+    renderDetailError(err.message);
+    return;
+  }
+
+  // Module "Bao hanh" tach rieng khoi 'cong_no' tu 2026-08-08 (migration 036) - 1 vai tro co
+  // 'cong_no' (vao duoc trang nay) nhung khong co 'bao_hanh' van xem duoc thong tin khach hang
+  // binh thuong, chi an rieng khoi "The" nay thay vi lam sap ca trang.
+  const canViewWarranty = currentUser.permissions.includes('bao_hanh');
+  btnAddWarranty.hidden = !canViewWarranty;
+  if (!canViewWarranty) {
+    warrantyEmptyEl.hidden = true;
+    warrantyCardsEl.innerHTML = '';
+    return;
+  }
+
+  try {
+    const { warranties } = await apiFetch(`/warranties?partner_id=${customerId}`);
     renderWarranties(warranties);
   } catch (err) {
     renderDetailError(err.message);

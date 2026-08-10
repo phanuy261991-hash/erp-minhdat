@@ -1074,7 +1074,10 @@ input:focus-visible {
 /* ---- Nut hanh dong chinh tren dau trang (vd "Them san pham") - dam mau + do noi,
    khac voi .icon-btn (dung cho hanh dong nho trong bang nhu Sua/Khoa). ---- */
 
-.btn-add {
+/* :not([hidden]) - tranh lap lai loi display bi ghi de thuoc tinh hidden (cung dang loi da gap
+   o .alert/.modal-overlay/.form-row... - phat hien 2026-08-08 khi can an nut "+ Them bao hanh"
+   theo quyen tren customer-detail.html). */
+.btn-add:not([hidden]) {
   display: inline-flex;
   align-items: center;
   gap: 6px;

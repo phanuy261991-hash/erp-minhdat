@@ -1,6 +1,7 @@
 // Route "Bao hanh" (migration 017) - gan voi 1 khach hang cu the (partners.type='khach_hang'),
-// khong ap dung cho NCC. Toan bo route trong file nay chi danh cho ai co quyen module 'cong_no'
-// (gan requirePermission khi mount o server.js, giong debts.routes.js) - thuoc menu Khach hang.
+// khong ap dung cho NCC. Toan bo route trong file nay chi danh cho ai co quyen module 'bao_hanh'
+// (gan requirePermission khi mount o server.js) - module rieng tu migration 036 (2026-08-08,
+// truoc do dung chung 'cong_no'), van nam trong nhom menu "Khach hang" o sidebar.
 //
 // Khong tu tinh lai expiry_date tu duration o tang backend - frontend da giu 2 chieu dong bo
 // (doi 1 trong 2 truong tu tinh lai truong con lai), backend chi luu nguyen nhung gi frontend
