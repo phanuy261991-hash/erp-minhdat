@@ -3,7 +3,7 @@
 
 const express = require('express');
 const db = require('../db/database');
-const { createStockReceipt, ServiceError } = require('../services/stockReceipt.service');
+const { createStockReceipt, updateStockReceiptDate, ServiceError } = require('../services/stockReceipt.service');
 
 const router = express.Router();
 
@@ -174,6 +174,32 @@ router.post('/', (req, res) => {
       projectId: rawProjectId ? Number(rawProjectId) : null,
     });
     res.status(201).json({ receipt });
+  } catch (err) {
+    if (err instanceof ServiceError) {
+      return res.status(400).json({ error: err.message });
+    }
+    throw err;
+  }
+});
+
+// Chi cho sua rieng ngay nhap - moi truong khac cua phieu bi khoa (xem ghi chu o
+// updateStockReceiptDate()). rawReceiptDate bat buoc o day (khac POST, khong cho de rong).
+router.patch('/:id/date', (req, res) => {
+  const id = Number(req.params.id);
+  const { receiptDate, error: dateError } = readReceiptDate((req.body || {}).receipt_date);
+  if (dateError) {
+    return res.status(400).json({ error: dateError });
+  }
+  if (!receiptDate) {
+    return res.status(400).json({ error: 'Thieu thoi gian nhap' });
+  }
+
+  try {
+    const receipt = updateStockReceiptDate({ id, receiptDate });
+    if (!receipt) {
+      return res.status(404).json({ error: 'Khong tim thay phieu nhap' });
+    }
+    res.json({ receipt });
   } catch (err) {
     if (err instanceof ServiceError) {
       return res.status(400).json({ error: err.message });

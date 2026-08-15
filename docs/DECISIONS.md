@@ -2,6 +2,19 @@
 
 > Ghi lại các quyết định đã chốt để không thảo luận lại trừ khi có lý do mới. Mỗi mục ghi ngày chốt.
 
+## 2026-08-15 — Sửa "Ngày nhập phiếu" cho Phiếu nhập kho: ngoại lệ có chủ đích của nguyên tắc "không sửa phiếu đã tạo", đồng bộ ngày sang toàn bộ bản ghi liên quan
+
+**Bối cảnh**: người dùng yêu cầu thêm chức năng sửa phiếu nhập kho, nhưng **chỉ cho sửa riêng "Ngày nhập phiếu"** — mọi trường khác (sản phẩm/số lượng/đơn giá/NCC/thanh toán) khóa cứng, không đổi tồn kho hay công nợ. Yêu cầu này **đối lập trực tiếp** với quyết định `2026-07-31 — Sửa/hủy phiếu đã tạo` ("Không cho sửa/xóa trực tiếp phiếu nhập/xuất đã tạo — chỉ tạo phiếu điều chỉnh bù trừ"). Xác nhận đây là ngoại lệ có chủ đích: phạm vi sửa hẹp đến mức không chạm vào bất kỳ số liệu nào ảnh hưởng ledger (tồn kho/công nợ), chỉ đổi 1 mốc thời gian — khác hẳn việc cho sửa số lượng/đơn giá (vẫn tuyệt đối cấm, không nằm trong phạm vi này).
+
+**2 quyết định chốt qua `AskUserQuestion` trước khi code**:
+1. **Đồng bộ ngày mới sang TOÀN BỘ bản ghi liên quan trong sổ cái tồn kho** (`stock_movements.created_at`, `stock_lots.created_at`) và **phiếu Chi tự động trong Sổ quỹ** (`cash_vouchers.created_at`, nếu phiếu nhập được đánh dấu trả tiền ngay) — không chỉ đổi ngày hiển thị trên riêng `stock_receipts`. Lý do: `created_at` của `stock_lots` quyết định thứ tự tiêu thụ FIFO các lô về sau, và `created_at` của `stock_movements`/`cash_vouchers` quyết định phiếu rơi vào đúng tháng nào trên Báo cáo/Sổ quỹ — nếu chỉ đổi ngày hiển thị trên phiếu mà không đồng bộ, phiếu sẽ hiện sai tháng ở các nơi khác, tạo ra 1 nguồn lệch dữ liệu mới. Đánh đổi được chấp nhận: đổi ngày 1 phiếu nhập cũ có thể làm xáo trộn thứ tự FIFO của các lô chưa tiêu thụ hết — chấp nhận được vì đây là thay đổi có chủ đích của người dùng (biết ngày nhập ghi sai, sửa lại cho đúng thực tế).
+2. **Quyền sửa: dùng chung quyền module `kho`** (đã áp dụng cho toàn bộ router `stock-receipts.routes.js`) — không tách quyền riêng/giới hạn Admin, nhất quán với quyền lập phiếu nhập hiện tại.
+
+**Quyết định kỹ thuật khi hiện thực hóa**:
+- Route riêng `PATCH /:id/date` (không dùng chung `PUT` với việc sửa toàn bộ phiếu — vì phiếu không có API sửa toàn bộ, chỉ có đúng 1 trường được phép sửa, tách route giúp không ai nhầm tưởng có thể sửa thêm trường khác qua cùng endpoint).
+- Chặn sửa nếu `stock_receipts.is_return=1` (bảng này dùng chung với "Trả hàng xuất", migration `032`) — tính năng chỉ áp dụng phiếu nhập kho thường.
+- Không đụng `debt_ledger` — phiếu nhập đánh dấu công nợ (`payment_status='cong_no'`) không tạo `cash_vouchers` (chỉ phiếu trả tiền ngay mới có), nên không có bản ghi nào khác cần đồng bộ ngoài 3 bảng trên.
+
 ## 2026-08-08 — "Danh xưng" đợt thanh toán: tái sử dụng giá trị enum thay vì rebuild bảng; tách quyền module "Bảo hành"
 
 **Bối cảnh**: người dùng yêu cầu 2 chỉnh sửa không liên quan nhau: (1) dropdown "Danh xưng" trên form đợt thanh toán dự án bỏ "Anh"/"Chị", thay bằng "Khách hàng"; (2) tách quyền module "Bảo hành" ra khỏi "Công nợ" trong cấu hình phân quyền vai trò.

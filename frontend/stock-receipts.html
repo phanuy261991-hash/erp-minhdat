@@ -74,6 +74,27 @@
     </div>
   </div>
 
+  <div id="edit-receipt-date-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3>Sửa ngày nhập phiếu</h3>
+      <p class="modal-subtitle">Chỉ sửa được thời gian nhập — các thông tin khác của phiếu được giữ nguyên.</p>
+      <form id="edit-receipt-date-form">
+        <div id="edit-receipt-date-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="edit-receipt-date-error-text"></span>
+        </div>
+        <div class="form-field">
+          <label for="edit-receipt-date-input">Thời gian nhập</label>
+          <input type="datetime-local" id="edit-receipt-date-input" required />
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-edit-receipt-date" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-edit-receipt-date" class="btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div id="receipt-modal" class="modal-overlay" hidden>
     <div class="modal-card modal-card-lg">
       <h3>Lập phiếu nhập kho</h3>

@@ -2,6 +2,15 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-15 (Sửa "Ngày nhập phiếu" cho Phiếu nhập kho — ngoại lệ có chủ đích của nguyên tắc "không sửa phiếu đã tạo")
+
+> Đã hỏi 2 câu qua `AskUserQuestion` trước khi code (đồng bộ ngày sang `stock_movements`/`stock_lots`/`cash_vouchers` hay chỉ đổi hiển thị; quyền `kho` hay chỉ Admin) — người dùng chọn đồng bộ toàn bộ + quyền `kho`. Xem `docs/DECISIONS.md`.
+
+- **`stockReceipt.service.js#updateStockReceiptDate()`** (mới): trong 1 transaction, cập nhật `created_at` trên cả `stock_receipts`, `stock_movements` (reference_type='receipt'), `stock_lots` (receipt_id), và `cash_vouchers` (reference_type='stock_receipt', nếu có phiếu Chi tự động từ lúc nhập trả tiền ngay). Chặn sửa nếu phiếu là "Trả hàng xuất" (`is_return=1`, dùng chung bảng).
+- **`stockReceipts.routes.js`**: `PATCH /:id/date` (chỉ nhận `receipt_date`, bắt buộc — không cho để rỗng như `POST`), quyền `kho` (đã áp dụng sẵn cho cả router).
+- **Frontend `stock-receipts.html`/`.js`**: modal mới "Sửa ngày nhập phiếu" (nút bút chì cạnh nút xem chi tiết trên mỗi dòng) — chỉ 1 trường `datetime-local`, không cho sửa sản phẩm/số lượng/đơn giá/NCC. `toDatetimeLocalValue()` (mới, chiều ngược `toSqliteDatetime()`) quy đổi giờ UTC lưu trong DB sang giờ địa phương để điền sẵn vào ô.
+- Test qua API thật (curl: đồng bộ đúng cả 4 bảng, chặn đúng khi sửa phiếu Trả hàng xuất/thiếu ngày/sai định dạng/không tồn tại/chưa đăng nhập, `thukho1` sửa được đúng quyền) + trình duyệt thật (Chrome headless CDP thô: bấm nút thật → modal mở đúng, điền sẵn đúng giờ địa phương, sửa + lưu → danh sách tự cập nhật, không lỗi console). Dữ liệu test đã xóa sạch sau khi test.
+
 ## 2026-08-08 (Danh xưng đợt thanh toán + tách quyền module "Bảo hành")
 
 - **`project-detail.html`**: dropdown "Danh xưng" bỏ "Anh"/"Chị", thay bằng "Khách hàng" — tái dùng giá trị lưu trữ `'anh'` (không đổi CHECK constraint DB, tránh rebuild bảng). `print-template-render.js#RECIPIENT_TITLE_LABELS` đổi nhãn tương ứng.

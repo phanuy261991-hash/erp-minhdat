@@ -62,6 +62,15 @@ function formatDate(sqliteDateTime) {
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+// Chieu nguoc lai toSqliteDatetime() - dung de dien san gia tri hien tai (UTC, luu trong DB)
+// vao o <input type="datetime-local"> (gio dia phuong) khi mo modal sua ngay.
+function toDatetimeLocalValue(sqliteDateTime) {
+  const iso = sqliteDateTime.replace(' ', 'T') + 'Z';
+  const d = new Date(iso);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function renderReceiptsError(message) {
   receiptsErrorText.textContent = message;
   receiptsErrorBox.hidden = false;
@@ -86,6 +95,7 @@ function renderReceiptRow(receipt) {
     <td>${formatDate(receipt.created_at)}</td>
     <td>
       <button type="button" class="icon-btn" data-action="view" data-id="${receipt.id}" title="Xem chi tiết">${icon('eye', 14)}</button>
+      <button type="button" class="icon-btn" data-action="edit-date" data-id="${receipt.id}" data-created-at="${receipt.created_at}" title="Sửa ngày nhập">${icon('pencil', 14)}</button>
     </td>
   `;
   return tr;
@@ -102,9 +112,73 @@ async function loadReceipts() {
 }
 
 receiptsTbody.addEventListener('click', (event) => {
-  const button = event.target.closest('button[data-action="view"]');
-  if (!button) return;
-  openReceiptDetailModal(button.dataset.id);
+  const viewButton = event.target.closest('button[data-action="view"]');
+  if (viewButton) {
+    openReceiptDetailModal(viewButton.dataset.id);
+    return;
+  }
+
+  const editDateButton = event.target.closest('button[data-action="edit-date"]');
+  if (editDateButton) {
+    openEditReceiptDateModal(editDateButton.dataset.id, editDateButton.dataset.createdAt);
+  }
+});
+
+// ----- Sua ngay nhap phieu (chi truong ngay, cac truong khac khoa - xem docs/DECISIONS.md) -----
+
+const editReceiptDateModal = document.getElementById('edit-receipt-date-modal');
+const editReceiptDateForm = document.getElementById('edit-receipt-date-form');
+const editReceiptDateErrorBox = document.getElementById('edit-receipt-date-error');
+const editReceiptDateErrorText = document.getElementById('edit-receipt-date-error-text');
+const editReceiptDateInput = document.getElementById('edit-receipt-date-input');
+const btnCancelEditReceiptDate = document.getElementById('btn-cancel-edit-receipt-date');
+const btnSubmitEditReceiptDate = document.getElementById('btn-submit-edit-receipt-date');
+let editingReceiptId = null;
+
+function openEditReceiptDateModal(id, createdAt) {
+  editingReceiptId = id;
+  editReceiptDateInput.value = toDatetimeLocalValue(createdAt);
+  editReceiptDateErrorBox.hidden = true;
+  editReceiptDateModal.hidden = false;
+}
+
+function closeEditReceiptDateModal() {
+  editReceiptDateModal.hidden = true;
+  editingReceiptId = null;
+}
+
+btnCancelEditReceiptDate.addEventListener('click', closeEditReceiptDateModal);
+editReceiptDateModal.addEventListener('click', (event) => {
+  if (event.target === editReceiptDateModal) closeEditReceiptDateModal();
+});
+
+editReceiptDateForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  editReceiptDateErrorBox.hidden = true;
+
+  if (!editReceiptDateInput.value) {
+    editReceiptDateErrorText.textContent = 'Vui lòng chọn thời gian nhập';
+    editReceiptDateErrorBox.hidden = false;
+    return;
+  }
+
+  btnSubmitEditReceiptDate.disabled = true;
+  btnSubmitEditReceiptDate.textContent = 'Đang lưu...';
+
+  try {
+    await apiFetch(`/stock-receipts/${editingReceiptId}/date`, {
+      method: 'PATCH',
+      body: JSON.stringify({ receipt_date: toSqliteDatetime(editReceiptDateInput.value) }),
+    });
+    closeEditReceiptDateModal();
+    await loadReceipts();
+  } catch (err) {
+    editReceiptDateErrorText.textContent = err.message;
+    editReceiptDateErrorBox.hidden = false;
+  } finally {
+    btnSubmitEditReceiptDate.disabled = false;
+    btnSubmitEditReceiptDate.textContent = 'Lưu';
+  }
 });
 
 async function loadProducts() {

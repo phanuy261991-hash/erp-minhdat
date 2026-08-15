@@ -615,6 +615,15 @@
 
 **Không làm bản mobile** (chốt để tránh phình phạm vi): 7 trang Cấu hình, Vai trò, Người dùng, Mẫu in + trình soạn thảo, Import/Export Excel, Báo cáo đầy đủ (chỉ có bản tóm tắt ở Trang chủ), 2 trang In phiếu.
 
+### Sửa "Ngày nhập phiếu" cho Phiếu nhập kho (ngoài phase, theo yêu cầu người dùng 2026-08-15)
+
+> Ngoại lệ có chủ đích của nguyên tắc "không sửa/xóa phiếu đã tạo" (2026-07-31) — chỉ cho sửa riêng trường ngày, mọi trường khác khóa cứng. Đã chốt 2 quyết định qua `AskUserQuestion` trước khi code: đồng bộ ngày sang `stock_movements`/`stock_lots`/`cash_vouchers`; quyền `kho` (không riêng Admin). Xem `docs/DECISIONS.md`.
+
+- [x] `stockReceipt.service.js#updateStockReceiptDate()`: cập nhật `created_at` đồng bộ trên `stock_receipts` + `stock_movements` + `stock_lots` + `cash_vouchers` (nếu có phiếu Chi tự động) trong 1 transaction; chặn nếu `is_return=1`
+- [x] `stockReceipts.routes.js`: `PATCH /:id/date`
+- [x] Frontend `stock-receipts.html`/`.js`: nút bút chì "Sửa ngày nhập" trên mỗi dòng + modal 1 trường `datetime-local`, `toDatetimeLocalValue()` (mới, chiều ngược `toSqliteDatetime()`)
+- [x] Test qua API thật (curl: đồng bộ đúng 4 bảng, chặn đúng is_return=1/thiếu ngày/sai định dạng/không tồn tại/chưa đăng nhập, quyền `kho` đúng qua `thukho1`) + trình duyệt thật (Chrome headless CDP thô, click thật qua DOM: mở modal đúng, điền sẵn đúng giờ địa phương, lưu → danh sách cập nhật, không lỗi console) — dữ liệu test đã xóa sạch
+
 ## Open questions cần chốt trước khi code phần liên quan
 
 Xem `docs/DECISIONS.md` mục "Open questions".

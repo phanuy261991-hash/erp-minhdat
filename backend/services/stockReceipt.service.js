@@ -130,4 +130,32 @@ function createStockReceipt({ partnerId, createdBy, note, items, receiptDate, or
   return db.prepare('SELECT * FROM stock_receipts WHERE id = ?').get(receiptId);
 }
 
-module.exports = { createStockReceipt, ServiceError };
+// Sua NGAY NHAP cua 1 phieu da tao - ngoai le CO CHU DICH cho nguyen tac "khong sua/xoa truc
+// tiep phieu nhap/xuat da tao" (docs/DECISIONS.md 2026-07-31): CHI cho sua truong ngay, khong
+// dung cho so luong/don gia/san pham/NCC - khong lam thay doi ton kho hay cong no. Dong bo ngay
+// moi sang CA stock_movements/stock_lots (anh huong thu tu tieu thu FIFO ve sau + gom dung thang
+// tren Bao cao) va cash_vouchers tu dong (neu co, phieu tra tien ngay) - da hoi va chot voi nguoi
+// dung truoc khi lam (2026-08-15). Chi ap dung phieu nhap thuong (is_return=0), khong dung cho
+// "Tra hang xuat" dung chung bang nay.
+function updateStockReceiptDate({ id, receiptDate }) {
+  const run = db.transaction(() => {
+    const receipt = db.prepare('SELECT id, is_return FROM stock_receipts WHERE id = ?').get(id);
+    if (!receipt) {
+      return false;
+    }
+    if (receipt.is_return) {
+      throw new ServiceError('Khong the sua ngay cua phieu Tra hang xuat o day');
+    }
+
+    db.prepare('UPDATE stock_receipts SET created_at = ? WHERE id = ?').run(receiptDate, id);
+    db.prepare("UPDATE stock_movements SET created_at = ? WHERE reference_type = 'receipt' AND reference_id = ?").run(receiptDate, id);
+    db.prepare('UPDATE stock_lots SET created_at = ? WHERE receipt_id = ?').run(receiptDate, id);
+    db.prepare("UPDATE cash_vouchers SET created_at = ? WHERE reference_type = 'stock_receipt' AND reference_id = ?").run(receiptDate, id);
+    return true;
+  });
+
+  if (!run()) return null;
+  return db.prepare('SELECT * FROM stock_receipts WHERE id = ?').get(id);
+}
+
+module.exports = { createStockReceipt, updateStockReceiptDate, ServiceError };
