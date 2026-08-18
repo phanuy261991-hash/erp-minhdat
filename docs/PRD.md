@@ -70,7 +70,7 @@ Web app nội bộ, kiến trúc đơn giản (không microservices, không clou
 - **Thời gian nhập kho** có thể chỉnh khác thời điểm lập phiếu thực tế (vd nhập bổ sung dữ liệu trễ, hoặc nhập tồn đầu kỳ theo đúng ngày quá khứ) — dùng làm mốc thời gian thật cho tồn kho/giá vốn, ảnh hưởng đúng thứ tự tính FIFO/bình quân gia quyền.
 - **Chiết khấu**: mỗi dòng sản phẩm trong phiếu nhập có thể nhập % chiết khấu riêng — giá vốn ghi nhận là giá sau chiết khấu, số tiền gốc trên hóa đơn vẫn giữ nguyên để đối chiếu. Tổng thành tiền (sau chiết khấu) hiển thị trực tiếp trên form khi lập phiếu.
 - **Mã đơn hàng**: trường tự do (không bắt buộc) ghi số hóa đơn/đơn hàng của nhà cung cấp, khác với mã phiếu nội bộ hệ thống tự sinh — dùng để đối chiếu sau này.
-- **Tồn đầu kỳ**: dùng cơ chế phiếu nhập kho thông thường, không chọn nhà cung cấp, ghi chú rõ là "Nhập tồn đầu kỳ".
+- **Tồn đầu kỳ** (bổ sung 2026-08-15): công tắc riêng "Nhập tồn đầu kỳ" trên form lập phiếu nhập — phiếu được đánh dấu chỉ thay đổi số lượng tồn kho (vẫn ghi giá vốn theo lô để tính đúng FIFO/bình quân gia quyền cho lần xuất sau), **không** phát sinh công nợ nhà cung cấp dù chọn đối tác, và **không** tự tạo phiếu Chi trong Sổ quỹ (khác phiếu nhập thường mặc định luôn tạo phiếu Chi — xem mục 4.11). Loại khỏi biểu đồ "Tổng mua hàng theo tháng" (mục 4.6) vì không phải chi tiêu mua hàng thực sự.
 - Lịch sử biến động kho, tra cứu theo sản phẩm/khoảng thời gian.
 - **Sửa/hủy phiếu đã lập** (bổ sung 2026-07-31): không cho sửa/xóa trực tiếp phiếu nhập/xuất đã tạo — chỉ tạo được **phiếu điều chỉnh bù trừ** (1 phiếu nhập hoặc xuất mới, ghi ngược dấu, liên kết ngược lại phiếu gốc để truy vết) nhằm giữ lịch sử ledger đầy đủ. Không giới hạn hướng bù trừ (phiếu nhập sai có thể bù bằng phiếu nhập khác hoặc phiếu xuất, và ngược lại).
 
@@ -95,7 +95,7 @@ Web app nội bộ, kiến trúc đơn giản (không microservices, không clou
 
 ### 4.6 Báo cáo (bổ sung 2026-08-01 — hoàn thành)
 - Báo cáo tồn kho hiện tại theo sản phẩm, kèm giá vốn (bình quân gia quyền) và giá trị tồn, tổng giá trị toàn kho.
-- Báo cáo mua hàng (nhập kho)/bán hàng (xuất kho) theo tháng — 6 tháng gần nhất, kèm % tăng trưởng so với tháng trước.
+- Báo cáo mua hàng (nhập kho)/bán hàng (xuất kho) theo tháng — 6 tháng gần nhất, kèm % tăng trưởng so với tháng trước. Phiếu nhập đánh dấu "Nhập tồn đầu kỳ" (mục 4.3, bổ sung 2026-08-15) loại khỏi tổng mua hàng — không phải chi tiêu mua hàng thực sự.
 - Báo cáo công nợ tổng hợp toàn hệ thống: tổng phải thu (khách hàng), tổng phải trả (NCC) — chi tiết theo từng đối tác xem trang Công nợ (mục 4.4).
 - Hiển thị dạng thẻ số liệu (card) cho các số tổng + bảng; **biểu đồ cột** cho xu hướng mua/bán hàng theo tháng — tự vẽ bằng SVG, không dùng thư viện ngoài (Chart.js) để giữ đúng nguyên tắc không phụ thuộc CDN/build step của dự án.
 
@@ -134,7 +134,7 @@ Web app nội bộ, kiến trúc đơn giản (không microservices, không clou
 
 **Phiếu tự động (bổ sung 2026-08-07, theo yêu cầu người dùng)**: mỗi khi có 1 khoản tiền mặt/chuyển khoản THẬT ra/vào công ty, hệ thống tự tạo 1 phiếu thu/chi tương ứng, gắn kèm nguồn gốc (đối tác, chứng từ gốc, dự án/đợt thanh toán nếu có) — **không cần nhân viên tự nhập tay 2 nơi**:
 - **Thu**: thanh toán công nợ khách hàng (danh mục "Thu hồi công nợ khách hàng" hoặc "Thu theo đợt thanh toán dự án" nếu gắn đợt thanh toán dự án), xuất hàng bán đánh dấu thu tiền ngay (không công nợ) — danh mục "Thu bán hàng trả ngay".
-- **Chi**: thanh toán công nợ nhà cung cấp — danh mục "Chi trả công nợ nhà cung cấp"; nhập hàng đánh dấu thanh toán ngay (không công nợ, **là trạng thái mặc định của mọi phiếu nhập kho thường**) — danh mục "Chi mua hàng trả ngay".
+- **Chi**: thanh toán công nợ nhà cung cấp — danh mục "Chi trả công nợ nhà cung cấp"; nhập hàng đánh dấu thanh toán ngay (không công nợ, **là trạng thái mặc định của mọi phiếu nhập kho thường**) — danh mục "Chi mua hàng trả ngay". **Ngoại lệ**: phiếu đánh dấu "Nhập tồn đầu kỳ" (mục 4.3) không tạo phiếu Chi này dù thanh toán ngay hay công nợ.
 - **"Trả hàng" (mục 4.15) KHÔNG tạo phiếu tự động** — chỉ giảm công nợ, không coi là dòng tiền thật chắc chắn.
 - **Phiếu tự động khóa vĩnh viễn** (không xóa được, kể cả Admin) — muốn điều chỉnh phải sửa đúng ở nghiệp vụ gốc (Công nợ/Kho).
 - Dữ liệu lịch sử trước 2026-08-07 đã được backfill (tạo lại phiếu cho toàn bộ thanh toán công nợ + phiếu nhập/xuất trả tiền ngay đã có từ trước) — "Tồn quỹ" các tháng đã qua có thể khác so với lần đối chiếu tiền mặt thật trước thời điểm này.

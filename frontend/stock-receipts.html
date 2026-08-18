@@ -126,6 +126,18 @@
 
         <div class="setting-row">
           <div class="setting-row-info">
+            <p class="setting-row-title">Nhập tồn đầu kỳ</p>
+            <p class="setting-row-desc">Chỉ dùng khi ghi nhận tồn kho có sẵn trước khi dùng hệ thống — phiếu sẽ chỉ thay đổi số lượng tồn, không phát sinh công nợ NCC hay phiếu chi tiền.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="receipt-opening-balance-toggle" />
+            <span class="switch-track"></span>
+            <span class="switch-thumb"></span>
+          </label>
+        </div>
+
+        <div class="setting-row" id="receipt-payment-row">
+          <div class="setting-row-info">
             <p class="setting-row-title">Chưa thanh toán ngay</p>
             <p class="setting-row-desc">Bật nếu chưa trả tiền NCC ngay — phiếu sẽ được đánh dấu công nợ phải trả.</p>
           </div>

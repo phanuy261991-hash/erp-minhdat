@@ -159,13 +159,15 @@ router.get('/stock-movements', (req, res) => {
   const fromDate = nMonthsAgoStart(months);
   const monthKeys = lastNMonthKeys(months);
 
+  // is_opening_balance = 0: phieu "Nhap ton dau ky" (migration 037) khong phai mua hang thuc su
+  // (khong phat sinh tien/cong no) - loai khoi tong de bieu do phan anh dung chi tieu mua hang.
   const purchaseRows = db
     .prepare(`
       SELECT strftime('%Y-%m', r.created_at) AS month,
              COALESCE(SUM(i.quantity * i.unit_price * (1 - i.discount_percent / 100.0)), 0) AS total
       FROM stock_receipts r
       JOIN stock_receipt_items i ON i.receipt_id = r.id
-      WHERE r.created_at >= ?
+      WHERE r.created_at >= ? AND r.is_opening_balance = 0
       GROUP BY month
     `)
     .all(fromDate);

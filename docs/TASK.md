@@ -624,6 +624,18 @@
 - [x] Frontend `stock-receipts.html`/`.js`: nút bút chì "Sửa ngày nhập" trên mỗi dòng + modal 1 trường `datetime-local`, `toDatetimeLocalValue()` (mới, chiều ngược `toSqliteDatetime()`)
 - [x] Test qua API thật (curl: đồng bộ đúng 4 bảng, chặn đúng is_return=1/thiếu ngày/sai định dạng/không tồn tại/chưa đăng nhập, quyền `kho` đúng qua `thukho1`) + trình duyệt thật (Chrome headless CDP thô, click thật qua DOM: mở modal đúng, điền sẵn đúng giờ địa phương, lưu → danh sách cập nhật, không lỗi console) — dữ liệu test đã xóa sạch
 
+### Checkbox "Nhập tồn đầu kỳ" cho Phiếu nhập kho (ngoài phase, theo yêu cầu người dùng 2026-08-18)
+
+> Thay quy ước cũ (chỉ ghi chú tự do, không có cơ chế chặn) bằng công tắc thật. Đã chốt 1 quyết định qua `AskUserQuestion` trước khi code: loại phiếu tồn đầu kỳ khỏi biểu đồ "Tổng mua hàng theo tháng". Xem `docs/DECISIONS.md`.
+
+- [x] Migration `037`: `stock_receipts.is_opening_balance`
+- [x] `stockReceipt.service.js#createStockReceipt()`: bỏ qua `recordDebtFromDocument()`/`recordAutoVoucher()` khi cờ bật, vẫn tạo `stock_movements`/`stock_lots` đầy đủ
+- [x] `stockReceipts.routes.js`: đọc/truyền/trả về `is_opening_balance`
+- [x] `reports.routes.js#/stock-movements`: loại `is_opening_balance=1` khỏi tổng mua hàng
+- [x] Frontend `stock-receipts.html`/`.js` + `receipt-detail.js`: công tắc mới, ẩn khung thanh toán khi bật, badge "Tồn đầu kỳ"
+- [x] Đồng bộ `docs/PRD.md` mục 4.3/4.6/4.11
+- [x] Test qua API thật (không tạo công nợ/phiếu chi, vẫn đổi đúng tồn kho, báo cáo loại đúng số tiền, hồi quy phiếu thường) + trình duyệt thật (Chrome headless CDP thô, click/gõ thật, không lỗi console) — dữ liệu test đã xóa sạch
+
 ## Open questions cần chốt trước khi code phần liên quan
 
 Xem `docs/DECISIONS.md` mục "Open questions".

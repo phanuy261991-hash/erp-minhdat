@@ -13,7 +13,7 @@ const router = express.Router();
 const SELECT_RECEIPT = `
   SELECT r.id, r.code, r.order_code, r.partner_id, pa.name AS partner_name, r.created_by,
          u.full_name AS created_by_name, r.note, r.payment_status, r.created_at,
-         r.adjusts_type, r.adjusts_id, r.project_id, pr.name AS project_name,
+         r.adjusts_type, r.adjusts_id, r.project_id, pr.name AS project_name, r.is_opening_balance,
          CASE r.adjusts_type WHEN 'receipt' THEN ar.code WHEN 'issue' THEN ai.code ELSE NULL END AS adjusts_code
   FROM stock_receipts r
   LEFT JOIN partners pa ON pa.id = r.partner_id
@@ -138,6 +138,7 @@ router.post('/', (req, res) => {
     order_code: orderCode,
     payment_status: paymentStatus,
     project_id: rawProjectId,
+    is_opening_balance: rawIsOpeningBalance,
   } = req.body || {};
   const { items, error } = readItems((req.body || {}).items);
 
@@ -159,6 +160,7 @@ router.post('/', (req, res) => {
   if (!PAYMENT_STATUSES.includes(resolvedPaymentStatus)) {
     return res.status(400).json({ error: `payment_status khong hop le: ${resolvedPaymentStatus}` });
   }
+  const isOpeningBalance = rawIsOpeningBalance === true || rawIsOpeningBalance === 'true';
 
   try {
     const receipt = createStockReceipt({
@@ -172,6 +174,7 @@ router.post('/', (req, res) => {
       adjustsId,
       paymentStatus: resolvedPaymentStatus,
       projectId: rawProjectId ? Number(rawProjectId) : null,
+      isOpeningBalance,
     });
     res.status(201).json({ receipt });
   } catch (err) {

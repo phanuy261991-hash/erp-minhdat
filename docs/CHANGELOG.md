@@ -2,6 +2,18 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-18 (Checkbox "Nhập tồn đầu kỳ" cho Phiếu nhập kho)
+
+> Thay quy ước cũ ở `docs/PRD.md` mục 4.3 (chỉ ghi chú tự do "Nhập tồn đầu kỳ", không có gì chặn phát sinh công nợ/phiếu chi nếu chọn sai trạng thái thanh toán) bằng 1 công tắc thật, đảm bảo đúng hành vi bằng code. Đã hỏi 1 câu qua `AskUserQuestion` trước khi code (loại khỏi biểu đồ "Tổng mua hàng theo tháng" hay không) — chọn loại. Xem `docs/DECISIONS.md`.
+
+- **Migration `037`**: `stock_receipts.is_opening_balance` (cờ, cùng pattern `is_return` migration `032`).
+- **`stockReceipt.service.js#createStockReceipt()`**: khi `isOpeningBalance=true`, bỏ qua hoàn toàn cả `recordDebtFromDocument()` lẫn `recordAutoVoucher()` (không phụ thuộc `payment_status`) — ép lưu `payment_status='da_thanh_toan'` (tránh vi phạm CHECK), bỏ qua validate "công nợ phải chọn NCC". `stock_movements`/`stock_lots` vẫn tạo đầy đủ như phiếu thường (kể cả giá vốn) — vẫn cần đúng cho FIFO/bình quân gia quyền lần xuất sau.
+- **`stockReceipts.routes.js`**: đọc/truyền `is_opening_balance`, thêm vào `SELECT_RECEIPT`.
+- **`reports.routes.js#/stock-movements`**: thêm điều kiện `r.is_opening_balance = 0` vào tổng mua hàng theo tháng — tránh 1 phiếu tồn đầu kỳ (thường giá trị lớn lúc khởi tạo hệ thống) làm sai lệch biểu đồ.
+- **Frontend `stock-receipts.html`/`.js`**: công tắc "Nhập tồn đầu kỳ" (đặt trên công tắc "Chưa thanh toán ngay") — bật lên ẩn hẳn khung thanh toán. `receipt-detail.js` (dùng chung `stock-receipts.html`/`product-detail.html`): badge danh sách/chi tiết đổi thành "Tồn đầu kỳ" thay vì "Công nợ"/"Đã thanh toán" khi có cờ.
+- **`docs/PRD.md`** mục 4.3/4.6/4.11: thay mô tả quy ước cũ bằng cơ chế mới.
+- Test qua API thật (curl: không tạo `debt_ledger`/`cash_vouchers` dù gửi `payment_status='cong_no'` không NCC, vẫn tạo đúng `stock_movements`/`stock_lots`, phiếu thường không tick vẫn hoạt động như cũ, báo cáo mua hàng loại đúng số tiền tồn đầu kỳ) + trình duyệt thật (Chrome headless CDP thô, click/gõ thật: bật công tắc ẩn đúng khung thanh toán, lập phiếu thành công, badge hiện đúng) — không lỗi console. Dữ liệu test đã xóa sạch.
+
 ## 2026-08-15 (Sửa "Ngày nhập phiếu" cho Phiếu nhập kho — ngoại lệ có chủ đích của nguyên tắc "không sửa phiếu đã tạo")
 
 > Đã hỏi 2 câu qua `AskUserQuestion` trước khi code (đồng bộ ngày sang `stock_movements`/`stock_lots`/`cash_vouchers` hay chỉ đổi hiển thị; quyền `kho` hay chỉ Admin) — người dùng chọn đồng bộ toàn bộ + quyền `kho`. Xem `docs/DECISIONS.md`.

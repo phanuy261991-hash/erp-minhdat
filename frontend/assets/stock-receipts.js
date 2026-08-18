@@ -32,6 +32,8 @@ const noteInput = document.getElementById('receipt-note');
 const receiptDateInput = document.getElementById('receipt-date');
 const orderCodeInput = document.getElementById('receipt-order-code');
 const paymentToggle = document.getElementById('receipt-payment-toggle');
+const paymentRow = document.getElementById('receipt-payment-row');
+const openingBalanceToggle = document.getElementById('receipt-opening-balance-toggle');
 const itemRowsContainer = document.getElementById('item-rows');
 const btnAddItemRow = document.getElementById('btn-add-item-row');
 const totalAmountEl = document.getElementById('receipt-total-amount');
@@ -81,9 +83,11 @@ function renderReceiptRow(receipt) {
     ? `<span class="badge badge-inactive" title="Điều chỉnh cho phiếu ${receipt.adjusts_code}">Điều chỉnh ${receipt.adjusts_code}</span> ${receipt.note || ''}`
     : (receipt.note || '-');
 
-  const paymentBadge = receipt.payment_status === 'cong_no'
-    ? '<span class="badge badge-inactive">Công nợ</span>'
-    : '<span class="badge badge-active">Đã thanh toán</span>';
+  const paymentBadge = receipt.is_opening_balance
+    ? '<span class="badge badge-inactive" title="Chỉ đổi số lượng tồn, không phát sinh công nợ/phiếu chi">Tồn đầu kỳ</span>'
+    : receipt.payment_status === 'cong_no'
+      ? '<span class="badge badge-inactive">Công nợ</span>'
+      : '<span class="badge badge-active">Đã thanh toán</span>';
 
   const tr = document.createElement('tr');
   tr.innerHTML = `
@@ -210,6 +214,15 @@ function renderProjectOptions() {
 
 partnerSelect.addEventListener('change', () => {
   newPartnerFields.hidden = partnerSelect.value !== '__new__';
+});
+
+// Phieu ton dau ky khong lien quan cong no - an nut "Chua thanh toan ngay" va tra ve trang thai
+// mac dinh (khong cong no) de tranh nguoi dung bat nham truoc khi an.
+openingBalanceToggle.addEventListener('change', () => {
+  paymentRow.hidden = openingBalanceToggle.checked;
+  if (openingBalanceToggle.checked) {
+    paymentToggle.checked = false;
+  }
 });
 
 // ----- Dong san pham dong (combobox tim theo ma/ten) -----
@@ -353,6 +366,7 @@ btnAddItemRow.addEventListener('click', addItemRow);
 function resetReceiptForm() {
   receiptForm.reset();
   newPartnerFields.hidden = true;
+  paymentRow.hidden = false;
   receiptDateInput.value = nowForDatetimeLocal();
   itemRowsContainer.innerHTML = '';
   addItemRow();
@@ -453,6 +467,7 @@ receiptForm.addEventListener('submit', async (event) => {
         order_code: orderCodeInput.value.trim(),
         receipt_date: receiptDateInput.value ? toSqliteDatetime(receiptDateInput.value) : null,
         payment_status: paymentToggle.checked ? 'cong_no' : 'da_thanh_toan',
+        is_opening_balance: openingBalanceToggle.checked,
         project_id: projectSelect.value || null,
         items,
         ...getAdjustmentPayload(),

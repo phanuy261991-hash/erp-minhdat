@@ -2,6 +2,17 @@
 
 > Ghi lại các quyết định đã chốt để không thảo luận lại trừ khi có lý do mới. Mỗi mục ghi ngày chốt.
 
+## 2026-08-18 — Checkbox "Nhập tồn đầu kỳ" cho Phiếu nhập kho: thay thế quy ước bằng ghi chú tự do đã lỗi thời trong PRD
+
+**Bối cảnh**: `docs/PRD.md` mục 4.3 (viết từ 2026-07-31) từng chốt tồn đầu kỳ chỉ là 1 **quy ước sử dụng** phiếu nhập thường: không chọn NCC + ghi chú "Nhập tồn đầu kỳ" — không có cơ chế kỹ thuật nào chặn phát sinh công nợ/phiếu Chi tự động (migration 035, 2026-08-07) nếu người dùng chọn payment_status sai. Người dùng yêu cầu thay bằng 1 công tắc thật trên form, đảm bảo đúng hành vi bằng code chứ không dựa vào quy ước.
+
+**Quyết định** (đã hỏi 1 câu qua `AskUserQuestion` trước khi code — có loại phiếu tồn đầu kỳ khỏi biểu đồ "Tổng mua hàng theo tháng" hay không, chọn: **loại**):
+- Migration `037`: thêm `stock_receipts.is_opening_balance` (cờ, giống pattern `is_return` của migration `032`).
+- `createStockReceipt()`: khi `isOpeningBalance=true`, bỏ qua HOÀN TOÀN cả 2 nhánh `recordDebtFromDocument()`/`recordAutoVoucher()` (không phụ thuộc `payment_status` gửi lên là gì) — ép `payment_status` lưu DB về `'da_thanh_toan'` để không vi phạm CHECK constraint, đồng thời bỏ qua validate "công nợ phải chọn NCC" (không còn ý nghĩa vì chắc chắn không ghi nợ). `stock_movements`/`stock_lots` vẫn tạo bình thường như phiếu thường (kể cả giá vốn `unit_cost`) — vì tồn đầu kỳ vẫn cần đúng lô/giá vốn để tính FIFO/bình quân gia quyền cho lần xuất sau, chỉ khác ở chỗ không đụng ledger tiền/công nợ.
+- `GET /api/reports/stock-movements` (biểu đồ mua/bán theo tháng): thêm điều kiện `r.is_opening_balance = 0` vào tổng mua hàng — tránh 1 phiếu tồn đầu kỳ (thường số lượng/giá trị lớn lúc khởi tạo hệ thống) làm sai lệch xu hướng chi tiêu mua hàng thật của tháng đó. Các nơi khác dùng `stock_receipts` (tồn kho hiện tại, lịch sử theo sản phẩm, vật tư dự án) **không đổi** — tồn đầu kỳ vẫn là tồn kho thật, cần tính đúng.
+- Frontend: công tắc "Nhập tồn đầu kỳ" đặt TRÊN công tắc "Chưa thanh toán ngay" — bật lên thì ẩn hẳn khung "Chưa thanh toán ngay" (không còn ý nghĩa), badge danh sách/chi tiết đổi thành "Tồn đầu kỳ" thay vì "Công nợ"/"Đã thanh toán".
+- Đã cập nhật `docs/PRD.md` mục 4.3/4.6/4.11 (thay quy ước cũ bằng mô tả cơ chế mới).
+
 ## 2026-08-15 — Sửa "Ngày nhập phiếu" cho Phiếu nhập kho: ngoại lệ có chủ đích của nguyên tắc "không sửa phiếu đã tạo", đồng bộ ngày sang toàn bộ bản ghi liên quan
 
 **Bối cảnh**: người dùng yêu cầu thêm chức năng sửa phiếu nhập kho, nhưng **chỉ cho sửa riêng "Ngày nhập phiếu"** — mọi trường khác (sản phẩm/số lượng/đơn giá/NCC/thanh toán) khóa cứng, không đổi tồn kho hay công nợ. Yêu cầu này **đối lập trực tiếp** với quyết định `2026-07-31 — Sửa/hủy phiếu đã tạo` ("Không cho sửa/xóa trực tiếp phiếu nhập/xuất đã tạo — chỉ tạo phiếu điều chỉnh bù trừ"). Xác nhận đây là ngoại lệ có chủ đích: phạm vi sửa hẹp đến mức không chạm vào bất kỳ số liệu nào ảnh hưởng ledger (tồn kho/công nợ), chỉ đổi 1 mốc thời gian — khác hẳn việc cho sửa số lượng/đơn giá (vẫn tuyệt đối cấm, không nằm trong phạm vi này).

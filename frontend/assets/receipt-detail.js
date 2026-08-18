@@ -28,9 +28,11 @@ function renderReceiptDetail(receipt) {
   const itemsTbody = document.getElementById('receipt-detail-items');
   const totalEl = document.getElementById('receipt-detail-total');
 
-  const paymentBadge = receipt.payment_status === 'cong_no'
-    ? '<span class="badge badge-inactive">Công nợ</span>'
-    : '<span class="badge badge-active">Đã thanh toán</span>';
+  const paymentBadge = receipt.is_opening_balance
+    ? '<span class="badge badge-inactive" title="Chỉ đổi số lượng tồn, không phát sinh công nợ/phiếu chi">Tồn đầu kỳ</span>'
+    : receipt.payment_status === 'cong_no'
+      ? '<span class="badge badge-inactive">Công nợ</span>'
+      : '<span class="badge badge-active">Đã thanh toán</span>';
 
   const infoItems = [
     detailInfoItem('Mã phiếu', receipt.code),

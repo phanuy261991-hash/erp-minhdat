@@ -33,11 +33,14 @@ function generateReceiptCode() {
 // da xuat va loc cong no theo du an (module "Quan ly du an" Dot 3, xem docs/DECISIONS.md).
 // Validate ton tai o day (khong o tang route) vi phai chay TRONG transaction giong het cach
 // validate san pham ben duoi.
-function createStockReceipt({ partnerId, createdBy, note, items, receiptDate, orderCode, adjustsType, adjustsId, paymentStatus, projectId }) {
+// isOpeningBalance (tuy chon, migration 037): phieu "Nhap ton dau ky" - danh dau de KHONG phat
+// sinh debt_ledger/cash_vouchers du payment_status la gi (bo qua ca 2 nhanh ben duoi), chi tao
+// stock_movements/stock_lots nhu phieu thuong de doi ton kho + luu gia von cho lan xuat sau.
+function createStockReceipt({ partnerId, createdBy, note, items, receiptDate, orderCode, adjustsType, adjustsId, paymentStatus, projectId, isOpeningBalance }) {
   if (!Array.isArray(items) || items.length === 0) {
     throw new ServiceError('Phieu nhap phai co it nhat 1 dong san pham');
   }
-  if (paymentStatus === 'cong_no' && !partnerId) {
+  if (!isOpeningBalance && paymentStatus === 'cong_no' && !partnerId) {
     throw new ServiceError('Phieu nhap cong no phai chon nha cung cap');
   }
 
@@ -62,12 +65,14 @@ function createStockReceipt({ partnerId, createdBy, note, items, receiptDate, or
     const timestamp = receiptDate || db.prepare("SELECT datetime('now') AS now").get().now;
 
     const code = generateReceiptCode();
-    const resolvedPaymentStatus = paymentStatus || 'da_thanh_toan';
+    // Phieu ton dau ky luon coi nhu "da thanh toan" ve mat du lieu (khong co y nghia cong no) -
+    // tranh CHECK constraint payment_status bi vi pham neu client lo gui 'cong_no'.
+    const resolvedPaymentStatus = isOpeningBalance ? 'da_thanh_toan' : (paymentStatus || 'da_thanh_toan');
     const receiptResult = db
       .prepare(
-        'INSERT INTO stock_receipts (code, partner_id, created_by, note, created_at, order_code, adjusts_type, adjusts_id, payment_status, project_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO stock_receipts (code, partner_id, created_by, note, created_at, order_code, adjusts_type, adjusts_id, payment_status, project_id, is_opening_balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
       )
-      .run(code, partnerId || null, createdBy, note || '', timestamp, orderCode || '', adjustsType || null, adjustsId || null, resolvedPaymentStatus, projectId || null);
+      .run(code, partnerId || null, createdBy, note || '', timestamp, orderCode || '', adjustsType || null, adjustsId || null, resolvedPaymentStatus, projectId || null, isOpeningBalance ? 1 : 0);
     const receiptId = receiptResult.lastInsertRowid;
 
     const insertItem = db.prepare(
@@ -94,7 +99,10 @@ function createStockReceipt({ partnerId, createdBy, note, items, receiptDate, or
       totalAmount += item.quantity * netUnitCost;
     });
 
-    if (resolvedPaymentStatus === 'cong_no') {
+    if (isOpeningBalance) {
+      // Nhap ton dau ky - chi doi so luong ton kho, khong dung cham cong no/so quy (xem
+      // migration 037 + docs/DECISIONS.md 2026-08-15).
+    } else if (resolvedPaymentStatus === 'cong_no') {
       recordDebtFromDocument({
         partnerId,
         amount: totalAmount,
