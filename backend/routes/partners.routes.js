@@ -1,19 +1,24 @@
 // Route doi tac (nha cung cap/khach hang). GET danh sach + POST tao nhanh la ban rut gon tu
 // Phase 2, dung khi lap phieu nhap/xuat can chon hoac them nhanh doi tac moi ngay tai form.
-// PUT/DELETE (quan ly doi tac day du, gan voi module Cong no) them o Phase 3 - xem
-// docs/DECISIONS.md muc "Doi tac".
+// PUT/DELETE (quan ly doi tac day du) them o Phase 3 - xem docs/DECISIONS.md muc "Doi tac".
 //
-// GET mo cho moi nguoi da dang nhap (can de hien dropdown chon doi tac). POST (them nhanh)
-// cho ca quyen 'kho' hoac 'cong_no' - ca thu kho (lap phieu nhap) lan ke toan deu co the can.
-// PUT/DELETE (sua/xoa day du tren trang quan ly doi tac) rieng chi quyen 'cong_no'.
-
+// GET mo cho moi nguoi da dang nhap (can de hien dropdown chon doi tac o nhieu module khac nhau -
+// kho/du_an/... khong doi hoi quyen quan ly doi tac day du). POST (them nhanh) cho nhieu quyen -
+// thu kho (lap phieu nhap), ke toan, hoac nguoi phu trach du an deu co the can.
+//
+// PUT/DELETE (sua/xoa day du tren trang quan ly doi tac): tu migration 039 (2026-08-19, "tach
+// quyen Cong no khach hang khoi NCC") KHONG con dung 1 quyen 'cong_no' chung cho ca 2 loai doi
+// tac - phai kiem tra theo DUNG type cua doi tac dang thao tac ('nha_cung_cap' -> 'cong_no',
+// 'khach_hang' -> 'khach_hang'). Vi vay khong gan requirePermission() lam middleware co dinh nua
+// (luc do chua biet type) - kiem tra thu cong NGAY TRONG handler sau khi da doc duoc doi tac.
 const express = require('express');
 const db = require('../db/database');
-const { requireAnyPermission, requirePermission } = require('../middleware/requirePermission');
+const { requireAnyPermission, userHasPermission } = require('../middleware/requirePermission');
 
 const router = express.Router();
 
 const PARTNER_TYPES = ['nha_cung_cap', 'khach_hang'];
+const PARTNER_TYPE_MODULE = { nha_cung_cap: 'cong_no', khach_hang: 'khach_hang' };
 
 // Validate category_id: chi co y nghia voi khach hang (xem migration 015) - NCC gui len se bi
 // tu bo qua (luon luu NULL) de tranh du lieu nham lan giua 2 loai doi tac.
@@ -72,8 +77,10 @@ function resolveAssignedUserId(assignedUserId) {
 
 // 'du_an' them 2026-08-06: form "Them du an" co nut them nhanh khach hang ngay tai cho (giong
 // pattern da co o stock-issues.html) - tai khoan chi co quyen module 'du_an' (khong co
-// 'kho'/'cong_no') can dung duoc nut nay, xem docs/DECISIONS.md.
-router.post('/', requireAnyPermission(['kho', 'cong_no', 'du_an']), (req, res) => {
+// 'kho'/'cong_no'/'khach_hang') can dung duoc nut nay, xem docs/DECISIONS.md. 'khach_hang' them
+// 2026-08-19 (migration 039) - doi xung voi 'cong_no', ke toan chi duoc cap rieng quyen nay van
+// tao nhanh duoc khach hang.
+router.post('/', requireAnyPermission(['kho', 'cong_no', 'khach_hang', 'du_an']), (req, res) => {
   const { type, name, phone, address, category_id: categoryId, assigned_user_id: assignedUserId } = req.body || {};
 
   if (!PARTNER_TYPES.includes(type)) {
@@ -109,11 +116,14 @@ router.post('/', requireAnyPermission(['kho', 'cong_no', 'du_an']), (req, res) =
 
 // Sua ten/sdt/dia chi - khong cho doi "type" sau khi tao (giong nguyen tac khong doi username
 // cua users), tranh doi tac da co lich su phieu nhap/xuat bi doi nhap nhang giua NCC/khach hang.
-router.put('/:id', requirePermission('cong_no'), (req, res) => {
+router.put('/:id', (req, res) => {
   const id = Number(req.params.id);
   const existing = db.prepare('SELECT id, type FROM partners WHERE id = ?').get(id);
   if (!existing) {
     return res.status(404).json({ error: 'Khong tim thay doi tac' });
+  }
+  if (!userHasPermission(req.session.user, PARTNER_TYPE_MODULE[existing.type])) {
+    return res.status(403).json({ error: 'Khong co quyen truy cap chuc nang nay' });
   }
 
   const { name, phone, address, category_id: categoryId, assigned_user_id: assignedUserId } = req.body || {};
@@ -145,11 +155,14 @@ router.put('/:id', requirePermission('cong_no'), (req, res) => {
 
 // Xoa cung: chan neu doi tac da co lich su (phieu nhap/xuat hoac dong cong no) - giu nguyen
 // tac giu lich su nhu xoa san pham/tai khoan (xem CLAUDE.md).
-router.delete('/:id', requirePermission('cong_no'), (req, res) => {
+router.delete('/:id', (req, res) => {
   const id = Number(req.params.id);
-  const existing = db.prepare('SELECT id FROM partners WHERE id = ?').get(id);
+  const existing = db.prepare('SELECT id, type FROM partners WHERE id = ?').get(id);
   if (!existing) {
     return res.status(404).json({ error: 'Khong tim thay doi tac' });
+  }
+  if (!userHasPermission(req.session.user, PARTNER_TYPE_MODULE[existing.type])) {
+    return res.status(403).json({ error: 'Khong co quyen truy cap chuc nang nay' });
   }
 
   const inUse = db

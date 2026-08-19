@@ -95,8 +95,9 @@ function roundedTopBarPath(x, yTop, width, yBottom, radius) {
 }
 
 // Bieu do cot don gian, 1 chuoi so lieu duy nhat (khong can chu thich mau vi chi 1 mau - xem
-// skill dataviz: "mot chuoi khong can legend"). Nhan gia tri chi hien o cot cuoi cung (thang
-// hien tai) de tranh roi mat, cac cot khac xem qua tooltip (title) khi ruot chuot vao.
+// skill dataviz: "mot chuoi khong can legend"). Nhan gia tri hien o 2 cot cuoi cung (thang hien
+// tai + thang truoc, theo yeu cau nguoi dung 2026-08-19 - truoc day chi hien dung 1 cot cuoi) de
+// so sanh nhanh khong can ruot chuot; cac cot con lai van xem qua tooltip (title) khi ruot chuot vao.
 function renderBarChart(container, data, color) {
   const width = 560;
   const height = 200;
@@ -117,6 +118,7 @@ function renderBarChart(container, data, color) {
       const x = paddingX + slot * index + (slot - barWidth) / 2;
       const yTop = baselineY - barHeight;
       const isLast = index === n - 1;
+      const isSecondLast = index === n - 2;
       const monthLabel = formatMonthLabel(d.month);
       const path = roundedTopBarPath(x, yTop, barWidth, baselineY, 4);
 
@@ -124,7 +126,7 @@ function renderBarChart(container, data, color) {
         <path d="${path}" fill="${color}">
           <title>Tháng ${monthLabel}: ${formatMoney(d.total)} đ</title>
         </path>
-        ${isLast && d.total > 0 ? `<text x="${x + barWidth / 2}" y="${yTop - 8}" text-anchor="middle" class="chart-bar-value">${formatCompactMoney(d.total)}</text>` : ''}
+        ${(isLast || isSecondLast) && d.total > 0 ? `<text x="${x + barWidth / 2}" y="${yTop - 8}" text-anchor="middle" class="chart-bar-value">${formatCompactMoney(d.total)}</text>` : ''}
         <text x="${x + barWidth / 2}" y="${height - 10}" text-anchor="middle" class="chart-month-label">${monthLabel}</text>
       `;
     })

@@ -777,6 +777,26 @@ input:focus-visible {
   border-bottom: none;
 }
 
+/* Dong tieu de nhom trong bang danh sach (vd customers.html gom nhom theo "Loai khach hang",
+   2026-08-19) - nen muted nhe phan biet voi dong du lieu, khong dung mau nang de tranh lac
+   huong khoi noi dung chinh. */
+.table-group-row td {
+  background: var(--color-muted);
+  padding: 8px 16px;
+}
+
+.table-group-row-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--color-foreground);
+}
+
+.table-group-row-count {
+  margin-left: 8px;
+  font-size: 12px;
+  color: var(--color-muted-foreground);
+}
+
 .data-table tr:hover td {
   background: var(--color-muted);
 }
@@ -2927,6 +2947,28 @@ input:focus-visible {
 .warranty-card-value--expired { color: var(--color-destructive); }
 .warranty-card-value--inactive { color: var(--color-muted-foreground); }
 
+/* Tab "Bao hanh" o Chi tiet du an (migration 038) - moi khoi la 1 ban ghi bao hanh KEM lich su
+   bao hanh (bang) ben duoi, xep doc toan chieu rong (khac .warranty-cards dang la luoi the nho
+   xep canh nhau o Chi tiet khach hang - noi dung o day nang hon vi co them bang nen khong dung
+   grid minmax(260px) duoc). */
+.project-warranty-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.project-warranty-block .warranty-card-top {
+  margin-bottom: 0;
+}
+
+.project-warranty-visits-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 20px 0 12px;
+}
+
 .chart-baseline {
   stroke: var(--color-border);
   stroke-width: 1;
@@ -3193,7 +3235,10 @@ input:focus-visible {
   overflow-x: auto;
 }
 
-.detail-tab {
+/* :not([hidden]) - tab "Bao hanh" (migration 038) la .detail-tab dau tien can an theo quyen
+   (bao_hanh) - neu chi khai bao display:flex tren .detail-tab thi se ghi de [hidden] (cung loi
+   da gap nhieu lan trong du an, xem .form-row o tren). */
+.detail-tab:not([hidden]) {
   display: flex;
   align-items: center;
   gap: 6px;

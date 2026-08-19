@@ -77,8 +77,14 @@ function renderDebtsError(message) {
 
 function getVisibleSummary() {
   const keyword = searchKeyword.trim().toLowerCase();
-  if (!keyword) return summaryCache;
-  return summaryCache.filter((s) => s.name.toLowerCase().includes(keyword) || (s.phone || '').toLowerCase().includes(keyword));
+  const list = keyword
+    ? summaryCache.filter((s) => s.name.toLowerCase().includes(keyword) || (s.phone || '').toLowerCase().includes(keyword))
+    : summaryCache;
+
+  // Uu tien khach hang con cong no (balance khac 0) len tren, balance = 0 day xuong duoi cung
+  // (theo yeu cau nguoi dung 2026-08-19) - sort on dinh (Array.prototype.sort) nen thu tu giua
+  // cac khach hang cung nhom (deu con no hoac deu = 0) giu nguyen nhu API tra ve.
+  return [...list].sort((a, b) => (a.balance === 0 ? 1 : 0) - (b.balance === 0 ? 1 : 0));
 }
 
 function isOverLimit(item) {

@@ -34,7 +34,7 @@ function timeOfDay() {
 const QUICK_LINKS = [
   { label: 'Nhập kho', href: 'stock-receipts.html', icon: 'arrowDownTray', module: 'kho' },
   { label: 'Xuất kho', href: 'stock-issues.html', icon: 'arrowUpTray', module: 'kho' },
-  { label: 'Bảo hành', href: 'warranties.html', icon: 'shield', module: 'cong_no' },
+  { label: 'Bảo hành', href: 'warranties.html', icon: 'shield', module: 'bao_hanh' },
   { label: 'Báo cáo', href: 'reports.html', icon: 'chartBar', module: 'bao_cao' },
 ];
 

@@ -297,6 +297,17 @@ function deleteProject(id) {
     }
   }
 
+  // Migration 038 ("quy bao hanh ve theo du an"): chan xoa neu da co bao hanh gan project_id.
+  const warrantyColumnExists = db
+    .prepare("SELECT 1 FROM pragma_table_info('warranties') WHERE name = 'project_id'")
+    .get();
+  if (warrantyColumnExists) {
+    const hasWarranties = db.prepare('SELECT COUNT(*) AS count FROM warranties WHERE project_id = ?').get(id);
+    if (hasWarranties.count > 0) {
+      throw new ServiceError('Dự án đã có bảo hành gắn vào, không thể xóa - chỉ chuyển trạng thái "Hủy"');
+    }
+  }
+
   const run = db.transaction(() => {
     db.prepare('DELETE FROM project_members WHERE project_id = ?').run(id);
     db.prepare('DELETE FROM project_phases WHERE project_id = ?').run(id);

@@ -6,6 +6,18 @@
 
 const db = require('../db/database');
 
+// Ham thuan (khong phai middleware) - dung khi can kiem tra quyen NGAY TRONG handler thay vi
+// truoc handler, vi module can kiem tra chi biet duoc SAU KHI da doc du lieu (vd quyen phu thuoc
+// "type" cua doi tac dang thao tac - xem debts.routes.js/partners.routes.js tach 'cong_no'/
+// 'khach_hang' theo type, migration 039).
+function userHasPermission(user, moduleKey) {
+  if (!user) return false;
+  if (user.is_protected) return true;
+  return Boolean(
+    db.prepare('SELECT 1 FROM role_permissions WHERE role_id = ? AND module_key = ?').get(user.role_id, moduleKey)
+  );
+}
+
 function requirePermission(moduleKey) {
   return function (req, res, next) {
     const user = req.session && req.session.user;
@@ -14,15 +26,7 @@ function requirePermission(moduleKey) {
       return res.status(401).json({ error: 'Chua dang nhap' });
     }
 
-    if (user.is_protected) {
-      return next();
-    }
-
-    const hasPermission = db
-      .prepare('SELECT 1 FROM role_permissions WHERE role_id = ? AND module_key = ?')
-      .get(user.role_id, moduleKey);
-
-    if (!hasPermission) {
+    if (!userHasPermission(user, moduleKey)) {
       return res.status(403).json({ error: 'Khong co quyen truy cap chuc nang nay' });
     }
 
@@ -41,13 +45,7 @@ function requireAnyPermission(moduleKeys) {
       return res.status(401).json({ error: 'Chua dang nhap' });
     }
 
-    if (user.is_protected) {
-      return next();
-    }
-
-    const hasAny = moduleKeys.some((moduleKey) =>
-      db.prepare('SELECT 1 FROM role_permissions WHERE role_id = ? AND module_key = ?').get(user.role_id, moduleKey)
-    );
+    const hasAny = moduleKeys.some((moduleKey) => userHasPermission(user, moduleKey));
 
     if (!hasAny) {
       return res.status(403).json({ error: 'Khong co quyen truy cap chuc nang nay' });
@@ -57,4 +55,4 @@ function requireAnyPermission(moduleKeys) {
   };
 }
 
-module.exports = { requirePermission, requireAnyPermission };
+module.exports = { requirePermission, requireAnyPermission, userHasPermission };

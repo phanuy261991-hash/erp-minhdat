@@ -68,6 +68,7 @@ const tabPanels = {
   materials: document.getElementById('tab-materials'),
   payments: document.getElementById('tab-payments'),
   variations: document.getElementById('tab-variations'),
+  warranties: document.getElementById('tab-warranties'),
 };
 
 const ganttSvg = document.getElementById('gantt-svg');
@@ -176,6 +177,40 @@ let editingVariationId = null;
 
 let currentMilestones = [];
 let currentVariations = [];
+
+// ----- Tab Bao hanh (migration 038, "quy bao hanh ve theo du an") -----
+// Doi hoi CA HAI quyen 'du_an' (vao duoc trang nay) VA 'bao_hanh' (da chot qua AskUserQuestion,
+// giong het cach card Bao hanh o Chi tiet khach hang an di neu thieu quyen thay vi lam sap trang)
+// - vi vay KHONG nap cung Promise.all voi cac tab con lai trong loadProjectDetail(): neu goi
+// GET /warranties?project_id= ma tai khoan thieu 'bao_hanh' se 403, lam hong ca loi Promise.all
+// va lam sap toan bo trang (dung bug da gap va sua o customer-detail.js 2026-08-08).
+let canViewProjectWarranty = false;
+let currentProjectWarranties = [];
+let staffCache = [];
+let editingWarrantyVisit = null; // { warrantyId, visitId } | null (null = tao moi)
+
+const tabBtnWarranties = document.getElementById('tab-btn-warranties');
+const btnAddProjectWarranty = document.getElementById('btn-add-project-warranty');
+const projectWarrantyCardsEl = document.getElementById('project-warranty-cards');
+const projectWarrantiesEmptyEl = document.getElementById('project-warranties-empty');
+
+const warrantyVisitModal = document.getElementById('warranty-visit-modal');
+const warrantyVisitModalTitle = document.getElementById('warranty-visit-modal-title');
+const warrantyVisitForm = document.getElementById('warranty-visit-form');
+const warrantyVisitFormErrorBox = document.getElementById('warranty-visit-form-error');
+const warrantyVisitFormErrorText = document.getElementById('warranty-visit-form-error-text');
+const btnCancelWarrantyVisit = document.getElementById('btn-cancel-warranty-visit');
+const btnSubmitWarrantyVisit = document.getElementById('btn-submit-warranty-visit');
+const warrantyVisitNumberInput = document.getElementById('warranty-visit-number');
+const warrantyVisitDateInput = document.getElementById('warranty-visit-date');
+const warrantyVisitContentInput = document.getElementById('warranty-visit-content');
+const warrantyVisitPerformedBySelect = document.getElementById('warranty-visit-performed-by');
+const warrantyVisitResultSelect = document.getElementById('warranty-visit-result');
+const warrantyVisitNoteInput = document.getElementById('warranty-visit-note');
+
+const WARRANTY_STATUS_LABELS = { ok: 'Còn hạn', warning: 'Sắp hết hạn', expired: 'Hết hạn', inactive: 'Đã vô hiệu hóa' };
+const VISIT_RESULT_LABELS = { hoan_thanh: 'Hoàn thành', chua_hoan_thanh: 'Chưa hoàn thành', tam_dung: 'Tạm dừng' };
+const VISIT_RESULT_BADGE_CLASS = { hoan_thanh: 'badge-active', chua_hoan_thanh: 'badge-inactive', tam_dung: 'badge-down' };
 
 function renderDetailError(message) {
   detailErrorText.textContent = message;
@@ -1340,6 +1375,216 @@ variationForm.addEventListener('submit', async (event) => {
   }
 });
 
+// ----- Tab Bao hanh (migration 038) -----
+
+// Mau theo do khan cap - copy tu customer-detail.js (chap nhan trung lap code giua 2 trang, dung
+// tien le da co cua du an - vd stock-receipts.js/stock-issues.js tach rieng hoan toan du cau truc
+// rat giong nhau).
+function warrantyUrgencyLevel(warranty, daysRemaining) {
+  if (!warranty.is_active) return 'inactive';
+  if (daysRemaining < 0) return 'expired';
+  if (daysRemaining <= 30) return 'warning';
+  return 'ok';
+}
+
+function renderVisitRow(warranty, visit) {
+  return `
+    <tr>
+      <td>${visit.visit_number}</td>
+      <td>${formatDateVN(visit.performed_date)}</td>
+      <td>${visit.content}</td>
+      <td>${visit.performed_by_name || '-'}</td>
+      <td><span class="badge ${VISIT_RESULT_BADGE_CLASS[visit.result]}">${VISIT_RESULT_LABELS[visit.result]}</span></td>
+      <td>${visit.note || '-'}</td>
+      <td>
+        <button type="button" class="icon-btn" data-action="edit-visit" data-warranty-id="${warranty.id}" data-visit-id="${visit.id}" title="Sửa lần bảo hành">${icon('pencil', 14)}</button>
+        <button type="button" class="icon-btn icon-btn-danger" data-action="delete-visit" data-warranty-id="${warranty.id}" data-visit-id="${visit.id}" title="Xóa lần bảo hành">${icon('trash', 14)}</button>
+      </td>
+    </tr>
+  `;
+}
+
+function renderWarrantyBlock(warranty) {
+  const daysRemaining = warrantyDaysRemaining(warranty.expiry_date);
+  const level = warrantyUrgencyLevel(warranty, daysRemaining);
+  const title = warranty.note ? warranty.note : 'Thông tin bảo hành';
+  const visits = warranty.visits || [];
+  const visitsRowsHtml = visits.length
+    ? visits.map((v) => renderVisitRow(warranty, v)).join('')
+    : '<tr><td colspan="7" class="subtask-empty">Chưa có lần bảo hành nào</td></tr>';
+
+  return `
+    <div class="warranty-card project-warranty-block">
+      <div class="warranty-card-top">
+        <div class="warranty-card-icon warranty-card-icon--${level}">${icon('shield', 20)}</div>
+        <div class="warranty-card-heading">
+          <p class="warranty-card-title" title="${title}">${title}</p>
+          <p class="warranty-card-subtitle">Nghiệm thu ${formatWarrantyDateVN(warranty.acceptance_date)} · Hết hạn ${formatWarrantyDateVN(warranty.expiry_date)} · ${formatWarrantyDuration(warranty.duration_value, warranty.duration_unit)}</p>
+        </div>
+        <span class="warranty-card-tag warranty-card-tag--${level}">${WARRANTY_STATUS_LABELS[level]}</span>
+      </div>
+
+      <div class="project-warranty-visits-header">
+        <h4 class="section-heading">Lịch sử bảo hành</h4>
+        <button type="button" class="btn-add" data-action="add-visit" data-warranty-id="${warranty.id}">${icon('plus', 16)} Thêm lần bảo hành</button>
+      </div>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Lần</th>
+              <th>Ngày thực hiện</th>
+              <th>Nội dung</th>
+              <th>Nhân viên thực hiện</th>
+              <th>Kết quả</th>
+              <th>Ghi chú</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>${visitsRowsHtml}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function renderProjectWarrantiesTab() {
+  if (currentProjectWarranties.length === 0) {
+    projectWarrantiesEmptyEl.hidden = false;
+    projectWarrantyCardsEl.innerHTML = '';
+    return;
+  }
+  projectWarrantiesEmptyEl.hidden = true;
+  projectWarrantyCardsEl.innerHTML = currentProjectWarranties.map(renderWarrantyBlock).join('');
+}
+
+async function loadProjectWarranties() {
+  if (!canViewProjectWarranty) return;
+  try {
+    const { warranties } = await apiFetch(`/warranties?project_id=${projectId}`);
+    const withVisits = await Promise.all(
+      warranties.map(async (w) => {
+        const { visits } = await apiFetch(`/warranties/${w.id}/visits`);
+        return { ...w, visits };
+      })
+    );
+    currentProjectWarranties = withVisits;
+    renderProjectWarrantiesTab();
+  } catch (err) {
+    renderDetailError(err.message);
+  }
+}
+
+async function loadStaff() {
+  const { staff } = await apiFetch('/partners/staff');
+  staffCache = staff;
+  warrantyVisitPerformedBySelect.innerHTML = '<option value="">-- Chọn nhân viên --</option>' +
+    staff.map((s) => `<option value="${s.id}">${s.full_name}</option>`).join('');
+}
+
+function findProjectWarranty(warrantyId) {
+  return currentProjectWarranties.find((w) => String(w.id) === String(warrantyId));
+}
+
+function openCreateVisitModal(warrantyId) {
+  const warranty = findProjectWarranty(warrantyId);
+  if (!warranty) return;
+
+  editingWarrantyVisit = { warrantyId: Number(warrantyId), visitId: null };
+  warrantyVisitModalTitle.textContent = 'Thêm lần bảo hành';
+  warrantyVisitForm.reset();
+  warrantyVisitFormErrorBox.hidden = true;
+  warrantyVisitNumberInput.value = `Lần thứ ${(warranty.visits || []).length + 1}`;
+  warrantyVisitResultSelect.value = 'hoan_thanh';
+  warrantyVisitModal.hidden = false;
+}
+
+function openEditVisitModal(warrantyId, visitId) {
+  const warranty = findProjectWarranty(warrantyId);
+  if (!warranty) return;
+  const visit = (warranty.visits || []).find((v) => String(v.id) === String(visitId));
+  if (!visit) return;
+
+  editingWarrantyVisit = { warrantyId: Number(warrantyId), visitId: Number(visitId) };
+  warrantyVisitModalTitle.textContent = 'Sửa lần bảo hành';
+  warrantyVisitFormErrorBox.hidden = true;
+  warrantyVisitNumberInput.value = `Lần thứ ${visit.visit_number}`;
+  warrantyVisitDateInput.value = visit.performed_date;
+  warrantyVisitContentInput.value = visit.content;
+  warrantyVisitPerformedBySelect.value = visit.performed_by_user_id || '';
+  warrantyVisitResultSelect.value = visit.result;
+  warrantyVisitNoteInput.value = visit.note || '';
+  warrantyVisitModal.hidden = false;
+}
+
+function closeWarrantyVisitModal() {
+  warrantyVisitModal.hidden = true;
+  editingWarrantyVisit = null;
+}
+
+btnCancelWarrantyVisit.addEventListener('click', closeWarrantyVisitModal);
+warrantyVisitModal.addEventListener('click', (event) => {
+  if (event.target === warrantyVisitModal) closeWarrantyVisitModal();
+});
+
+projectWarrantyCardsEl.addEventListener('click', async (event) => {
+  const button = event.target.closest('button[data-action]');
+  if (!button) return;
+  const { action, warrantyId, visitId } = button.dataset;
+
+  if (action === 'add-visit') {
+    openCreateVisitModal(warrantyId);
+    return;
+  }
+  if (action === 'edit-visit') {
+    openEditVisitModal(warrantyId, visitId);
+    return;
+  }
+  if (action === 'delete-visit') {
+    if (!confirm('Xóa lần bảo hành này?')) return;
+    button.disabled = true;
+    try {
+      await apiFetch(`/warranties/${warrantyId}/visits/${visitId}`, { method: 'DELETE' });
+      await loadProjectWarranties();
+    } catch (err) {
+      renderDetailError(err.message);
+      button.disabled = false;
+    }
+  }
+});
+
+warrantyVisitForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  warrantyVisitFormErrorBox.hidden = true;
+  btnSubmitWarrantyVisit.disabled = true;
+  btnSubmitWarrantyVisit.textContent = 'Đang lưu...';
+
+  const body = {
+    performed_date: warrantyVisitDateInput.value,
+    content: warrantyVisitContentInput.value.trim(),
+    performed_by_user_id: Number(warrantyVisitPerformedBySelect.value) || null,
+    result: warrantyVisitResultSelect.value,
+    note: warrantyVisitNoteInput.value.trim(),
+  };
+
+  try {
+    const { warrantyId, visitId } = editingWarrantyVisit;
+    if (visitId === null) {
+      await apiFetch(`/warranties/${warrantyId}/visits`, { method: 'POST', body: JSON.stringify(body) });
+    } else {
+      await apiFetch(`/warranties/${warrantyId}/visits/${visitId}`, { method: 'PUT', body: JSON.stringify(body) });
+    }
+    closeWarrantyVisitModal();
+    await loadProjectWarranties();
+  } catch (err) {
+    warrantyVisitFormErrorText.textContent = err.message;
+    warrantyVisitFormErrorBox.hidden = false;
+  } finally {
+    btnSubmitWarrantyVisit.disabled = false;
+    btnSubmitWarrantyVisit.textContent = 'Lưu';
+  }
+});
+
 // ----- Nap du lieu -----
 
 async function loadProjectDetail() {
@@ -1393,14 +1638,24 @@ async function loadProducts() {
   btnAddMaterial.innerHTML = `${icon('plus', 16)} Thêm dự toán`;
   btnAddMilestone.innerHTML = `${icon('plus', 16)} Thêm đợt thanh toán`;
   btnAddVariation.innerHTML = `${icon('plus', 16)} Thêm phát sinh`;
+  btnAddProjectWarranty.innerHTML = `${icon('plus', 16)} Thêm bảo hành`;
 
   if (!projectId) {
     renderDetailError('Thiếu id dự án trên đường dẫn');
     return;
   }
 
+  // Tab "Bao hanh" doi hoi CA HAI quyen 'du_an' (da vao duoc trang nay) VA 'bao_hanh' (da chot
+  // qua AskUserQuestion) - an han ca nut tab neu thieu quyen thu 2, khong goi API bao hanh.
+  canViewProjectWarranty = currentUser.permissions.includes('bao_hanh');
+  tabBtnWarranties.hidden = !canViewProjectWarranty;
+
   await loadProducts();
   await loadProjectDetail();
+  if (canViewProjectWarranty) {
+    btnAddProjectWarranty.href = `warranties.html?customer_id=${currentProject.partner_id}&project_id=${projectId}`;
+    await Promise.all([loadStaff(), loadProjectWarranties()]);
+  }
 
   // Mo san 1 tab cu the qua URL (?tab=materials...) - dung cho link tu trang Bao cao (Dot 5,
   // cot "Vat tu vuot du toan") dieu huong thang vao dung tab thay vi luon mo "Tong quan".

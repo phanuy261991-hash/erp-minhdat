@@ -2,6 +2,47 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-19 (6 việc trong 1 phiên: sắp xếp/gom nhóm danh sách, bảo hành theo dự án, tách quyền Khách hàng)
+
+> Chi tiết đầy đủ (2 việc kiến trúc lớn): `docs/DECISIONS.md` mục 2026-08-19.
+
+**1. Sắp xếp cột "Ngày nghiệm thu" (trang Bảo hành)**
+- `warranties.html`/`.js`: `.sortable-th` + `acceptanceSortDir`, dùng lại đúng pattern cột "Tồn kho" ở `products.js`.
+
+**2. "Quy bảo hành về theo dự án" + Lịch sử bảo hành**
+- Đã hỏi 4 câu qua `AskUserQuestion`, chọn phương án khuyến nghị cho cả 4 (dự án tùy chọn không bắt buộc; tab Dự án đòi cả `du_an`+`bao_hanh`; giữ nguyên trang `warranties.html` làm danh sách gốc; 1 dự án cho nhiều bản ghi bảo hành).
+- Migration `038`: `warranties.project_id` (nullable) + bảng `warranty_visits` (Lần tự tính `MAX+1` theo `warranty_id`, Ngày thực hiện, Nội dung, `performed_by_user_id`, Kết quả `hoan_thanh`/`chua_hoan_thanh`/`tam_dung`, Ghi chú).
+- `backend/routes/warranties.routes.js`: `readWarrantyInput`/`validateWarrantyInput` thêm `project_id` (validate dự án phải thuộc đúng khách hàng), `GET /` hỗ trợ `?project_id=`, CRUD đầy đủ `/:warrantyId/visits`, `DELETE /:id` chặn nếu đã có lịch sử.
+- `backend/services/project.service.js#deleteProject()`: thêm điều kiện chặn nếu dự án đã có bảo hành gắn `project_id`.
+- `warranties.html`/`.js`: select "Dự án" trong modal (form-row cùng "Khách hàng"), lọc theo `GET /projects?partner_id=`, ẩn hẳn nếu tài khoản thiếu quyền `du_an` (không gọi API sẽ 403); cột "Dự án" trong bảng; hỗ trợ prefill `?customer_id=&project_id=` từ URL.
+- `project-detail.html`/`.js`: tab "Bảo hành" mới — tải dữ liệu TÁCH RIÊNG khỏi `Promise.all` chính của `loadProjectDetail()` (tránh lặp lại bug đã gặp ở `customer-detail.js` 2026-08-08: 1 API 403 làm hỏng cả `Promise.all`, sập cả các tab khác), ẩn hẳn nút tab nếu thiếu `bao_hanh` (thêm CSS `.detail-tab:not([hidden])` — lần đầu tab này cần ẩn theo quyền).
+- **Bổ sung ngay sau, theo yêu cầu người dùng**: `warranties.html`/`.js` — nút "Xem chi tiết" (icon mắt) mở modal `modal-card-lg` mới, hiện đầy đủ thông tin (`.detail-info-grid`) + bảng lịch sử bảo hành + CRUD từng lần (modal riêng `warranty-visit-modal`), dùng chung đúng API `warranty_visits` với tab Dự án.
+- Test qua API thật (Node `fetch`): tạo bảo hành có/không dự án, chặn dự án không thuộc khách hàng (400), `visit_number` tự tăng đúng, sửa không đổi `visit_number`, chặn thiếu nhân viên thực hiện, chặn xóa bảo hành/dự án còn lịch sử/còn bảo hành gắn vào, xóa được sau khi gỡ hết. Test qua trình duyệt thật (Chrome headless CDP thô, click/gõ thật): luồng đầy đủ 2 nơi (`warranties.html` + tab Dự án) đồng bộ 2 chiều đúng dữ liệu. Dữ liệu test đã xóa sạch (kể cả 1 bản ghi mồ côi từ 1 lần chạy script lỗi ban đầu).
+
+**3. Sắp xếp "Công nợ khách hàng" ưu tiên số dư khác 0**
+- `customer-debts.js#getVisibleSummary()`: sort ổn định `balance !== 0` lên trên, `= 0` xuống cuối. Test qua CDP với dữ liệu thật (1 bằng 0, 3 khác 0 cả âm/dương) — đúng thứ tự, không đổi thứ tự tương đối trong cùng nhóm.
+
+**4. Gom nhóm "Khách hàng" theo Loại khách hàng**
+- Dùng skill `ui-ux-pro-max` trước khi viết CSS (pattern bảng gom nhóm theo danh mục — mới, chưa từng có trong dự án).
+- `customers.html`/`.js`: bỏ cột "Loại khách hàng" (dư thừa với tiêu đề nhóm), thêm dòng tiêu đề nhóm (`.table-group-row`, style.css mới: nền `--color-muted`, chữ đậm 600 + số lượng) theo đúng thứ tự `categoriesCache`, nhóm "Không phân loại" luôn cuối cùng. Lọc theo từ khóa vẫn hoạt động đúng (lọc trước, gom nhóm sau). Xử lý race `loadCustomers()`/`loadCategories()` chạy song song — `renderCustomers()` gọi lại sau khi `loadCategories()` xong để nhóm đúng dù bên nào xong trước.
+- Test qua CDP: đúng thứ tự nhóm, đúng số lượng, header bảng còn đúng 4 cột, tìm kiếm không khớp → không còn dòng nào kể cả tiêu đề nhóm.
+
+**5. Biểu đồ Báo cáo: hiện thêm nhãn tháng trước**
+- `reports.js#renderBarChart()`: trước đây chỉ hiện nhãn số tiền ở cột cuối cùng (tháng hiện tại), nay hiện thêm ở cột áp chót (tháng trước) — `isLast || isSecondLast`. Test qua CDP + chụp ảnh màn hình xác nhận không chồng lấn, đọc rõ cả 2 nhãn.
+
+**6. Tách quyền module `khach_hang` khỏi `cong_no`**
+- Migration `039`: backfill vai trò đang có `cong_no` được cấp thêm `khach_hang`. `cong_no` từ nay chỉ còn "Nhà cung cấp"/"Công nợ NCC" (đổi nhãn hiển thị "Công nợ" → "Nhà cung cấp" ở `backend/config/modules.js`), `khach_hang` mới gồm "Khách hàng"/"Công nợ khách hàng" (`frontend/assets/layout.js`).
+- `backend/middleware/requirePermission.js`: thêm hàm thuần `userHasPermission(user, moduleKey)` (tách khỏi 2 middleware factory, dùng lại được khi cần kiểm tra NGAY TRONG handler).
+- `backend/routes/debts.routes.js`: bỏ quyền cố định (`debts.routes.js` phục vụ chung cả 2 loại đối tác qua `?type=`/`partner_id`, không tách được bằng gắn quyền cố định lúc mount như `bao_hanh`) — thêm `PARTNER_TYPE_MODULE` + `requireDebtPermissionForPartnerId()` dùng chung cho `GET /`, `POST /payment`, `GET /documents`, `POST /adjustment`; `GET /summary?type=` đổi từ tùy chọn thành bắt buộc.
+- `backend/routes/partners.routes.js`: `PUT`/`DELETE /:id` kiểm tra quyền theo `existing.type` ngay trong handler (bỏ middleware cố định); `POST /` mở rộng `requireAnyPermission` thêm `khach_hang`. `GET /partners`/`GET /partners/staff` (danh sách cơ bản dùng cho dropdown ở nhiều module khác) **giữ nguyên mở cho mọi tài khoản đã đăng nhập** — quyết định có chủ đích, không phải sót, tránh phá vỡ luồng lập phiếu/thêm nhanh đối tác ở các module khác.
+- `backend/server.js`: đổi mount `/api/debts` bỏ `requirePermission('cong_no')` cố định.
+- **Sửa luôn 1 lỗi có sẵn phát hiện tình cờ, không liên quan trực tiếp**: `dashboard.js` (mục "Truy cập nhanh") link "Bảo hành" vẫn dùng `module: 'cong_no'` từ trước migration `036` — sót lại khi tách `bao_hanh`, sửa thành `module: 'bao_hanh'`.
+- Test qua API thật (Node `fetch`): tạo 1 vai trò + 1 tài khoản test CHỈ có `khach_hang` — xác nhận 200 với toàn bộ Khách hàng/Công nợ khách hàng (kể cả PUT no-op), 403 với toàn bộ NCC (`GET`/`PUT`/`DELETE`/`POST /payment`/`POST /adjustment`, chặn TRƯỚC khi ghi vào `debt_ledger` nên không có dữ liệu tài chính rác cần dọn), `GET /partners` cơ bản không đổi, backfill đúng trên 2 vai trò thật "Kế toán"/"Nhân viên kho phụ". Test qua trình duyệt thật (Chrome headless CDP thô): sidebar ẩn đúng nhóm "Nhà cung cấp", vào thẳng URL `partners.html` bị redirect về Tổng quan, trang Công nợ khách hàng vẫn tải bình thường. Đã xóa sạch vai trò/tài khoản test.
+
+**Đồng bộ tài liệu**: `docs/PRD.md` mục 4.1 (nguyên tắc tách module dần theo thời gian)/4.10 (bảo hành theo dự án + lịch sử), `docs/erd.mermaid` (`WARRANTY_VISITS`, quan hệ `PROJECTS`-`WARRANTIES`).
+
+Đã restart server 2 lần trong phiên này (bắt buộc sau mỗi lần sửa backend, không có hot-reload).
+
 ## 2026-08-18 (Checkbox "Nhập tồn đầu kỳ" cho Phiếu nhập kho)
 
 > Thay quy ước cũ ở `docs/PRD.md` mục 4.3 (chỉ ghi chú tự do "Nhập tồn đầu kỳ", không có gì chặn phát sinh công nợ/phiếu chi nếu chọn sai trạng thái thanh toán) bằng 1 công tắc thật, đảm bảo đúng hành vi bằng code. Đã hỏi 1 câu qua `AskUserQuestion` trước khi code (loại khỏi biểu đồ "Tổng mua hàng theo tháng" hay không) — chọn loại. Xem `docs/DECISIONS.md`.

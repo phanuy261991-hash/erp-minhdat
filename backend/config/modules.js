@@ -11,11 +11,16 @@
 // "Bao hanh" dung chung quyen 'cong_no' (gan voi nhom menu Khach hang), nay co checkbox rieng o
 // trang "Vai tro". Migration 036 backfill role_permissions: vai tro nao dang co 'cong_no' duoc
 // cap luon 'bao_hanh' de khong mat quyen dang co ngay sau khi trien khai - xem docs/DECISIONS.md.
-const MODULE_KEYS = ['kho', 'cong_no', 'bao_cao', 'nguoi_dung', 'cau_hinh', 'so_quy', 'du_an', 'doi_tac', 'bao_hanh'];
+// khach_hang (2026-08-19): tach tiep "Khach hang" + "Cong no khach hang" ra khoi 'cong_no' - tu
+// nay 'cong_no' chi con gan voi "Nha cung cap" + "Cong no NCC". Cung pattern migration 036,
+// backfill o migration 039. Xem debts.routes.js/partners.routes.js: enforcement theo dung TYPE
+// cua doi tac (nha_cung_cap -> 'cong_no', khach_hang -> 'khach_hang'), khong con 1 quyen chung.
+const MODULE_KEYS = ['kho', 'cong_no', 'khach_hang', 'bao_cao', 'nguoi_dung', 'cau_hinh', 'so_quy', 'du_an', 'doi_tac', 'bao_hanh'];
 
 const MODULE_LABELS = {
   kho: 'Kho',
-  cong_no: 'Công nợ',
+  cong_no: 'Nhà cung cấp',
+  khach_hang: 'Khách hàng',
   bao_cao: 'Báo cáo',
   nguoi_dung: 'Người dùng',
   cau_hinh: 'Cấu hình',

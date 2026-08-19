@@ -636,6 +636,30 @@
 - [x] Đồng bộ `docs/PRD.md` mục 4.3/4.6/4.11
 - [x] Test qua API thật (không tạo công nợ/phiếu chi, vẫn đổi đúng tồn kho, báo cáo loại đúng số tiền, hồi quy phiếu thường) + trình duyệt thật (Chrome headless CDP thô, click/gõ thật, không lỗi console) — dữ liệu test đã xóa sạch
 
+### 6 việc trong 1 phiên: sắp xếp/gom nhóm danh sách, bảo hành theo dự án, tách quyền Khách hàng (ngoài phase, theo yêu cầu người dùng 2026-08-19)
+
+> Chi tiết đầy đủ (đặc biệt 2 việc kiến trúc lớn: bảo hành theo dự án, tách quyền): `docs/DECISIONS.md` mục 2026-08-19.
+
+- [x] `warranties.html`/`.js`: cột "Ngày nghiệm thu" sắp xếp tăng/giảm dần (`.sortable-th`, dùng lại pattern cột "Tồn kho" ở `products.js`)
+- [x] Migration `038`: `warranties.project_id` (tùy chọn) + bảng `warranty_visits` (lịch sử bảo hành)
+- [x] `backend/routes/warranties.routes.js`: đọc/validate/lưu `project_id` (phải đúng khách hàng đã chọn), `?project_id=` filter cho `GET /`, CRUD đầy đủ `/:warrantyId/visits` (Lần tự tính `MAX+1`), chặn xóa bảo hành đã có lịch sử
+- [x] `backend/services/project.service.js#deleteProject()`: chặn xóa dự án đã có bảo hành gắn vào
+- [x] `warranties.html`/`.js`: select "Dự án" trong modal Thêm/Sửa (ẩn nếu thiếu quyền `du_an`), cột "Dự án" trong bảng, hỗ trợ prefill `?project_id=` từ URL
+- [x] `project-detail.html`/`.js`: tab "Bảo hành" mới (đòi cả `du_an` và `bao_hanh`, tải tách biệt khỏi `Promise.all` chính để tránh lỗi 403 làm sập cả tab khác) — hiển thị + quản lý lịch sử, không tạo bảo hành mới tại đây
+- [x] **Bổ sung ngay sau, theo yêu cầu người dùng**: `warranties.html`/`.js` — nút "Xem chi tiết" (icon mắt) mở modal `modal-card-lg` hiện đầy đủ thông tin + bảng lịch sử bảo hành + CRUD từng lần, dùng chung API với tab Dự án
+- [x] `frontend/assets/customer-debts.js`: sắp xếp danh sách ưu tiên `balance !== 0` lên trên, `balance === 0` xuống cuối (sort ổn định, không đổi thứ tự trong cùng nhóm)
+- [x] `frontend/customers.html`/`.js`: gom nhóm hiển thị theo "Loại khách hàng" — dòng tiêu đề nhóm (`.table-group-row`, CSS mới qua skill `ui-ux-pro-max`), nhóm "Không phân loại" luôn cuối, bỏ cột "Loại khách hàng" (dư thừa với tiêu đề nhóm)
+- [x] `frontend/assets/reports.js#renderBarChart()`: hiện nhãn số tiền ở CẢ 2 cột cuối (tháng hiện tại + tháng trước), trước đây chỉ hiện 1 cột cuối
+- [x] Migration `039`: tách quyền `khach_hang` khỏi `cong_no` — `cong_no` từ nay chỉ còn Nhà cung cấp/Công nợ NCC (đổi nhãn "Công nợ" → "Nhà cung cấp"), backfill vai trò đang có `cong_no` được cấp thêm `khach_hang`
+- [x] `backend/config/modules.js`, `frontend/assets/layout.js`: thêm module `khach_hang`, đổi module của 2 mục nav "Khách hàng"/"Công nợ khách hàng"
+- [x] `backend/middleware/requirePermission.js`: thêm hàm thuần `userHasPermission()` dùng được cả trong middleware lẫn gọi trực tiếp trong route handler
+- [x] `backend/routes/debts.routes.js`: bỏ quyền cố định gắn lúc mount ở `server.js`, chuyển kiểm tra theo đúng `partner.type` ngay trong từng route (`GET /summary` đổi `type` từ tùy chọn thành bắt buộc)
+- [x] `backend/routes/partners.routes.js`: `PUT`/`DELETE /:id` kiểm tra quyền theo `existing.type` sau khi đọc được đối tác; `POST /` mở rộng thêm `khach_hang` vào danh sách quyền được tạo nhanh đối tác
+- [x] `backend/server.js`: đổi mount `/api/debts` bỏ `requirePermission('cong_no')` cố định
+- [x] Sửa luôn 1 lỗi có sẵn phát hiện tình cờ: `dashboard.js` link "Bảo hành" ở Truy cập nhanh còn dùng quyền `cong_no` cũ thay vì `bao_hanh` (sót lại từ migration `036`)
+- [x] Đồng bộ `docs/PRD.md` mục 4.1/4.10, `docs/erd.mermaid` (thêm `WARRANTY_VISITS`, quan hệ `PROJECTS`-`WARRANTIES`)
+- [x] Test qua API thật (Node `fetch`) + trình duyệt thật (Chrome headless CDP thô, click/gõ thật) cho toàn bộ 6 việc — chi tiết đầy đủ `docs/CHANGELOG.md`. Dữ liệu/tài khoản/vai trò test đã xóa sạch. Đã restart server (bắt buộc, không có hot-reload).
+
 ## Open questions cần chốt trước khi code phần liên quan
 
 Xem `docs/DECISIONS.md` mục "Open questions".

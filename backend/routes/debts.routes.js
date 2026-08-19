@@ -1,25 +1,52 @@
-// Route cong no (Phase 3). Ca GET va POST deu yeu cau quyen module 'cong_no' (kiem tra khi
-// mount o server.js). So du khong luu co dinh - luon tinh tu SUM(debt_ledger) theo partner_id
+// Route cong no (Phase 3). So du khong luu co dinh - luon tinh tu SUM(debt_ledger) theo partner_id
 // (xem .claude/docs/inventory-debt-ledger.md).
+//
+// Tu migration 039 (2026-08-19, "tach quyen Cong no khach hang khoi NCC"): KHONG con 1 quyen
+// 'cong_no' chung cho toan bo router nay (truoc day gan requirePermission('cong_no') luc mount o
+// server.js) - moi route phai tu kiem tra theo DUNG type cua doi tac dang thao tac
+// ('nha_cung_cap' -> quyen 'cong_no', 'khach_hang' -> quyen 'khach_hang', xem
+// PARTNER_TYPE_MODULE) vi 1 router nay phuc vu ca 2 trang "Cong no NCC" (debts.html) lan
+// "Cong no khach hang" (customer-debts.html).
 
 const express = require('express');
 const db = require('../db/database');
 const { recordPayment, recordDebtAdjustment, ServiceError } = require('../services/debt.service');
+const { userHasPermission } = require('../middleware/requirePermission');
 
 const router = express.Router();
 
 const PARTNER_TYPES = ['nha_cung_cap', 'khach_hang'];
+const PARTNER_TYPE_MODULE = { nha_cung_cap: 'cong_no', khach_hang: 'khach_hang' };
+
+function requireDebtPermissionForPartnerId(req, res, partnerId) {
+  const partner = db.prepare('SELECT id, type FROM partners WHERE id = ?').get(partnerId);
+  if (!partner) {
+    res.status(404).json({ error: 'Khong tim thay doi tac' });
+    return null;
+  }
+  if (!userHasPermission(req.session.user, PARTNER_TYPE_MODULE[partner.type])) {
+    res.status(403).json({ error: 'Khong co quyen truy cap chuc nang nay' });
+    return null;
+  }
+  return partner;
+}
 
 // Tong hop so du hien tai cua tung doi tac. Chieu dien giai so du: NCC = khoan MINH con phai
 // tra ho; khach hang = khoan HO con phai tra minh (xem migration 012).
+// "type" tu nay BAT BUOC (truoc day tuy chon, tra ve gop ca 2 loai) - ca 2 trang tieu thu API
+// nay (debts.js/customer-debts.js) deu da luon truyen dung type san, va bat buoc o day de xac
+// dinh dung quyen can kiem tra (khong the tra ve du lieu ca 2 loai gop chung cho 1 quyen).
 router.get('/summary', (req, res) => {
   const { type } = req.query;
-  if (type && !PARTNER_TYPES.includes(type)) {
+  if (!PARTNER_TYPES.includes(type)) {
     return res.status(400).json({ error: `Loai doi tac khong hop le: ${type}` });
   }
+  if (!userHasPermission(req.session.user, PARTNER_TYPE_MODULE[type])) {
+    return res.status(403).json({ error: 'Khong co quyen truy cap chuc nang nay' });
+  }
 
-  const whereClause = type ? 'WHERE p.type = ?' : '';
-  const params = type ? [type] : [];
+  const whereClause = 'WHERE p.type = ?';
+  const params = [type];
 
   const summary = db
     .prepare(`
@@ -75,10 +102,8 @@ router.get('/', (req, res) => {
     return res.status(400).json({ error: 'Thieu partner_id' });
   }
 
-  const partner = db.prepare('SELECT id, type FROM partners WHERE id = ?').get(partnerId);
-  if (!partner) {
-    return res.status(404).json({ error: 'Khong tim thay doi tac' });
-  }
+  const partner = requireDebtPermissionForPartnerId(req, res, partnerId);
+  if (!partner) return;
 
   const entries = db
     .prepare(`
@@ -103,6 +128,7 @@ router.post('/payment', (req, res) => {
   if (!partnerId || !(Number(amount) > 0)) {
     return res.status(400).json({ error: 'Thieu doi tac hoac so tien thanh toan khong hop le' });
   }
+  if (!requireDebtPermissionForPartnerId(req, res, Number(partnerId))) return;
 
   try {
     const entry = recordPayment({
@@ -130,6 +156,7 @@ router.get('/documents', (req, res) => {
   if (!partnerId) {
     return res.status(400).json({ error: 'Thieu partner_id' });
   }
+  if (!requireDebtPermissionForPartnerId(req, res, partnerId)) return;
 
   const receipts = db
     .prepare("SELECT id, code, created_at FROM stock_receipts WHERE partner_id = ? AND payment_status = 'cong_no' ORDER BY created_at DESC")
@@ -160,6 +187,7 @@ router.post('/adjustment', (req, res) => {
   if (!partnerId) {
     return res.status(400).json({ error: 'Thieu doi tac' });
   }
+  if (!requireDebtPermissionForPartnerId(req, res, Number(partnerId))) return;
 
   try {
     const entry = recordDebtAdjustment({

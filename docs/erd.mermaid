@@ -11,6 +11,9 @@ erDiagram
     CUSTOMER_CATEGORIES ||--o{ PARTNERS : "phan loai (chi khach hang)"
     PARTNERS ||--o{ WARRANTIES : "co bao hanh (chi khach hang)"
     USERS ||--o{ WARRANTIES : "tao"
+    PROJECTS ||--o{ WARRANTIES : "gan bao hanh (tuy chon, migration 038)"
+    WARRANTIES ||--o{ WARRANTY_VISITS : "co lich su bao hanh"
+    USERS ||--o{ WARRANTY_VISITS : "thuc hien / tao"
     PRODUCTS ||--o{ STOCK_RECEIPT_ITEMS : "thuoc ve"
     PRODUCTS ||--o{ STOCK_ISSUE_ITEMS : "thuoc ve"
     PRODUCTS ||--o{ STOCK_MOVEMENTS : "bien dong"
@@ -124,6 +127,7 @@ erDiagram
     WARRANTIES {
         int id PK
         int partner_id FK "chi khach_hang"
+        int project_id FK "nullable, tuy chon (migration 038) - 1 du an co the co nhieu ban ghi"
         string phone "snapshot, fill tu doi tac nhung sua duoc"
         string address "snapshot, fill tu doi tac nhung sua duoc"
         string acceptance_date "YYYY-MM-DD, ngay nghiem thu"
@@ -132,6 +136,20 @@ erDiagram
         string duration_unit "ngay, thang, hoac nam"
         string note
         boolean is_active "0 = vo hieu hoa"
+        int created_by FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    WARRANTY_VISITS {
+        int id PK
+        int warranty_id FK
+        int visit_number "Lan - backend tu tinh MAX+1 theo warranty_id, khong nhan tu client"
+        string performed_date "YYYY-MM-DD, ngay thuc hien"
+        string content "noi dung bao hanh"
+        int performed_by_user_id FK "nhan vien thuc hien, chon tu toan bo user he thong"
+        string result "hoan_thanh, chua_hoan_thanh, hoac tam_dung"
+        string note
         int created_by FK
         datetime created_at
         datetime updated_at

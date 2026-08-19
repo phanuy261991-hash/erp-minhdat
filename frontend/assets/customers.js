@@ -48,7 +48,6 @@ function renderRow(customer) {
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td>${customer.name}</td>
-    <td>${customer.category_name || '-'}</td>
     <td>${customer.phone || '-'}</td>
     <td>${customer.address || '-'}</td>
     <td>
@@ -60,9 +59,41 @@ function renderRow(customer) {
   return tr;
 }
 
+function renderGroupRow(name, count) {
+  const tr = document.createElement('tr');
+  tr.className = 'table-group-row';
+  tr.innerHTML = `
+    <td colspan="4">
+      <span class="table-group-row-name">${name}</span>
+      <span class="table-group-row-count">${count} khách hàng</span>
+    </td>
+  `;
+  return tr;
+}
+
+// Gom nhom hien thi theo "Loai khach hang" (theo yeu cau nguoi dung 2026-08-19) - thu tu nhom
+// theo dung thu tu categoriesCache tra ve tu GET /customer-categories, nhom "Khong phan loai"
+// luon xep CUOI CUNG. Loc theo tu khoa tim kiem TRUOC roi moi gom nhom, dung nguyen tac da ap
+// dung cho sap xep cong no (chi gom/sap xep tren tap da loc, khong doi hanh vi tim kiem).
 function renderCustomers() {
   customersTbody.innerHTML = '';
-  getVisibleCustomers().forEach((c) => customersTbody.appendChild(renderRow(c)));
+  const visible = getVisibleCustomers();
+
+  const groups = categoriesCache.map((cat) => ({
+    name: cat.name,
+    customers: visible.filter((c) => c.category_id === cat.id),
+  }));
+  const uncategorized = visible.filter((c) => !categoriesCache.some((cat) => cat.id === c.category_id));
+  if (uncategorized.length > 0) {
+    groups.push({ name: 'Không phân loại', customers: uncategorized });
+  }
+
+  groups
+    .filter((g) => g.customers.length > 0)
+    .forEach((g) => {
+      customersTbody.appendChild(renderGroupRow(g.name, g.customers.length));
+      g.customers.forEach((c) => customersTbody.appendChild(renderRow(c)));
+    });
 }
 
 async function loadCustomers() {
@@ -81,6 +112,10 @@ async function loadCategories() {
     categoriesCache = categories;
     categorySelect.innerHTML = '<option value="">-- Không phân loại --</option>' +
       categories.map((c) => `<option value="${c.id}">${c.name}</option>`).join('');
+    // loadCustomers()/loadCategories() chay song song (Promise.all o init) - ve lai danh sach
+    // gom nhom phong truong hop categoriesCache nap xong SAU khi renderCustomers() da chay 1 lan
+    // (luc do se chua co du lieu de nhom dung).
+    renderCustomers();
   } catch (err) {
     renderCustomersError(err.message);
   }

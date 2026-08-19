@@ -34,10 +34,13 @@ const NAV_GROUPS = [
     ],
   },
   {
+    // Module 'khach_hang' (2026-08-19, migration 039): tach rieng khoi 'cong_no' - truoc day dung
+    // chung 1 quyen voi nhom "Nha cung cap" o tren, khong the cap rieng "chi xem Khach hang" cho
+    // 1 vai tro. Xem docs/DECISIONS.md.
     label: 'Khách hàng',
     items: [
-      { key: 'customers', label: 'Khách hàng', href: 'customers.html', icon: 'users', module: 'cong_no', enabled: true },
-      { key: 'customer-debts', label: 'Công nợ khách hàng', href: 'customer-debts.html', icon: 'ledger', module: 'cong_no', enabled: true },
+      { key: 'customers', label: 'Khách hàng', href: 'customers.html', icon: 'users', module: 'khach_hang', enabled: true },
+      { key: 'customer-debts', label: 'Công nợ khách hàng', href: 'customer-debts.html', icon: 'ledger', module: 'khach_hang', enabled: true },
       { key: 'warranties', label: 'Bảo hành', href: 'warranties.html', icon: 'shield', module: 'bao_hanh', enabled: true },
     ],
   },

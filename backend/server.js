@@ -125,13 +125,16 @@ app.use('/api/stock-issues', requireAuth, requirePermission('kho'), stockIssuesR
 app.use('/api/stock-returns', requireAuth, requirePermission('kho'), stockReturnsRoutes);
 app.use('/api/supplier-returns', requireAuth, requirePermission('kho'), supplierReturnsRoutes);
 // GET mo cho moi nguoi da dang nhap (chon doi tac luc lap phieu), POST/PUT/DELETE rieng kiem
-// tra quyen ('kho' hoac 'cong_no' cho POST, chi 'cong_no' cho PUT/DELETE) ben trong file route
-// (xem partners.routes.js).
+// tra quyen ben trong file route ('kho'/'cong_no'/'khach_hang'/'du_an' cho POST; rieng
+// PUT/DELETE tu migration 039 kiem tra theo dung type doi tac - xem partners.routes.js).
 app.use('/api/partners', requireAuth, partnersRoutes);
 // GET mo cho moi nguoi da dang nhap (chon loai khach hang luc them/sua), POST/PUT/DELETE rieng
 // kiem tra quyen 'cau_hinh' ben trong file route (xem customerCategories.routes.js).
 app.use('/api/customer-categories', requireAuth, customerCategoriesRoutes);
-app.use('/api/debts', requireAuth, requirePermission('cong_no'), debtsRoutes);
+// Tu migration 039 (2026-08-19): KHONG con 1 quyen 'cong_no' co dinh cho ca router - moi route
+// tu kiem tra theo dung TYPE cua doi tac dang thao tac ('nha_cung_cap' -> 'cong_no',
+// 'khach_hang' -> 'khach_hang', xem debts.routes.js).
+app.use('/api/debts', requireAuth, debtsRoutes);
 // Module rieng 'bao_hanh' (migration 036, 2026-08-08) - truoc do dung chung quyen 'cong_no',
 // da tach de chon rieng duoc o trang "Vai tro" (xem warranties.routes.js).
 app.use('/api/warranties', requireAuth, requirePermission('bao_hanh'), warrantiesRoutes);

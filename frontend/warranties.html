@@ -32,8 +32,9 @@
           <thead>
             <tr>
               <th>Khách hàng</th>
+              <th>Dự án</th>
               <th>Số điện thoại</th>
-              <th>Ngày nghiệm thu</th>
+              <th id="th-acceptance-date" class="sortable-th">Ngày nghiệm thu <span class="sort-icon"></span></th>
               <th>Ngày hết hạn</th>
               <th>Thời gian bảo hành</th>
               <th>Trạng thái</th>
@@ -55,9 +56,17 @@
           <span id="warranty-form-error-text"></span>
         </div>
 
-        <div class="form-field">
-          <label for="warranty-partner">Khách hàng</label>
-          <select id="warranty-partner" required></select>
+        <div class="form-row">
+          <div class="form-field">
+            <label for="warranty-partner">Khách hàng</label>
+            <select id="warranty-partner" required></select>
+          </div>
+          <div class="form-field" id="warranty-project-field">
+            <label for="warranty-project">Dự án (không bắt buộc)</label>
+            <select id="warranty-project">
+              <option value="">-- Không gắn dự án --</option>
+            </select>
+          </div>
         </div>
 
         <div class="form-row">
@@ -102,6 +111,95 @@
         <div class="modal-actions">
           <button type="button" id="btn-cancel-warranty" class="btn-secondary">Hủy</button>
           <button type="submit" id="btn-submit-warranty" class="btn-primary">Tạo bảo hành</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="warranty-detail-modal" class="modal-overlay" hidden>
+    <div class="modal-card modal-card-lg">
+      <h3 id="warranty-detail-title">Chi tiết bảo hành</h3>
+
+      <div class="detail-info-grid" id="warranty-detail-info"></div>
+
+      <div class="page-header">
+        <h4 class="section-heading">Lịch sử bảo hành</h4>
+        <button type="button" id="btn-add-warranty-visit" class="btn-add"></button>
+      </div>
+      <div id="warranty-visits-empty" class="empty-state" hidden>
+        <p>Chưa có lần bảo hành nào.</p>
+      </div>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Lần</th>
+              <th>Ngày thực hiện</th>
+              <th>Nội dung</th>
+              <th>Nhân viên thực hiện</th>
+              <th>Kết quả</th>
+              <th>Ghi chú</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="warranty-visits-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" id="btn-close-warranty-detail" class="btn-secondary">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="warranty-visit-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3 id="warranty-visit-modal-title">Thêm lần bảo hành</h3>
+      <form id="warranty-visit-form">
+        <div id="warranty-visit-form-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="warranty-visit-form-error-text"></span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="warranty-visit-number">Lần</label>
+            <input type="text" id="warranty-visit-number" disabled />
+          </div>
+          <div class="form-field">
+            <label for="warranty-visit-date">Ngày thực hiện</label>
+            <input type="date" id="warranty-visit-date" required />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="warranty-visit-content">Nội dung bảo hành</label>
+          <input type="text" id="warranty-visit-content" required autocomplete="off" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="warranty-visit-performed-by">Nhân viên thực hiện</label>
+            <select id="warranty-visit-performed-by" required></select>
+          </div>
+          <div class="form-field">
+            <label for="warranty-visit-result">Kết quả</label>
+            <select id="warranty-visit-result">
+              <option value="hoan_thanh">Hoàn thành</option>
+              <option value="chua_hoan_thanh">Chưa hoàn thành</option>
+              <option value="tam_dung">Tạm dừng</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="warranty-visit-note">Ghi chú</label>
+          <input type="text" id="warranty-visit-note" placeholder="Không bắt buộc" autocomplete="off" />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-warranty-visit" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-warranty-visit" class="btn-primary">Lưu</button>
         </div>
       </form>
     </div>
