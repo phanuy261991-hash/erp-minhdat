@@ -1,9 +1,9 @@
 // Trang in phieu xuat kho (chi doc, khong dung layout.js/sidebar - day la ban in doc lap, xem
-// docs/PRD.md muc 4.5). Tu migration 028 (theo yeu cau nguoi dung 2026-08-05), noi dung dau
-// trang/chan trang/cot bang san pham KHONG con hardcode cung trong file nay - doc tu mau da luu
-// qua GET /api/print-templates/stock_issue (cau hinh duoc o trang "Mau in", menu Cau hinh). Logic
-// tinh gia tri token + dung bang dung CHUNG voi khung xem truoc cua trang chinh sua mau in, xem
-// frontend/assets/print-template-render.js.
+// docs/PRD.md muc 4.5). Noi dung mau in KHONG hardcode trong file nay - doc tu mau da luu qua GET
+// /api/print-templates/stock_issue (cau hinh duoc o trang "Mau in", menu Cau hinh; tu migration
+// 040 la 1 khung HTML/CSS that duy nhat, khong con tach header/footer/table_columns). Logic tinh
+// gia tri token + lap dong bang san pham dung CHUNG voi khung xem truoc cua trang chinh sua mau
+// in, xem frontend/assets/print-template-render.js.
 
 const issueId = new URLSearchParams(window.location.search).get('id');
 const errorBox = document.getElementById('print-error');
@@ -15,11 +15,10 @@ function renderError(message) {
   errorBox.hidden = false;
 }
 
-// Kho ngang: CSS lop .print-sheet--landscape chi doi hien thi tren man hinh - luc in that phai
-// tu chen 1 <style> rieng dat @page size, vi @page khong the dieu kien hoa theo class trong CSS
-// thuan (xem chu thich trong style.css).
+// Kho ngang: kich thuoc hien thi tren man hinh gio do chinh <style> cua mau quyet dinh (xem
+// print-sheet trong style.css) - o day chi con lo phan THAT SU anh huong luc in: chen 1 <style>
+// rieng dat @page size (khong the dieu kien hoa @page theo class trong CSS thuan).
 function applyPrintOrientation(orientation) {
-  sheet.classList.toggle('print-sheet--landscape', orientation === 'landscape');
   if (orientation === 'landscape') {
     const style = document.createElement('style');
     style.textContent = '@page { size: A4 landscape; }';
@@ -27,25 +26,23 @@ function applyPrintOrientation(orientation) {
   }
 }
 
-function renderIssue(issue, company, template, tableColumnsMeta) {
+function renderIssue(issue, company, template) {
   const tokenValues = buildStockIssueTokenValues(issue, company);
-
-  const headerMount = document.getElementById('print-header-mount');
-  const footerMount = document.getElementById('print-footer-mount');
-  const tableMount = document.getElementById('print-table-mount');
-
-  headerMount.innerHTML = template.header_html;
-  footerMount.innerHTML = template.footer_html;
-  applyPrintTemplateTokens(headerMount, tokenValues);
-  applyPrintTemplateTokens(footerMount, tokenValues);
-
-  tableMount.innerHTML = renderPrintTable({
-    columns: template.table_columns,
-    columnsMeta: tableColumnsMeta,
+  const rendered = renderPrintTemplate({
+    templateHtml: template.template_html,
+    tokenValues,
     items: issue.items,
-    totalAmount: issue.total_amount,
-    showAmountInWords: template.show_amount_in_words,
+    itemTokenBuilder: buildStockIssueItemTokenValues,
   });
+  // Mau in mang theo <style> CSS rieng cua nguoi dung (bat buoc tu migration 040) - PHAI render
+  // trong Shadow DOM (attachShadow tren chinh #print-sheet) de CSS do khong ro ri ra ngoai anh
+  // huong .print-toolbar/nut "Quay lai"/"In phieu" (da xay ra that: 1 mau nguoi dung tu viet co
+  // `* { margin:0 }` + `body { display:flex }` day lech het toolbar - phat hien qua phan hoi
+  // nguoi dung 2026-08-19). Cung 1 nguyen tac co lap da ap dung cho khung xem truoc o
+  // print-template-edit.js (o do dung iframe vi la trang khac; o day dung Shadow DOM vi van la
+  // cung 1 trang, can window.print() in dung ca noi dung ben trong).
+  const shadow = sheet.shadowRoot || sheet.attachShadow({ mode: 'open' });
+  shadow.innerHTML = rendered;
 
   applyPrintOrientation(template.orientation);
 }
@@ -67,13 +64,12 @@ function renderIssue(issue, company, template, tableColumnsMeta) {
   }
 
   try {
-    const [{ issue }, { settings }, { template }, { tableColumns }] = await Promise.all([
+    const [{ issue }, { settings }, { template }] = await Promise.all([
       apiFetch(`/stock-issues/${issueId}`),
       apiFetch('/company-settings'),
       apiFetch('/print-templates/stock_issue'),
-      apiFetch('/print-templates/stock_issue/tokens'),
     ]);
-    renderIssue(issue, settings, template, tableColumns);
+    renderIssue(issue, settings, template);
     sheet.hidden = false;
   } catch (err) {
     if (err.status === 401) {

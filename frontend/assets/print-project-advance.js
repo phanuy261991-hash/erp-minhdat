@@ -1,7 +1,7 @@
 // Trang in "Giay de nghi tam ung" cho 1 dot thanh toan du an (migration 030, theo yeu cau
 // nguoi dung 2026-08-05, kem mau PDF that tham khao). Chi doc, khong dung layout.js/sidebar -
-// giong het pattern print-issue.html. Loai phieu nay KHONG co bang san pham (hasTable=false) -
-// chi 2 mount dau/chan trang, khong co #print-table-mount.
+// giong het pattern print-issue.html. Loai phieu nay KHONG co bang san pham (hasItems=false) -
+// khong truyen items/itemTokenBuilder khi goi renderPrintTemplate().
 
 const params = new URLSearchParams(window.location.search);
 const projectId = params.get('project_id');
@@ -16,7 +16,6 @@ function renderError(message) {
 }
 
 function applyPrintOrientation(orientation) {
-  sheet.classList.toggle('print-sheet--landscape', orientation === 'landscape');
   if (orientation === 'landscape') {
     const style = document.createElement('style');
     style.textContent = '@page { size: A4 landscape; }';
@@ -26,14 +25,11 @@ function applyPrintOrientation(orientation) {
 
 function renderAdvance(project, milestone, company, template) {
   const tokenValues = buildProjectAdvanceTokenValues(project, milestone, company);
-
-  const headerMount = document.getElementById('print-header-mount');
-  const footerMount = document.getElementById('print-footer-mount');
-
-  headerMount.innerHTML = template.header_html;
-  footerMount.innerHTML = template.footer_html;
-  applyPrintTemplateTokens(headerMount, tokenValues);
-  applyPrintTemplateTokens(footerMount, tokenValues);
+  const rendered = renderPrintTemplate({ templateHtml: template.template_html, tokenValues });
+  // Xem chu thich tuong ung trong print-issue.js - cung ly do phai dung Shadow DOM tren chinh
+  // #print-sheet (cach ly <style> rieng cua mau, khong de ro ri ra .print-toolbar).
+  const shadow = sheet.shadowRoot || sheet.attachShadow({ mode: 'open' });
+  shadow.innerHTML = rendered;
 
   applyPrintOrientation(template.orientation);
 }

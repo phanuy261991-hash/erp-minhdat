@@ -1,0 +1,49 @@
+<style>
+  /* Tu migration 040: mau tu quan ly toan bo trinh bay - .tpl-page dong vai tro "to giay" gia
+     lap tren man hinh, @media print bo di khi in that. */
+  .tpl-page { max-width: 800px; margin: 0 auto; background: #fff; border: 1px solid #E4ECFC; border-radius: 8px; padding: 40px; font-size: 14px; color: #000; }
+  @media print {
+    .tpl-page { max-width: 100%; border: none; border-radius: 0; box-shadow: none; padding: 12mm; }
+  }
+  .tpl-advance-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 24px; }
+  .tpl-company-name { font-size: 16px; font-weight: 700; margin: 0 0 4px; }
+  .tpl-advance-national { flex-shrink: 0; text-align: center; min-width: 260px; }
+  .tpl-advance-national p { margin: 2px 0; font-size: 13px; }
+  .tpl-advance-national p:last-child { text-decoration: underline; }
+  .tpl-advance-title { text-align: center; font-size: 20px; letter-spacing: 0.04em; margin: 0 0 20px; }
+  .tpl-advance-amount { text-align: center; font-size: 15px; margin: 4px 0; }
+  .tpl-advance-amount-words { text-align: center; font-size: 13px; margin: 0 0 20px; }
+  .tpl-advance-signature { text-align: right; margin-top: 32px; }
+  .tpl-advance-signature p { margin: 2px 0; }
+  .tpl-advance-signature-name { margin-top: 56px !important; }
+</style>
+
+<div class="tpl-page">
+<div class="tpl-advance-header">
+  <div>
+    <p class="tpl-company-name">{{CompanyName}}</p>
+    <p>Số: <strong>{{ContractNo}}</strong></p>
+  </div>
+  <div class="tpl-advance-national">
+    <p><strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong></p>
+    <p>Độc lập - Tự do - Hạnh phúc</p>
+  </div>
+</div>
+<h1 class="tpl-advance-title">GIẤY ĐỀ NGHỊ TẠM ỨNG LẦN {{AdvanceNumber}}</h1>
+<p>Kính gửi: <strong>{{CustomerName}}</strong></p>
+<p>Căn cứ theo hợp đồng Số: <strong>{{ContractNo}}</strong> ký ngày <strong>{{ContractDate}}</strong> giữa hai bên về việc cung cấp và lắp đặt các giải pháp điện thông minh tại: <strong>{{SiteAddress}}</strong>.</p>
+<p>Đề nghị Quý Công ty tạm ứng lần <strong>{{AdvanceNumber}}</strong>, tương ứng <strong>{{AdvancePercent}}</strong>% theo giá trị hợp đồng cho chúng tôi số tiền là:</p>
+<p class="tpl-advance-amount"><strong>{{AdvanceAmount}}</strong></p>
+<p class="tpl-advance-amount-words"><strong><em>(Bằng chữ: {{AdvanceAmountWords}})</em></strong></p>
+
+<p>Thanh toán bằng chuyển khoản vào tài khoản như sau:</p>
+<p>Tên thụ hưởng: <strong>{{BankAccountHolder}}</strong></p>
+<p>Số tài khoản: <strong>{{BankAccountNumber}}</strong>&nbsp;&nbsp;Ngân hàng <strong>{{BankNameBranch}}</strong></p>
+<p>Đại diện bởi: <strong>.....</strong>&nbsp;&nbsp;&nbsp;Chức vụ: <strong>.....</strong></p>
+<p>Trân trọng cảm ơn.</p>
+<div class="tpl-advance-signature">
+  <p>Hồ Chí Minh, {{PrintDate}}</p>
+  <p><strong>.....</strong></p>
+  <p class="tpl-advance-signature-name"><strong>.....</strong></p>
+</div>
+</div>

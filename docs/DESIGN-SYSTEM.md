@@ -106,6 +106,16 @@
 - Nút "In phiếu" gọi thẳng `window.print()` — không dùng thư viện PDF nào.
 - Thông tin công ty hiển thị **từng dòng ẩn riêng nếu trống** (không để dòng trắng thừa nếu chưa cấu hình email/website/ngân hàng...) — dùng hàm dùng chung `renderCompanyLine()` set `hidden` theo có/không có dữ liệu, không phải ẩn cả khối.
 
+## Trang "Chỉnh sửa mẫu in" (print-template-edit.html) — code editor + panel token + iframe cô lập
+
+> Bổ sung 2026-08-05 (trình soạn thảo WYSIWYG contenteditable đầu tiên), **viết lại hoàn toàn 2026-08-19** theo yêu cầu người dùng (khó dùng: không định vị tự do được, khó tìm token) — chuyển sang cho soạn thẳng HTML/CSS thật. Thiết kế qua skill `ui-ux-pro-max`.
+
+- Bố cục 2 cột: trái là `.pt-editor-col` (rộng 560px) gồm toolbar tải file (`.pt-file-toolbar`) + ô soạn mã (`.pt-code-editor`, `<textarea>` monospace nền tối `#0F172A`/chữ sáng `#E2E8F0` — cố ý khác hẳn input thường trong hệ thống để báo hiệu "đây là vùng viết mã") + panel token (`.pt-token-panel`, lưới chip `.pt-token-chip` luôn hiện sẵn — không còn dropdown ẩn như bản cũ, giải quyết đúng phản hồi "khó tìm token"); phải là `.pt-preview-col` xem trước.
+- **Xem trước dùng `<iframe sandbox>` với `.srcdoc`** (`.pt-preview-iframe-el`, mô phỏng đúng kích thước tờ giấy 800px dọc/1100px ngang qua modifier `--landscape`) — KHÔNG còn dùng chung `.print-sheet`/`.print-table` như bản cũ, vì mẫu giờ tự mang `<style>` CSS riêng của người dùng: injecting trực tiếp vào DOM trang quản trị sẽ làm CSS đó rò rỉ ra ngoài (và ngược lại). `sandbox` không cho phép chạy script trong mẫu (phòng vệ, dù mẫu chỉ nên là HTML/CSS tĩnh).
+- Token dùng cú pháp `{{TenBien}}` (không dùng `#TenBien` — tránh trùng dấu `#` của CSS ID selector khi mẫu có `<style>` nhúng thật). Panel token bấm-để-chèn tại đúng vị trí con trỏ trong textarea (`selectionStart`/`selectionEnd`), không phải luôn chèn cuối.
+- 2 nút "Tải mẫu lên"/"Tải mẫu về" (`.pt-file-toolbar button`) đọc/ghi file `.html` hoàn toàn phía trình duyệt (`FileReader`/Blob) — tiện soạn thảo bằng code editor thật ngoài trình duyệt, KHÔNG phải cơ chế lưu (vẫn phải bấm "Lưu mẫu" mới ghi vào hệ thống).
+- Bảng sản phẩm/dòng "Số tiền viết bằng chữ" **không còn có UI cấu hình riêng** (bỏ hẳn bảng chọn cột bật/tắt + checkbox cũ) — tất cả là token bình thường người dùng tự đặt vị trí trong HTML tự viết, đúng nguyên tắc "chỉ 1 cơ chế cấu hình duy nhất" của thiết kế mới.
+
 ## Biểu đồ báo cáo (reports.html) — cột SVG tự vẽ tay, không dùng thư viện ngoài
 
 > Bổ sung 2026-08-01 khi làm trang Báo cáo (Phase 4). Quyết định có chủ đích không dùng Chart.js hay bất kỳ thư viện biểu đồ nào — nhất quán với nguyên tắc dự án không phụ thuộc CDN/build step (đã áp dụng cho font từ Phase 1, icon từ `icons.js`). Đã tham khảo skill `dataviz` trước khi thiết kế.

@@ -1,7 +1,9 @@
-// Route "Cau hinh mau in" (migration 028, theo yeu cau nguoi dung 2026-08-05). Moi loai phieu
-// (type, vd 'stock_issue') chi co dung 1 mau, sua truc tiep - khong co khai niem nhieu mau/loai.
-// GET mo cho moi tai khoan da dang nhap (trang in phieu thuc te can doc mau de render, khong doi
-// quyen 'kho'), PUT rieng yeu cau quyen 'cau_hinh' - giong het pattern companySettings.routes.js.
+// Route "Cau hinh mau in" (migration 028, viet lai hoan toan o migration 040 theo yeu cau nguoi
+// dung 2026-08-19 - chuyen tu contenteditable + table_columns JSON sang 1 khung HTML/CSS THAT
+// duy nhat, xem docs/DECISIONS.md). Moi loai phieu (type, vd 'stock_issue') chi co dung 1 mau,
+// sua truc tiep - khong co khai niem nhieu mau/loai. GET mo cho moi tai khoan da dang nhap (trang
+// in phieu thuc te can doc mau de render, khong doi quyen 'kho'), PUT rieng yeu cau quyen
+// 'cau_hinh' - giong het pattern companySettings.routes.js.
 
 const express = require('express');
 const multer = require('multer');
@@ -15,11 +17,11 @@ const { PRINT_TEMPLATE_TYPES } = require('../config/printTemplateTokens');
 const router = express.Router();
 
 // Dinh kem hinh anh vao mau in (2026-08-06, theo yeu cau nguoi dung - vd ma QR code thanh toan)
-// - chi chen truc tiep <img> vao header_html/footer_html qua trinh soan thao WYSIWYG, khong can
-// cot/bang moi (khong phai token - anh la noi dung tu do nguoi dung tu dat vi tri). Luu file that
-// vao data/print-template-uploads/<type>/ (memoryStorage roi tu ghi dia, giong pattern
-// products.routes.js#import), KHONG luu trong repo (xem .gitignore) vi day la du lieu runtime
-// nguoi dung tai len, khac anh thuong hieu tinh (frontend/assets/images/).
+// - tra ve URL tinh de frontend tu chen doan <img src="..."> vao dung vi tri con tro trong o
+// soan thao (khong con la vung contenteditable tu migration 040, nhung co che upload khong doi).
+// Luu file that vao data/print-template-uploads/<type>/ (memoryStorage roi tu ghi dia, giong
+// pattern products.routes.js#import), KHONG luu trong repo (xem .gitignore) vi day la du lieu
+// runtime nguoi dung tai len, khac anh thuong hieu tinh (frontend/assets/images/).
 const IMAGE_MIME_EXTENSIONS = {
   'image/png': '.png',
   'image/jpeg': '.jpg',
@@ -37,12 +39,63 @@ const uploadImage = multer({
   },
 });
 
+// Cung 1 quy uoc danh dau khoi lap dong san pham voi frontend/assets/print-template-render.js -
+// PHAI khop dung cu phap (khong dung chung 1 file vi day la 2 moi truong khac nhau: backend chi
+// dung regex thuan de VALIDATE token, khong render).
+const ITEMS_BLOCK_PATTERN = /<!--\s*items:start\s*-->([\s\S]*?)<!--\s*items:end\s*-->/;
+const CONDITIONAL_IF_PATTERN = /<!--\s*if:([A-Za-z0-9_.]+)\s*-->/g;
+const TOKEN_PATTERN = /\{\{\s*([A-Za-z0-9_.]+)\s*\}\}/g;
+
+function extractTokenKeys(text) {
+  const keys = new Set();
+  let match = TOKEN_PATTERN.exec(text);
+  while (match) {
+    keys.add(match[1]);
+    match = TOKEN_PATTERN.exec(text);
+  }
+  return keys;
+}
+
+function extractConditionalKeys(text) {
+  const keys = new Set();
+  let match = CONDITIONAL_IF_PATTERN.exec(text);
+  while (match) {
+    keys.add(match[1]);
+    match = CONDITIONAL_IF_PATTERN.exec(text);
+  }
+  return keys;
+}
+
+// Kiem tra toan bo {{...}} va <!-- if:... --> xuat hien trong template_html co khop dung
+// whitelist token cua dung loai phieu hay khong (bat loi go sai ten token TRUOC khi luu, thay vi
+// de nguoi dung phat hien luc in phieu that ra o rong). Token BEN TRONG khoi
+// <!-- items:start -->...<!-- items:end --> phai thuoc danh sach 'item' (key da co san prefix
+// "Item." trong config, vd 'Item.ProductName'); token o NGOAI khoi do (ke ca dieu kien if:) phai
+// thuoc danh sach 'document'. Tra ve mang ten token khong hop le (rong = hop le).
+function findInvalidTokens(templateHtml, def) {
+  const documentKeys = new Set(def.tokens.document.map((t) => t.key));
+  const itemKeys = new Set(def.tokens.item.map((t) => t.key));
+
+  const itemsMatch = def.hasItems ? templateHtml.match(ITEMS_BLOCK_PATTERN) : null;
+  const itemsBlockText = itemsMatch ? itemsMatch[1] : '';
+  const outsideText = itemsMatch ? templateHtml.replace(ITEMS_BLOCK_PATTERN, '') : templateHtml;
+
+  const invalid = new Set();
+  extractTokenKeys(outsideText).forEach((key) => {
+    if (!documentKeys.has(key)) invalid.add(key);
+  });
+  extractConditionalKeys(templateHtml).forEach((key) => {
+    if (!documentKeys.has(key)) invalid.add(key);
+  });
+  extractTokenKeys(itemsBlockText).forEach((key) => {
+    if (!itemKeys.has(key)) invalid.add(key);
+  });
+
+  return Array.from(invalid);
+}
+
 function serialize(row) {
-  return {
-    ...row,
-    table_columns: JSON.parse(row.table_columns || '[]'),
-    show_amount_in_words: row.show_amount_in_words === 1,
-  };
+  return { ...row };
 }
 
 router.get('/', (req, res) => {
@@ -61,30 +114,29 @@ router.get('/:type', (req, res) => {
   res.json({ template: serialize(row) });
 });
 
-// Danh sach token kha dung (dropdown "Chen truong thong tin") + danh sach cot bang san pham -
-// dung cho trang chinh sua mau in.
+// Danh sach token kha dung (panel "Token tham chieu") - dung cho trang chinh sua mau in.
 router.get('/:type/tokens', (req, res) => {
   const def = PRINT_TEMPLATE_TYPES[req.params.type];
   if (!def) {
     return res.status(404).json({ error: 'Loại mẫu in không tồn tại' });
   }
-  res.json({ tokens: def.tokens, tableColumns: def.tableColumns, hasTable: def.hasTable });
+  res.json({ tokens: def.tokens, hasItems: def.hasItems });
 });
 
-// Noi dung mac dinh ("factory default") - dung cho nut "Dat lai" o trang chinh sua, khong doi
-// gi du du lieu trong bang print_templates da bi nguoi dung sua truoc do.
+// Noi dung mac dinh ("factory default") - dung cho nut "Dat lai" o trang chinh sua, khong doi gi
+// du du lieu trong bang print_templates da bi nguoi dung sua truoc do. Doc truc tiep tu file
+// .html trong backend/config/print-template-defaults/ (de dang xem/sua bang tay hon 1 string JS
+// dai) - moi lan goi doc lai file, khong cache, vi day la thao tac hiem (chi luc bam "Dat lai").
 router.get('/:type/default', (req, res) => {
   const def = PRINT_TEMPLATE_TYPES[req.params.type];
   if (!def) {
     return res.status(404).json({ error: 'Loại mẫu in không tồn tại' });
   }
+  const templateHtml = fs.readFileSync(def.defaultTemplatePath, 'utf8');
   res.json({
     name: def.name,
     orientation: def.defaultOrientation,
-    header_html: def.defaultHeaderHtml,
-    footer_html: def.defaultFooterHtml,
-    table_columns: def.defaultTableColumns,
-    show_amount_in_words: def.defaultShowAmountInWords,
+    template_html: templateHtml,
   });
 });
 
@@ -98,55 +150,35 @@ router.put('/:type', requirePermission('cau_hinh'), (req, res) => {
     return res.status(404).json({ error: 'Chưa có mẫu in cho loại này' });
   }
 
-  const {
-    header_html: headerHtml,
-    footer_html: footerHtml,
-    table_columns: tableColumns,
-    orientation,
-    show_amount_in_words: showAmountInWords,
-  } = req.body || {};
+  const { template_html: templateHtml, orientation } = req.body || {};
 
-  if (typeof headerHtml !== 'string' || typeof footerHtml !== 'string') {
-    return res.status(400).json({ error: 'Thiếu nội dung đầu trang/chân trang' });
+  if (typeof templateHtml !== 'string' || !templateHtml.trim()) {
+    return res.status(400).json({ error: 'Nội dung mẫu in không được để trống' });
   }
   if (orientation !== 'portrait' && orientation !== 'landscape') {
     return res.status(400).json({ error: 'Khổ giấy không hợp lệ' });
   }
-  // table_columns: mang object {key, width} - width la ti le tuong doi (khong bat buoc tong = 100,
-  // xem chu thich o backend/config/printTemplateTokens.js). Loai phieu khong co bang san pham
-  // (hasTable=false, vd "Giay de nghi tam ung") luon luu '[]', khong validate cot.
-  let tableColumnsToSave = [];
-  if (def.hasTable) {
-    const validKeys = new Set(def.tableColumns.map((c) => c.key));
-    const isValidColumn = (c) =>
-      c && typeof c.key === 'string' && validKeys.has(c.key) && Number.isFinite(Number(c.width)) && Number(c.width) > 0;
-    if (!Array.isArray(tableColumns) || tableColumns.length === 0 || !tableColumns.every(isValidColumn)) {
-      return res.status(400).json({ error: 'Danh sách cột bảng sản phẩm không hợp lệ' });
-    }
-    tableColumnsToSave = tableColumns;
+
+  const invalidTokens = findInvalidTokens(templateHtml, def);
+  if (invalidTokens.length > 0) {
+    return res.status(400).json({
+      error: `Mẫu in chứa token không hợp lệ: ${invalidTokens.map((t) => `{{${t}}}`).join(', ')}`,
+      invalidTokens,
+    });
   }
 
   db.prepare(`
     UPDATE print_templates
-    SET header_html = ?, footer_html = ?, table_columns = ?, orientation = ?, show_amount_in_words = ?,
-        updated_at = datetime('now'), updated_by = ?
+    SET template_html = ?, orientation = ?, updated_at = datetime('now'), updated_by = ?
     WHERE type = ?
-  `).run(
-    headerHtml,
-    footerHtml,
-    JSON.stringify(tableColumnsToSave),
-    orientation,
-    showAmountInWords ? 1 : 0,
-    req.session.user.id,
-    req.params.type
-  );
+  `).run(templateHtml, orientation, req.session.user.id, req.params.type);
 
   const row = db.prepare('SELECT * FROM print_templates WHERE type = ?').get(req.params.type);
   res.json({ template: serialize(row) });
 });
 
 // Tai 1 hinh anh len de chen vao mau in (nut "Chen hinh anh" o print-template-edit.js) - tra ve
-// URL tinh de frontend tu chen the <img src="..."> vao dung vi tri con tro trong vung soan thao.
+// URL tinh de frontend tu chen doan <img src="..."> vao dung vi tri con tro trong o soan thao.
 router.post('/:type/images', requirePermission('cau_hinh'), uploadImage.single('file'), (req, res) => {
   if (!PRINT_TEMPLATE_TYPES[req.params.type]) {
     return res.status(404).json({ error: 'Loại mẫu in không tồn tại' });

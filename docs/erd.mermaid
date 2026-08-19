@@ -440,9 +440,7 @@ erDiagram
         string type UK "vd 'stock_issue', mo rong sau (stock_receipt...)"
         string name
         string orientation "portrait | landscape"
-        string header_html "vung soan thao tu do, truoc bang san pham"
-        string footer_html "vung soan thao tu do, sau bang san pham"
-        string table_columns "JSON mang key cot da bat, dung thu tu"
+        string template_html "migration 040 - 1 khung HTML/CSS THAT duy nhat nguoi dung tu soan, chua token {{TenBien}} + khoi lap <!-- items:start/end --> + khoi dieu kien <!-- if:KEY/endif -->"
         datetime updated_at
         int updated_by FK "nullable"
     }

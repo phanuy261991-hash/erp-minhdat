@@ -1,6 +1,12 @@
-// Logic RENDER dung CHUNG giua trang in that (print-issue.js) va khung xem truoc cua trang
-// chinh sua mau in (print-template-edit.js) - chi 1 noi tinh toan gia tri token + dung bang san
-// pham, tranh 2 noi trien khai le nhau ve sau (migration 028, theo yeu cau nguoi dung 2026-08-05).
+// Logic RENDER dung CHUNG giua trang in that (print-issue.js/print-project-advance.js) va khung
+// xem truoc cua trang chinh sua mau in (print-template-edit.js) - chi 1 noi tinh toan gia tri
+// token + lap dong bang san pham, tranh 2 noi trien khai le nhau ve sau (migration 028, mo rong
+// lai hoan toan o migration 040 theo yeu cau nguoi dung 2026-08-19 - xem docs/DECISIONS.md).
+//
+// Tu migration 040: template_html la 1 doan HTML/CSS THAT DUY NHAT (khong con tach header/
+// footer/table_columns). Engine render la STRING-BASED (khong con DOM-walk nhu ban cu dung
+// <span data-token>) vi khong con "chip" DOM nao de tim - token gio la van ban tho dang
+// {{TenBien}} nam thang trong chuoi HTML nguoi dung tu go.
 
 function formatMoneyVN(value) {
   return Number(value).toLocaleString('vi-VN');
@@ -13,30 +19,27 @@ function formatDateVN(sqliteDateTime) {
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
 }
 
-// Dinh dang dai "DD tháng MM năm YYYY" (dung cho Giay de nghi tam ung - migration 030) - nhan
-// ca chuoi 'YYYY-MM-DD' (tu cot DATE trong DB, vd projects.contract_date) lan doi tuong Date
-// (vd ngay in hom nay). Them "T00:00:00" khi parse chuoi de ep gio dia phuong, tranh lech 1 ngay
-// do "YYYY-MM-DD" thuan bi trinh duyet hieu la nua dem UTC.
+// Dinh dang dai "DD tháng MM năm YYYY" (dung cho Giay de nghi tam ung) - nhan ca chuoi
+// 'YYYY-MM-DD' (tu cot DATE trong DB, vd projects.contract_date) lan doi tuong Date (vd ngay in
+// hom nay). Them "T00:00:00" khi parse chuoi de ep gio dia phuong, tranh lech 1 ngay do
+// "YYYY-MM-DD" thuan bi trinh duyet hieu la nua dem UTC.
 function formatDateVNLong(dateInput) {
   const d = dateInput instanceof Date ? dateInput : new Date(`${dateInput}T00:00:00`);
   const pad = (n) => String(n).padStart(2, '0');
   return `${pad(d.getDate())} tháng ${pad(d.getMonth() + 1)} năm ${d.getFullYear()}`;
 }
 
-// Cac dong cong ty co the RONG (an ca dong neu khong co du lieu, xem token registry
-// hideLineIfEmpty trong backend/config/printTemplateTokens.js) - dung chuoi da ghep san
-// nhan+gia tri, giong het logic cu cua print-issue.js truoc migration 028.
 function buildCompanyAddressLine(company) {
-  return company.address ? `Địa chỉ: ${company.address}` : '';
+  return company.address || '';
 }
 
 function buildCompanyPhonesLine(company) {
   const phones = Array.isArray(company.phones) ? company.phones : [];
-  return phones.length > 0 ? `Điện thoại: ${phones.join(' - ')}` : '';
+  return phones.length > 0 ? phones.join(' - ') : '';
 }
 
 function buildCompanyTaxCodeLine(company) {
-  return company.tax_code ? `MST: ${company.tax_code}` : '';
+  return company.tax_code || '';
 }
 
 function buildCompanyContactLine(company) {
@@ -46,15 +49,15 @@ function buildCompanyContactLine(company) {
   return parts.join(' - ');
 }
 
+function buildBankNameBranchLine(company) {
+  if (!company.bank_name) return '';
+  return company.bank_branch ? `${company.bank_name} – ${company.bank_branch}` : company.bank_name;
+}
+
 function buildCompanyBankLine(company) {
   const parts = [];
   if (company.bank_account_number) {
     let line = `STK: ${company.bank_account_number}`;
-    // Ten ngan hang + chi nhanh dung CHUNG buildBankNameBranchLine() voi mau "Giay de nghi tam ung"
-    // (sua 2026-08-06 theo yeu cau nguoi dung) - truoc day cho chi nhanh trong ngoac don
-    // "Vietcombank (Chi nhanh TP.HCM)", nay thong nhat dang "Vietcombank – PGD An Nhon".
-    // Dung dau gach ngang dai (–) de phan biet voi dau " - " von da dung lam dau phan tach giua
-    // cac doan STK/ngan hang/Chu TK trong cung 1 dong.
     const nameBranch = buildBankNameBranchLine(company);
     if (nameBranch) line += ` - ${nameBranch}`;
     parts.push(line);
@@ -63,43 +66,47 @@ function buildCompanyBankLine(company) {
   return parts.join(' - ');
 }
 
-// Dung cho ca phieu that (issue/company tu API) lan du lieu mau co dinh trong khung xem truoc.
+// Gia tri token CAP PHIEU (khong phai token cap tung dong san pham - xem
+// buildStockIssueItemTokenValues ben duoi) - dung cho ca phieu that (issue/company tu API) lan
+// du lieu mau co dinh trong khung xem truoc.
 function buildStockIssueTokenValues(issue, company) {
+  const totalAmount = Math.round(issue.total_amount);
   return {
-    company_name: company.company_name || '(Chưa cấu hình tên công ty)',
-    company_address: buildCompanyAddressLine(company),
-    company_phones: buildCompanyPhonesLine(company),
-    company_tax_code: buildCompanyTaxCodeLine(company),
-    company_contact: buildCompanyContactLine(company),
-    company_bank_info: buildCompanyBankLine(company),
-    issue_code: issue.code,
-    issue_date: formatDateVN(issue.created_at),
-    customer_name: issue.partner_name || 'Khách lẻ',
-    customer_address: issue.partner_address || '-',
-    customer_phone: issue.partner_phone || '-',
-    project_name: issue.project_name || '',
-    issue_note: issue.note || '',
-    company_print_note: company.print_note && company.print_note.trim() ? company.print_note : '',
-    created_by_name: issue.created_by_name || '',
+    CompanyName: company.company_name || '(Chưa cấu hình tên công ty)',
+    CompanyAddress: buildCompanyAddressLine(company),
+    CompanyPhones: buildCompanyPhonesLine(company),
+    CompanyTaxCode: buildCompanyTaxCodeLine(company),
+    CompanyContact: buildCompanyContactLine(company),
+    CompanyBankInfo: buildCompanyBankLine(company),
+    IssueCode: issue.code,
+    IssueDate: formatDateVN(issue.created_at),
+    CustomerName: issue.partner_name || 'Khách lẻ',
+    CustomerAddress: issue.partner_address || '-',
+    CustomerPhone: issue.partner_phone || '-',
+    ProjectName: issue.project_name || '',
+    IssueNote: issue.note || '',
+    CompanyPrintNote: company.print_note && company.print_note.trim() ? company.print_note : '',
+    CreatedByName: issue.created_by_name || '',
+    TotalAmount: formatMoneyVN(totalAmount),
+    AmountInWords: numberToVietnameseWords(totalAmount),
   };
 }
 
-// Thay tung the <span data-token="..."> bang GIA TRI THAT dang text thuan (khong con class/nen/
-// vien "chip" - chip mau xanh chi phuc vu luc dang soan thao trong print-template-edit.html, con
-// ham nay dung cho ca khung xem truoc LAN ban in that nen phai ra dung "van ban binh thuong":
-// khong nen, khong vien, mau chu mac dinh). An ca dong bao ngoai <... data-token-line="..."> neu
-// gia tri rong (dung chung 1 attribute name voi token tuong ung).
-function applyPrintTemplateTokens(root, values) {
-  root.querySelectorAll('[data-token]').forEach((el) => {
-    const key = el.dataset.token;
-    const value = values[key];
-    const text = value !== undefined && value !== null ? value : '';
-    el.replaceWith(document.createTextNode(text));
-  });
-  root.querySelectorAll('[data-token-line]').forEach((el) => {
-    const key = el.dataset.tokenLine;
-    el.hidden = !values[key];
-  });
+// Gia tri token CAP TUNG DONG san pham (prefix "Item." trong template_html, vd
+// {{Item.ProductName}}) - chi co y nghia BEN TRONG khoi lap <!-- items:start -->...<!-- items:end -->.
+function buildStockIssueItemTokenValues(item, index) {
+  const netUnitPrice = Math.round(item.unit_price * (1 - (item.discount_percent || 0) / 100));
+  return {
+    Stt: String(index + 1),
+    ProductCode: item.product_code,
+    ProductName: item.product_name,
+    Unit: item.unit,
+    Quantity: formatMoneyVN(item.quantity),
+    UnitPrice: formatMoneyVN(item.unit_price),
+    DiscountPercent: item.discount_percent ? `${item.discount_percent}%` : '-',
+    NetUnitPrice: formatMoneyVN(netUnitPrice),
+    LineTotal: formatMoneyVN(Math.round(item.quantity * netUnitPrice)),
+  };
 }
 
 // Doc so tien thanh chu tieng Viet (vd 125000 -> "Một trăm hai mươi lăm nghìn đồng") - thuan JS,
@@ -166,93 +173,107 @@ function numberToVietnameseWords(amount) {
   return sentence.charAt(0).toUpperCase() + sentence.slice(1);
 }
 
-// table_columns luu trong DB co the o 1 trong 2 dang: mang chuoi cu ["key",...] (tu migration
-// 028, cac cot rong bang nhau) hoac mang object moi [{key,width},...] (tu migration 029, tu
-// chinh duoc do rong). Ham nay luon tra ve dang object da chuan hoa, tu quy doi cot cu sang do
-// rong deu nhau neu gap dinh dang cu - khong can migrate lai du lieu da luu truoc do.
-function normalizeTableColumns(rawColumns) {
-  const list = Array.isArray(rawColumns) ? rawColumns : [];
-  const evenWidth = list.length > 0 ? Math.round((100 / list.length) * 10) / 10 : 0;
-  return list
-    .map((item) => {
-      if (typeof item === 'string') return { key: item, width: evenWidth };
-      const width = Number(item && item.width);
-      return { key: item && item.key, width: width > 0 ? width : evenWidth };
-    })
-    .filter((c) => !!c.key);
+// ---- Giay de nghi tam ung ----
+
+// Danh xung "Thong tin phieu in" cua dot thanh toan (migration 031) - khop dung danh sach CHECK
+// o backend (project_payment_milestones.recipient_title), chi hien nhan doc duoc khi in.
+const RECIPIENT_TITLE_LABELS = { anh: 'Khách hàng', chi: 'Chị', cong_ty: 'Công Ty', don_vi: 'Đơn vị' };
+
+// Dung cho ca phieu that (project/milestone/company tu API) lan du lieu mau co dinh trong khung
+// xem truoc. PrintDate luon la NGAY IN THAT (luc bam in/xem truoc), khong phai ngay tao dot
+// thanh toan trong DB.
+function buildProjectAdvanceTokenValues(project, milestone, company) {
+  return {
+    CompanyName: company.company_name || '(Chưa cấu hình tên công ty)',
+    ContractNo: project.contract_no || '',
+    ContractDate: project.contract_date ? formatDateVNLong(project.contract_date) : '',
+    CustomerName: project.partner_name || '',
+    SiteAddress: project.site_address || '-',
+    AdvanceNumber: milestone.sort_order !== null && milestone.sort_order !== undefined ? String(milestone.sort_order) : '',
+    AdvancePercent: milestone.percent !== null && milestone.percent !== undefined ? String(milestone.percent) : '',
+    AdvanceAmount: `${formatMoneyVN(Math.round(milestone.amount))} VNĐ`,
+    AdvanceAmountWords: numberToVietnameseWords(milestone.amount),
+    BankAccountHolder: company.bank_account_holder || '',
+    BankAccountNumber: company.bank_account_number || '',
+    BankNameBranch: buildBankNameBranchLine(company),
+    PrintDate: `ngày ${formatDateVNLong(new Date())}`,
+    RecipientTitle: RECIPIENT_TITLE_LABELS[milestone.recipient_title] || '',
+    RecipientName: milestone.recipient_name || '',
+  };
 }
 
-// Gia tri tung cot bang san pham - key phai khop dung STOCK_ISSUE_TABLE_COLUMNS trong
-// backend/config/printTemplateTokens.js.
-const STOCK_ISSUE_TABLE_CELL_RENDERERS = {
-  stt: (item, index) => String(index + 1),
-  product_code: (item) => item.product_code,
-  product_name: (item) => item.product_name,
-  unit: (item) => item.unit,
-  quantity: (item) => formatMoneyVN(item.quantity),
-  unit_price: (item) => formatMoneyVN(item.unit_price),
-  discount_percent: (item) => (item.discount_percent ? `${item.discount_percent}%` : '-'),
-  net_unit_price: (item) => formatMoneyVN(Math.round(item.unit_price * (1 - (item.discount_percent || 0) / 100))),
-  line_total: (item) => formatMoneyVN(Math.round(item.quantity * item.unit_price * (1 - (item.discount_percent || 0) / 100))),
-};
+// ==== Render engine string-based (thay DOM-walk cu) ====
 
-// Dung lai cau truc + class CSS cua .print-table hien co (khong doi gi ve mat hien thi so voi
-// ban tinh truoc migration 028 khi du 9 cot mac dinh duoc bat theo dung thu tu/do rong goc).
-// `columns` la table_columns THO tu DB (chua chuan hoa - co the o dang mang chuoi cu hoac mang
-// object moi, xem normalizeTableColumns). `table-layout:fixed` (style.css) khien <colgroup> duoc
-// ton trong tuyet doi - chu dai se tu xuong dong trong dung do rong cot da chinh, thay vi tu keo
-// gian cot (dung nhu yeu cau nguoi dung: kiem soat duoc do rong, chap nhan xuong dong neu hep).
-function renderPrintTable({ columns, columnsMeta, items, totalAmount, showAmountInWords }) {
-  const metaByKey = {};
-  columnsMeta.forEach((c) => {
-    metaByKey[c.key] = c;
-  });
-  const normalized = normalizeTableColumns(columns).filter(
-    (c) => metaByKey[c.key] && STOCK_ISSUE_TABLE_CELL_RENDERERS[c.key]
-  );
+function escapeHtml(value) {
+  const text = value === undefined || value === null ? '' : String(value);
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
-  const totalWidth = normalized.reduce((sum, c) => sum + c.width, 0) || 1;
-  const colgroupCells = normalized.map((c) => `<col style="width:${((c.width / totalWidth) * 100).toFixed(2)}%">`).join('');
+const TOKEN_PATTERN = /\{\{\s*([A-Za-z0-9_.]+)\s*\}\}/g;
+const CONDITIONAL_BLOCK_PATTERN = /<!--\s*if:([A-Za-z0-9_.]+)\s*-->([\s\S]*?)<!--\s*endif\s*-->/g;
+const ITEMS_BLOCK_PATTERN = /<!--\s*items:start\s*-->([\s\S]*?)<!--\s*items:end\s*-->/;
 
-  const theadCells = normalized
-    .map((c) => `<th${metaByKey[c.key].numeric ? ' class="print-num"' : ''}>${metaByKey[c.key].label}</th>`)
-    .join('');
+// Thay toan bo {{Key}} trong 1 doan HTML bang gia tri da escape tu `values`. Token khong co trong
+// `values` duoc thay bang chuoi rong (khong phai loi render - viec bat token la khong hop le da
+// lam o buoc validate luc Luu, xem backend/routes/printTemplates.routes.js).
+function substituteTokens(html, values) {
+  return html.replace(TOKEN_PATTERN, (match, key) => escapeHtml(values[key]));
+}
 
-  const bodyRows = items
+// Boc dieu kien <!-- if:KEY -->...<!-- endif --> - giu noi dung neu gia tri KEY truthy (khac
+// rong/0/undefined), xoa ca khoi neu khong. Chi 1 cap, khong ho tro long nhau (dung muc hien tai
+// cua data-token-line cu).
+function applyConditionalBlocks(html, values) {
+  return html.replace(CONDITIONAL_BLOCK_PATTERN, (match, key, inner) => (values[key] ? inner : ''));
+}
+
+// Tach + lap khoi <!-- items:start -->...<!-- items:end --> theo so luong `items`, thay token
+// {{Item.Xxx}} rieng cho tung dong bang `itemTokenBuilder(item, index)`. Neu template khong co
+// khoi nay (vd loai phieu hasItems=false) thi tra nguyen ham khong doi.
+function expandItemsBlock(html, items, itemTokenBuilder) {
+  const match = html.match(ITEMS_BLOCK_PATTERN);
+  if (!match) return html;
+
+  const rowTemplate = match[1];
+  const list = Array.isArray(items) ? items : [];
+  const rowsHtml = list
     .map((item, index) => {
-      const cells = normalized
-        .map((c) => {
-          const value = STOCK_ISSUE_TABLE_CELL_RENDERERS[c.key](item, index);
-          return `<td${metaByKey[c.key].numeric ? ' class="print-num"' : ''}>${value}</td>`;
-        })
-        .join('');
-      return `<tr>${cells}</tr>`;
+      const itemValues = itemTokenBuilder(item, index);
+      // Token cap dong dung prefix "Item." trong template (vd {{Item.ProductName}}) nhung
+      // itemTokenBuilder tra ve key KHONG co prefix (vd ProductName) - ghep lai truoc khi thay.
+      const prefixedValues = {};
+      Object.keys(itemValues).forEach((key) => {
+        prefixedValues[`Item.${key}`] = itemValues[key];
+      });
+      return substituteTokens(rowTemplate, prefixedValues);
     })
     .join('');
 
-  const colspan = Math.max(normalized.length - 1, 1);
-  const amountWordsRow = showAmountInWords
-    ? `<tr>
-        <td colspan="${normalized.length}" class="print-amount-words">Số tiền viết bằng chữ: <strong>${numberToVietnameseWords(totalAmount)}</strong></td>
-      </tr>`
-    : '';
-
-  return `<table class="print-table">
-    <colgroup>${colgroupCells}</colgroup>
-    <thead><tr>${theadCells}</tr></thead>
-    <tbody>${bodyRows}</tbody>
-    <tfoot>
-      <tr>
-        <td colspan="${colspan}" class="print-total-label">Tổng cộng</td>
-        <td class="print-total-value">${formatMoneyVN(Math.round(totalAmount))}</td>
-      </tr>
-      ${amountWordsRow}
-    </tfoot>
-  </table>`;
+  return html.replace(ITEMS_BLOCK_PATTERN, rowsHtml);
 }
 
-// Du lieu mau CO DINH (khong goi API) dung cho khung xem truoc o trang chinh sua mau in - tranh
-// phu thuoc phai co san 1 phieu xuat that + tranh lo du lieu that khi demo mau in.
+// Ham render trung tam - dung CHUNG cho ca khung xem truoc (print-template-edit.js) lan trang in
+// that (print-issue.js/print-project-advance.js). `templateHtml` la template_html tho tu DB (co
+// the chua <style> nhung + token + khoi dieu kien/lap). `tokenValues` la object token CAP TAI
+// LIEU da tinh san (xem buildStockIssueTokenValues/buildProjectAdvanceTokenValues). `items` +
+// `itemTokenBuilder` chi can khi loai phieu co bang san pham (hasItems=true).
+function renderPrintTemplate({ templateHtml, tokenValues, items, itemTokenBuilder }) {
+  let html = templateHtml || '';
+  html = applyConditionalBlocks(html, tokenValues);
+  if (itemTokenBuilder) {
+    html = expandItemsBlock(html, items, itemTokenBuilder);
+  }
+  html = substituteTokens(html, tokenValues);
+  return html;
+}
+
+// ==== Du lieu mau CO DINH (khong goi API) dung cho khung xem truoc o trang chinh sua mau in ====
+
 const SAMPLE_STOCK_ISSUE_DATA = {
   company: {
     company_name: 'Công ty TNHH Minh Đạt',
@@ -285,49 +306,6 @@ const SAMPLE_STOCK_ISSUE_DATA = {
   },
 };
 
-// ---- Giay de nghi tam ung (migration 030) - mau in THU 2, khong co bang san pham ----
-
-// Bo chu "Chi nhanh" truoc ten chi nhanh (them 2026-08-06, theo yeu cau nguoi dung) - ten chi
-// nhanh cong ty da nhap thuong tu co tien to rieng (vd "PGD ..."), ghi them "Chi nhanh" truoc do
-// bi thua/trung lap.
-function buildBankNameBranchLine(company) {
-  if (!company.bank_name) return '';
-  return company.bank_branch ? `${company.bank_name} – ${company.bank_branch}` : company.bank_name;
-}
-
-// Danh xung "Thong tin phieu in" cua dot thanh toan (migration 031) - khop dung danh sach CHECK
-// o backend (project_payment_milestones.recipient_title), chi hien nhan doc duoc khi in.
-// 2026-08-08 (theo yeu cau nguoi dung): bo 2 lua chon "Anh"/"Chi" tren giao dien, thay bang
-// "Khach hang" - TAI SU DUNG gia tri luu tru 'anh' de gan nhan moi (khong doi CHECK constraint
-// o DB, tranh phai rebuild bang - xem docs/DECISIONS.md). 'chi' giu lai nhan cu de tuong thich
-// nguoc voi du lieu cu (neu co), du giao dien khong con cho chon gia tri nay nua.
-const RECIPIENT_TITLE_LABELS = { anh: 'Khách hàng', chi: 'Chị', cong_ty: 'Công Ty', don_vi: 'Đơn vị' };
-
-// Dung cho ca phieu that (project/milestone/company tu API) lan du lieu mau co dinh trong khung
-// xem truoc. print_date luon la NGAY IN THAT (luc bam in/xem truoc), khong phai ngay tao dot
-// thanh toan trong DB - dung yeu cau nguoi dung.
-function buildProjectAdvanceTokenValues(project, milestone, company) {
-  return {
-    company_name: company.company_name || '(Chưa cấu hình tên công ty)',
-    contract_no: project.contract_no || '',
-    contract_date: project.contract_date ? formatDateVNLong(project.contract_date) : '',
-    customer_name: project.partner_name || '',
-    site_address: project.site_address || '-',
-    advance_number: milestone.sort_order !== null && milestone.sort_order !== undefined ? String(milestone.sort_order) : '',
-    advance_percent: milestone.percent !== null && milestone.percent !== undefined ? String(milestone.percent) : '',
-    advance_amount: `${formatMoneyVN(Math.round(milestone.amount))} VNĐ`,
-    advance_amount_words: numberToVietnameseWords(milestone.amount),
-    bank_account_holder: company.bank_account_holder || '',
-    bank_account_number: company.bank_account_number || '',
-    bank_name_branch: buildBankNameBranchLine(company),
-    print_date: `ngày ${formatDateVNLong(new Date())}`,
-    recipient_title: RECIPIENT_TITLE_LABELS[milestone.recipient_title] || '',
-    recipient_name: milestone.recipient_name || '',
-  };
-}
-
-// Du lieu mau CO DINH cho khung xem truoc - phong theo dung so lieu trong mau PDF nguoi dung
-// gui tham khao (DNTT LAN 1 ANH QUYNH.pdf).
 const SAMPLE_PROJECT_ADVANCE_DATA = {
   company: {
     company_name: 'Công ty TNHH Kỹ Thuật Công Nghệ Minh Đạt',
@@ -352,15 +330,19 @@ const SAMPLE_PROJECT_ADVANCE_DATA = {
 };
 
 // ---- Registry tong quat: loai phieu -> du lieu mau + ham tinh token - de print-template-edit.js
-// dung CHUNG 1 logic cho moi loai phieu (khong hardcode rieng tung loai), them mau in moi sau
-// nay (vd Phieu nhap kho) chi can them 1 entry o day. ----
+// dung CHUNG 1 logic cho moi loai phieu (khong hardcode rieng tung loai), them mau in moi sau nay
+// chi can them 1 entry o day. ----
 const PRINT_TYPE_HANDLERS = {
   stock_issue: {
     sampleData: SAMPLE_STOCK_ISSUE_DATA,
     buildTokenValues: (data) => buildStockIssueTokenValues(data.issue, data.company),
+    items: SAMPLE_STOCK_ISSUE_DATA.issue.items,
+    itemTokenBuilder: buildStockIssueItemTokenValues,
   },
   project_payment_advance: {
     sampleData: SAMPLE_PROJECT_ADVANCE_DATA,
     buildTokenValues: (data) => buildProjectAdvanceTokenValues(data.project, data.milestone, data.company),
+    items: null,
+    itemTokenBuilder: null,
   },
 };

@@ -2,6 +2,31 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-19 (Viết lại cơ chế "Mẫu in": khung HTML/CSS thật + token binding)
+
+> Đảo ngược cách tiếp cận WYSIWYG contenteditable của migration `028`/`029` (2026-08-05) theo phản hồi người dùng ("khó dùng"). Chi tiết đầy đủ quá trình chốt hướng (so sánh phương án, các quyết định qua `AskUserQuestion`): `docs/DECISIONS.md` mục 2026-08-19 (Mẫu in).
+
+**1. Schema & backend**
+- Migration `040`: `print_templates` bỏ `header_html`/`footer_html`/`table_columns`/`show_amount_in_words`, thêm `template_html` (`DROP COLUMN`, tiền lệ đã dùng ở migration `004`).
+- `backend/config/printTemplateTokens.js`: viết lại — danh sách token phẳng `{key,label,group:'document'|'item'}`, `defaultTemplatePath` trỏ tới file `.html` thật trong `backend/config/print-template-defaults/` (thay string JS dài).
+- `backend/routes/printTemplates.routes.js`: `GET /:type/tokens` trả cấu trúc mới `{document:[], item:[]}` + `hasItems`; `GET /:type/default` đọc file default; `PUT /:type` quét `{{...}}`/`<!-- if:KEY -->` trong `template_html`, so khớp whitelist đúng phạm vi (`Item.*` chỉ hợp lệ trong khối `items:start/end`), trả 400 kèm danh sách token sai nếu có.
+
+**2. Render engine**
+- `frontend/assets/print-template-render.js`: thay `applyPrintTemplateTokens()`/`renderPrintTable()` (DOM-walk) bằng `renderPrintTemplate()` (string-based) — xử lý khối điều kiện `<!-- if:KEY -->...<!-- endif -->`, khối lặp `<!-- items:start -->...<!-- items:end -->` (token con `{{Item.Xxx}}`), `escapeHtml()` cho giá trị token. Giữ nguyên tái sử dụng `buildStockIssueTokenValues`/`buildProjectAdvanceTokenValues`/`numberToVietnameseWords`, thêm `buildStockIssueItemTokenValues()` mới.
+
+**3. Trang chỉnh sửa mẫu**
+- `print-template-edit.html`/`.js`: bỏ toolbar rich-text + 2 vùng contenteditable + bảng chọn cột — thay `<textarea class="pt-code-editor">` (monospace nền tối) + panel token luôn hiện sẵn (`.pt-token-panel`/`.pt-token-chip`, bấm chèn tại vị trí con trỏ — giải quyết đúng phản hồi "khó tìm token") + 2 nút "Tải mẫu lên"/"Tải mẫu về" (`FileReader`/Blob, phía trình duyệt, theo yêu cầu người dùng "tiện cập nhật khung HTML") + xem trước `<iframe sandbox srcdoc>` cô lập hoàn toàn CSS mẫu với trang quản trị.
+
+**4. Trang in thật**
+- `print-issue.html`/`.js`, `print-project-advance.html`/`.js`: đổi sang gọi `renderPrintTemplate()`, render vào **Shadow DOM** (`#print-sheet.attachShadow({mode:'open'})`) thay vì `innerHTML` trực tiếp.
+- **Sự cố phát hiện qua phản hồi người dùng ngay sau khi triển khai (cùng phiên)**: mẫu thật người dùng tự soạn có `<style>` riêng (`* {margin:0}`, `body{display:flex;justify-content:center}`) rò rỉ ra toàn trang vì lúc đầu chỉ `innerHTML` trực tiếp — đẩy lệch nút "Quay lại"/"In phiếu" khỏi vị trí đúng. Sửa bằng Shadow DOM (cô lập triệt để), đơn giản hóa `.print-sheet` (CSS) thành shadow host trung lập (bỏ khung "tờ giấy" cứng `max-width`/`padding`/`border`/`shadow` — mỗi mẫu tự mang theo trình bày riêng qua class `.tpl-page` tự viết, áp dụng luôn cho 2 mẫu mặc định của hệ thống).
+- Cùng phiên: phát hiện + sửa 1 lỗi hiển thị thật trên mẫu người dùng đang dùng — thẻ `<img>` mã QR bị lồng cú pháp (`<img id="payment-qr" <img src="...">`) do chèn ảnh lúc con trỏ đứng giữa 1 thẻ `<img>` khác chưa gõ xong — sửa trực tiếp bằng script (khớp đúng chuỗi lỗi, không đụng phần còn lại của mẫu), xác nhận qua CDP (`naturalWidth` ảnh từ 0 → 166).
+
+**5. Dọn dẹp & tài liệu**
+- `frontend/assets/style.css`: xóa CSS gắn với cấu trúc mẫu cố định cũ (`.print-header`/`.print-company-name`/`.print-doc-title`/`.print-customer`/`.print-table*`/`.print-amount-words`/`.print-company-note*`/`.print-signatures*`/`.print-advance-*`/`.pt-toolbar*`/`.pt-token-dropdown`/`.pt-token-menu*`/`.pt-editable*`/`.pt-token*`/`.pt-columns-list`...), thêm CSS mới (`.pt-code-editor`, `.pt-token-panel`/`.pt-token-chip`, `.pt-file-toolbar`, `.pt-preview-iframe-el`) — thiết kế qua skill `ui-ux-pro-max`.
+- Đồng bộ `docs/PRD.md` mục 4.5, `docs/erd.mermaid` (bảng `PRINT_TEMPLATES`), `docs/DESIGN-SYSTEM.md` (section mới).
+- Test qua API thật (Node `fetch`: lưu thành công, chặn đúng 400 khi token sai tên/dùng sai phạm vi `Item.*`, 403 đúng khi thiếu quyền `cau_hinh`, `GET` vẫn mở cho mọi tài khoản đăng nhập) + trình duyệt thật (Chrome headless CDP thô: chèn token đúng vị trí con trỏ, tải mẫu lên/xuống round-trip đúng nội dung file, đổi khổ giấy, chụp ảnh xác nhận bố cục nút đúng vị trí sau khi sửa Shadow DOM) — không lỗi console ở cả 3 trang (editor + 2 trang in thật). Dữ liệu/tài khoản test đã xóa sạch. Đã restart server nhiều lần trong phiên (bắt buộc, không có hot-reload).
+
 ## 2026-08-19 (6 việc trong 1 phiên: sắp xếp/gom nhóm danh sách, bảo hành theo dự án, tách quyền Khách hàng)
 
 > Chi tiết đầy đủ (2 việc kiến trúc lớn): `docs/DECISIONS.md` mục 2026-08-19.

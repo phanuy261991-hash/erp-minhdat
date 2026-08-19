@@ -2170,175 +2170,17 @@ input:focus-visible {
   margin-bottom: 14px;
 }
 
+/* Tu migration 040: #print-sheet la SHADOW HOST (attachShadow trong print-issue.js/
+   print-project-advance.js), khong con la "khung to giay" tu ve nhu ban cu - moi mau tu mang
+   <style> rieng dinh nghia toan bo trinh bay (kich thuoc trang, padding, bong do...) BEN TRONG
+   shadow tree, xem backend/config/print-template-defaults/*.html. CSS o day chi con lo can giua
+   tren man hinh - KHONG dat max-width/padding/background/border nua, vi se tao "khung long
+   khung" voi khung to giay rieng cua chinh mau (phat hien qua phan hoi nguoi dung 2026-08-19: mau
+   tu viet co the tu dinh nghia body{display:flex} rieng, xung dot voi khung ngoai cu). */
 .print-sheet {
-  max-width: 800px;
-  margin: 0 auto;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 40px;
-  font-size: 14px;
-  color: #000;
-}
-
-/* Kho ngang (migration 028, cau hinh mau in) - chi doi be rong hien thi tren man hinh/khung xem
-   truoc. Khi in that, kich thuoc trang giay (@page size) duoc chen dong bang JS luc bam In
-   (xem print-issue.js) - khong the dieu kien hoa @page theo class trong CSS thuan. */
-.print-sheet--landscape {
-  max-width: 1100px;
-}
-
-.print-header {
   display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid var(--color-foreground);
-  margin-bottom: 20px;
-}
-
-.print-company-name {
-  font-family: var(--font-heading);
-  font-size: 16px;
-  font-weight: 700;
-  margin: 0 0 4px;
-}
-
-.print-header p {
-  margin: 2px 0;
-  font-size: 13px;
-  /* Doi tu mau xam nhat (--color-muted-foreground) sang mau chu chinh + dam hon 1 chut - theo
-     phan hoi nguoi dung: thong tin cong ty tren ban in qua nhat, kho doc (2026-08-05). */
-  color: var(--color-foreground);
-  font-weight: 500;
-}
-
-.print-doc-title {
-  text-align: right;
-}
-
-.print-doc-title h1 {
-  font-size: 20px;
-  letter-spacing: 0.04em;
-  margin-bottom: 6px;
-}
-
-.print-doc-title p {
-  margin: 2px 0;
-  font-size: 13px;
-}
-
-.print-customer p {
-  margin: 4px 0;
-  font-size: 14px;
-}
-
-.print-table {
+  justify-content: center;
   width: 100%;
-  border-collapse: collapse;
-  margin: 20px 0 24px;
-  /* table-layout:fixed - ton trong tuyet doi do rong khai bao trong <colgroup> (cau hinh duoc qua
-     trang "Chinh sua mau in", migration 029) thay vi tu co gian cot theo do dai noi dung. */
-  table-layout: fixed;
-}
-
-.print-table th,
-.print-table td {
-  border: 1px solid var(--color-foreground);
-  padding: 8px 10px;
-  font-size: 13px;
-  text-align: left;
-  /* Chu dai tu xuong dong trong dung do rong cot da chinh (thay vi tran ra ngoai) - dung y nghia
-     voi table-layout:fixed o tren. */
-  overflow-wrap: break-word;
-  word-break: break-word;
-}
-
-.print-table th {
-  background: var(--color-muted);
-  font-weight: 600;
-  /* Tieu de cot luon can giua cho dep (theo yeu cau nguoi dung) - khac voi du lieu than bang
-     (can trai/phai tuy loai du lieu, xem .print-num ben duoi). */
-  text-align: center;
-}
-
-.print-table td.print-num {
-  text-align: right;
-}
-
-/* BAT BUOC viet dang ".print-table td.<class>" chu KHONG phai ".<class>" tran: rule
-   ".print-table td" o tren co do uu tien (0,1,1) CAO HON class tran (0,1,0) nen se de len
-   text-align/font-size - loi nay khien 2 rule duoi day chet lang trong thoi gian dai (dong
-   "Tong cong" bi can trai theo mac dinh cua td, co chu 15px khong bao gio duoc ap dung, trong
-   khi cac o so cung cot lai can phai dung nho ".print-table td.print-num" (0,2,1) o tren).
-   Phat hien 2026-08-06 khi do computed style that qua CDP, khong nhin ra duoc bang mat thuong
-   vi so tien mau gan lap day o nen lech chi ~2px. */
-.print-table td.print-total-label {
-  text-align: right;
-  font-weight: 600;
-}
-
-.print-table td.print-total-value {
-  text-align: right;
-  font-weight: 700;
-  font-size: 15px;
-}
-
-/* Dong "So tien viet bang chu" (migration 029, theo yeu cau nguoi dung) - dat ngay duoi dong
-   Tong cong trong cung tfoot, chi bat/tat duoc qua trang "Chinh sua mau in" (show_amount_in_words). */
-.print-amount-words {
-  font-style: italic;
-  font-size: 13px;
-}
-
-/* Ghi chu cua cong ty (dieu kien bao hanh, chinh sach doi tra...) - cau hinh duoc qua trang
-   Thong tin cong ty (company_settings.print_note), khong hardcode. Giu xuong dong nguoi dung
-   da nhap (white-space: pre-line) vi noi dung thuong la danh sach nhieu dong. */
-.print-company-note {
-  margin-bottom: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--color-border);
-}
-
-.print-company-note-title {
-  margin: 0 0 4px;
-  font-size: 13px;
-  font-weight: 700;
-  font-style: italic;
-}
-
-.print-company-note-text {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.7;
-  white-space: pre-line;
-  color: var(--color-foreground);
-}
-
-.print-signatures {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 40px;
-  text-align: center;
-}
-
-.print-signatures > div {
-  width: 45%;
-}
-
-.print-signatures p {
-  margin: 2px 0;
-}
-
-.print-sign-hint {
-  font-size: 12px;
-  color: var(--color-muted-foreground);
-  font-style: italic;
-}
-
-.print-sign-name {
-  margin-top: 60px;
-  font-weight: 600;
 }
 
 @media print {
@@ -2351,82 +2193,9 @@ input:focus-visible {
     padding: 0;
   }
 
-  .print-sheet {
-    box-shadow: none;
-    border: none;
-    border-radius: 0;
-    max-width: 100%;
-    padding: 12mm;
-  }
-
   @page {
     margin: 12mm;
   }
-}
-
-/* ---- Giay de nghi tam ung (print-project-advance.html, migration 030) - mau in THU 2, khong co
-   bang san pham. Chu mac dinh dung mau chinh (--color-foreground), KHONG dung muted-foreground -
-   dung bai hoc tu lan lam mau in truoc (thong tin cong ty qua nhat). ---- */
-
-.print-advance-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 24px;
-  margin-bottom: 24px;
-}
-
-.print-advance-national {
-  flex-shrink: 0;
-  text-align: center;
-  min-width: 260px;
-}
-
-.print-advance-national p {
-  margin: 2px 0;
-  /* Dung dung cỡ chữ voi .print-header p cua Phieu xuat kho (13px) - dong bo font/co chu giua
-     2 mau in, theo yeu cau nguoi dung. */
-  font-size: 13px;
-}
-
-.print-advance-national p:last-child {
-  text-decoration: underline;
-}
-
-.print-advance-title {
-  text-align: center;
-  /* Dung dung font-size/letter-spacing voi .print-doc-title h1 cua Phieu xuat kho. */
-  font-size: 20px;
-  letter-spacing: 0.04em;
-  margin: 0 0 20px;
-}
-
-.print-advance-amount {
-  text-align: center;
-  /* Dung dung co chu voi .print-total-value cua Phieu xuat kho (dong tien noi bat). */
-  font-size: 15px;
-  margin: 4px 0 4px;
-}
-
-/* Dong "So tien bang chu" (them 2026-08-06) - dam+nghieng qua the <strong><em> ngay trong seed
-   HTML (backend/config/printTemplateTokens.js), CSS chi lo can giua + khoang cach. */
-.print-advance-amount-words {
-  text-align: center;
-  font-size: 13px;
-  margin: 0 0 20px;
-}
-
-.print-advance-signature {
-  text-align: right;
-  margin-top: 32px;
-}
-
-.print-advance-signature p {
-  margin: 2px 0;
-}
-
-.print-advance-signature-name {
-  margin-top: 56px !important;
 }
 
 /* ---- Popup xem truoc/in phieu (them 2026-08-06) - tiem vao document.body qua print-preview.js,
@@ -2453,11 +2222,12 @@ input:focus-visible {
   background: #fff;
 }
 
-/* ---- Trang "Chinh sua mau in" (print-template-edit.html, migration 028) - bo cuc 2 cot: trai
-   la trinh soan thao (toolbar + 2 vung contenteditable + cau hinh cot bang/kho giay), phai la
-   khung xem truoc thu nho tren nen giay (dung LAI class .print-sheet/.print-table/... that su,
-   khong dung rieng CSS khac de dam bao xem truoc dung 100% giong ban in that). Thiet ke qua
-   skill ui-ux-pro-max. ---- */
+/* ---- Trang "Chinh sua mau in" (print-template-edit.html, migration 028, viet lai hoan toan o
+   migration 040 theo yeu cau nguoi dung 2026-08-19) - bo cuc 2 cot: trai la o soan HTML/CSS THAT
+   (<textarea> dang code editor) + panel token bam-de-chen + kho giay, phai la khung xem truoc
+   bang <iframe sandbox> (co lap hoan toan CSS nguoi dung tu viet trong mau, khong dung chung
+   .print-sheet/.print-table nhu ban cu nua vi mau gio tu mang CSS rieng). Thiet ke qua skill
+   ui-ux-pro-max. ---- */
 
 .pt-layout {
   display: flex;
@@ -2466,7 +2236,7 @@ input:focus-visible {
 }
 
 .pt-editor-col {
-  flex: 0 0 460px;
+  flex: 0 0 560px;
   min-width: 0;
 }
 
@@ -2498,244 +2268,100 @@ input:focus-visible {
   overflow-x: auto;
 }
 
-.pt-preview-frame .print-sheet {
-  box-shadow: var(--shadow-card);
-  flex-shrink: 0;
-}
-
-/* Toolbar dinh dang chu, dung chung cho ca 2 vung "Dau trang"/"Chan trang" - ap dung len vung
-   dang co con tro (activeZone trong print-template-edit.js). */
-.pt-toolbar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding-bottom: 16px;
-  margin-bottom: 20px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.pt-toolbar-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--color-foreground);
-  font-family: var(--font-body);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.pt-toolbar-btn:hover {
-  background: var(--color-muted);
-  border-color: var(--color-border);
-}
-
-.pt-toolbar-btn-wide {
-  width: auto;
-  padding: 0 12px;
-  font-weight: 500;
-}
-
-.pt-toolbar-divider {
-  width: 1px;
-  height: 22px;
-  background: var(--color-border);
-  margin: 0 6px;
-}
-
-.pt-token-dropdown {
-  position: relative;
-}
-
-.pt-token-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 20;
-  min-width: 240px;
-  max-height: 320px;
-  overflow-y: auto;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-card);
-  padding: 6px;
-}
-
-.pt-token-menu-item {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 8px 10px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--color-foreground);
-  font-family: var(--font-body);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.pt-token-menu-item:hover {
-  background: var(--color-muted);
-}
-
-/* Vung soan thao WYSIWYG - vien ro rang de phan biet voi text tinh xung quanh, focus ring giong
-   input thuong de nhat quan voi he thong. */
-.pt-editable {
-  min-height: 140px;
-  padding: 14px 16px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--color-foreground);
-}
-
-.pt-editable:focus {
-  outline: none;
-  border-color: var(--color-ring);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-}
-
-/* Chip "truong thong tin" da chen - noi bat ro voi text thuong, khong the go chu vao trong
-   (contenteditable="false" tren chinh no khi tao o print-template-edit.js). */
-.pt-token {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 6px 2px 8px;
-  margin: 0 1px;
-  border-radius: 5px;
-  background: rgba(37, 99, 235, 0.12);
-  border: 1px solid rgba(37, 99, 235, 0.35);
-  color: var(--color-primary-dark);
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: default;
-}
-
-.pt-token-remove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--color-primary-dark);
-  cursor: pointer;
-}
-
-.pt-token-remove:hover {
-  background: rgba(37, 99, 235, 0.3);
-}
-
-/* Hinh anh dinh kem chen truc tiep vao vung soan thao/mau in (them 2026-08-06, vd ma QR thanh
-   toan) - max-width:100% chi de phong ho neu do rong luu lai (style="width:...") vuot khung giay,
-   khong gioi han kich thuoc that (nguoi dung tu keo-giai qua nut goc co san cua trinh duyet ngay
-   trong vung contenteditable). Dung 1 selector cho ca 2 boi canh (dang soan thao va ban in/xem
-   truoc that) vi cung 1 the <img> duoc luu nguyen trong header_html/footer_html. */
-.pt-editable img,
-.print-sheet img {
+/* Khung "to giay" gia lap trong iframe - cung kich thuoc/bong do voi .print-sheet that (800px
+   dọc/1100px ngang) de nguoi dung hinh dung dung ti le, du ben trong la 1 tai lieu HTML doc lap
+   hoan toan (srcdoc) chu khong con la .print-sheet dung chung. */
+.pt-preview-iframe-el {
+  width: 800px;
+  height: 1000px;
   max-width: 100%;
-  height: auto;
-  vertical-align: middle;
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: #fff;
+  box-shadow: var(--shadow-card);
 }
 
-/* Cau hinh cot bang san pham - danh sach ~9 dong, checkbox bat/tat + mui ten len/xuong sap xep
-   thu tu (khong keo-tha, da chot voi nguoi dung). */
-.pt-columns-list {
+.pt-preview-iframe-el--landscape {
+  width: 1100px;
+}
+
+/* Nut tai len/tai ve file .html + chen hinh anh - hang ngang phia tren o soan ma. */
+.pt-file-toolbar {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.pt-file-toolbar button {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
 }
 
-.pt-column-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 12px;
-  border: 1px solid var(--color-border);
+/* O soan ma HTML/CSS - nen toi + chu sang (giong theme code editor pho bien) de phan biet ro
+   rang voi cac o nhap lieu binh thuong (input/textarea nen trang) trong he thong, bao hieu day
+   la vung "go ma" chu khong phai vung nhap van ban tu do. Font monospace he thong (khong tai
+   font ngoai - dung nguyen tac du an khong phu thuoc CDN). */
+.pt-code-editor {
+  width: 100%;
+  min-height: 420px;
+  padding: 14px 16px;
+  border: 1px solid #1E293B;
   border-radius: var(--radius-sm);
-}
-
-.pt-column-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-/* O nhap do rong tung cot (migration 029, ti le % - tu quy doi ve 100% luc render, khong bat
-   buoc phai nhap tong dung 100). */
-.pt-column-width {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.pt-column-width input {
-  width: 52px;
-  padding: 5px 6px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  font-family: var(--font-body);
+  background: #0F172A;
+  color: #E2E8F0;
+  font-family: ui-monospace, 'Cascadia Code', 'Consolas', 'SFMono-Regular', monospace;
   font-size: 13px;
-  text-align: right;
+  line-height: 1.6;
+  resize: vertical;
+  tab-size: 2;
 }
 
-.pt-column-width input:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.pt-code-editor:focus {
+  outline: none;
+  border-color: var(--color-ring);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
 }
 
-.pt-column-width-suffix {
-  font-size: 12px;
-  color: var(--color-muted-foreground);
+/* Panel token tham chieu - luon hien san dang luoi chip (khong con la dropdown an nhu ban cu),
+   giai quyet dung phan hoi "kho tim token": nguoi dung thay het danh sach ngay, bam la chen. */
+.pt-token-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
 }
 
-.pt-column-move {
+.pt-token-chip {
   display: flex;
-  gap: 4px;
-}
-
-.pt-column-move button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  padding: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
-  color: var(--color-foreground);
+  text-align: left;
   cursor: pointer;
 }
 
-.pt-column-move button:hover {
+.pt-token-chip:hover {
   background: var(--color-muted);
+  border-color: var(--color-ring);
 }
 
-.pt-column-move button:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
+.pt-token-chip-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-foreground);
+}
+
+.pt-token-chip-syntax {
+  font-family: ui-monospace, 'Cascadia Code', 'Consolas', 'SFMono-Regular', monospace;
+  font-size: 11px;
+  color: var(--color-primary-dark);
 }
 
 /* Toggle "Kho doc / Kho ngang" - 2 nut dang segmented control, khac .switch (boolean bat/tat)
