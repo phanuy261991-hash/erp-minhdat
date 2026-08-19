@@ -1,0 +1,594 @@
+<title>Nghiệm thu theo giải pháp</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Open+Sans:wght@400;500;600;700&display=swap">
+<style>
+  /* ===== Token he thong that cua du an (frontend/assets/tokens.css) - mockup nay ke thua
+     nguyen ven, khong phat minh bang mau/font moi. App goc chi co 1 giao dien sang, khong co
+     dark mode - commit 1 the gioi thi giac duy nhat co chu dich, khong bo sot. ===== */
+  :root {
+    --color-primary: #2563eb;
+    --color-primary-dark: #1d4ed8;
+    --color-accent: #059669;
+    --color-destructive: #dc2626;
+    --color-warning: #b45309;
+    --color-background: #f8fafc;
+    --color-foreground: #0f172a;
+    --color-surface: #ffffff;
+    --color-muted: #f1f5fd;
+    --color-muted-foreground: #64748b;
+    --color-border: #e4ecfc;
+    --color-ring: #2563eb;
+
+    --font-heading: 'Be Vietnam Pro', 'Segoe UI', Roboto, Arial, sans-serif;
+    --font-body: 'Open Sans', 'Segoe UI', Roboto, Arial, sans-serif;
+
+    --radius-lg: 20px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+
+    --shadow-card: 0 20px 45px rgba(37, 99, 235, 0.18), 0 4px 12px rgba(15, 23, 42, 0.06);
+    --shadow-button: 0 8px 20px rgba(37, 99, 235, 0.25);
+    --transition-fast: 180ms ease-out;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-body);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 { font-family: var(--font-heading); text-wrap: balance; margin: 0; }
+  button, input { font-family: inherit; }
+  button:focus-visible, input:focus-visible, a:focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+  table { font-variant-numeric: tabular-nums; }
+
+  /* ===== Khung app: sidebar + noi dung (rap khuon .app-layout/.sidebar that) ===== */
+  .app-layout { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 224px;
+    flex-shrink: 0;
+    background: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    padding: 14px 0;
+  }
+
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 14px 14px;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 8px;
+  }
+  .sidebar-mark {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-family: var(--font-heading); font-weight: 700; font-size: 13px;
+    flex-shrink: 0;
+  }
+  .sidebar-word { font-family: var(--font-heading); font-weight: 600; font-size: 14px; color: var(--color-foreground); }
+
+  .nav-group-label {
+    padding: 12px 18px 4px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--color-muted-foreground);
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    margin: 1px 8px; padding: 9px 14px; border-radius: var(--radius-sm);
+    font-size: 14px; color: var(--color-foreground); text-decoration: none;
+  }
+  .nav-item svg { flex-shrink: 0; opacity: .75; }
+  .nav-item.active { background: var(--color-muted); color: var(--color-primary); font-weight: 600; }
+  .nav-item.active svg { opacity: 1; }
+
+  .app-content { flex: 1; min-width: 0; padding: 22px 30px 60px; max-width: 1180px; }
+
+  .page-eyebrow { margin: 0 0 4px; font-size: 12px; color: var(--color-muted-foreground); }
+
+  .page-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    margin-bottom: 18px;
+  }
+  .page-title-group { display: flex; align-items: center; gap: 12px; }
+  .page-title-group h2 { font-size: 22px; font-weight: 600; }
+  .status-badge {
+    display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 999px;
+    font-size: 12px; font-weight: 600; background: #ecfdf5; color: var(--color-accent);
+  }
+  .btn-back {
+    width: 34px; height: 34px; border-radius: var(--radius-sm); border: 1px solid var(--color-border);
+    background: var(--color-surface); color: var(--color-muted-foreground);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .btn-secondary {
+    padding: 9px 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+    background: var(--color-surface); color: var(--color-foreground); font-size: 14px;
+    text-decoration: none; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  }
+
+  /* ===== Tab bar (rap khuon .detail-tabs/.detail-tab that) ===== */
+  .detail-tabs {
+    display: flex; gap: 4px; border-bottom: 1px solid var(--color-border);
+    margin-bottom: 24px; overflow-x: auto;
+  }
+  .detail-tab {
+    display: flex; align-items: center; gap: 6px; padding: 10px 16px;
+    border: none; border-bottom: 2px solid transparent; background: none;
+    font-family: var(--font-body); font-size: 14px; font-weight: 500;
+    color: var(--color-muted-foreground); cursor: pointer; white-space: nowrap;
+  }
+  .detail-tab.active { color: var(--color-primary); font-weight: 600; border-bottom-color: var(--color-primary); }
+  .detail-tab .tab-new-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--color-accent); margin-left: 2px;
+  }
+
+  /* ===== Stat row ===== */
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+  .stat-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 16px 18px; }
+  .stat-card-label { margin: 0 0 6px; font-size: 13px; color: var(--color-muted-foreground); }
+  .stat-card-value { font-family: var(--font-heading); font-size: 25px; font-weight: 700; }
+  .stat-card-value .unit { font-size: 14px; font-weight: 500; color: var(--color-muted-foreground); margin-left: 4px; }
+  .stat-card-value--accent { color: var(--color-accent); }
+  .stat-card-value--warning { color: var(--color-warning); }
+  .stat-card-bar { margin-top: 10px; height: 6px; border-radius: 999px; background: var(--color-muted); overflow: hidden; }
+  .stat-card-bar-fill { height: 100%; background: linear-gradient(90deg, var(--color-primary), var(--color-accent)); border-radius: 999px; }
+
+  /* ===== Section header ===== */
+  .section-row {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 14px;
+  }
+  .section-row h3 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .section-row p { margin: 0; font-size: 13px; color: var(--color-muted-foreground); max-width: 60ch; }
+
+  .btn-add {
+    display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border: none;
+    border-radius: var(--radius-sm); background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    color: #fff; font-family: var(--font-heading); font-weight: 600; font-size: 14px; cursor: pointer;
+    box-shadow: var(--shadow-button); flex-shrink: 0; white-space: nowrap;
+  }
+
+  /* ===== Danh sach the Giai phap ===== */
+  .solution-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 8px; }
+
+  .solution-card {
+    background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg);
+    padding: 20px 22px; box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+    display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: start;
+  }
+
+  .solution-icon {
+    width: 42px; height: 42px; border-radius: var(--radius-md); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--color-muted); color: var(--color-primary);
+  }
+
+  .solution-head { display: flex; gap: 14px; margin-bottom: 12px; }
+  .solution-title-group { min-width: 0; }
+  .solution-title { font-size: 16px; font-weight: 600; margin: 0 0 3px; }
+  .solution-meta { margin: 0; font-size: 13px; color: var(--color-muted-foreground); }
+
+  .solution-devices { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; padding-left: 56px; }
+  .device-chip {
+    display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px 4px 4px;
+    background: var(--color-muted); border-radius: 999px; font-size: 12.5px; color: var(--color-foreground);
+  }
+  .device-chip .qty {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px;
+    padding: 0 5px; border-radius: 999px; background: var(--color-surface); color: var(--color-primary);
+    font-weight: 700; font-size: 11px;
+  }
+  .device-chip.more { background: transparent; border: 1px dashed var(--color-border); color: var(--color-muted-foreground); }
+
+  .solution-progress { padding-left: 56px; display: flex; align-items: center; gap: 10px; }
+  .solution-progress-track { flex: 1; max-width: 260px; height: 6px; border-radius: 999px; background: var(--color-muted); overflow: hidden; }
+  .solution-progress-fill { height: 100%; border-radius: 999px; background: var(--color-accent); }
+  .solution-progress-label { font-size: 12.5px; color: var(--color-muted-foreground); white-space: nowrap; }
+
+  .solution-actions { display: flex; gap: 6px; }
+  .icon-btn {
+    width: 32px; height: 32px; border-radius: var(--radius-sm); border: 1px solid transparent;
+    background: none; color: var(--color-muted-foreground); display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .icon-btn:hover { background: var(--color-muted); color: var(--color-primary); }
+  .icon-btn.danger:hover { background: #fef2f2; color: var(--color-destructive); }
+
+  /* ===== Modal Them/Sua giai phap ===== */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(15, 23, 42, .45);
+    display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px;
+  }
+  .modal-overlay[hidden] { display: none; }
+  .modal-card {
+    width: 1020px; max-width: 100%; max-height: calc(100vh - 40px); overflow-y: auto;
+    background: var(--color-surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);
+    padding: 26px 28px 22px;
+  }
+  .modal-card h3 { font-size: 18px; margin-bottom: 4px; }
+  .modal-subtitle { margin: 0 0 20px; font-size: 13px; color: var(--color-muted-foreground); }
+
+  .form-row { display: flex; gap: 16px; margin-bottom: 16px; }
+  .form-field { flex: 1; min-width: 0; }
+  .form-field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--color-foreground); }
+  .form-field input[type="text"] {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+    font-size: 14px; background: var(--color-surface); color: var(--color-foreground);
+  }
+  .form-field input[type="text"]:focus { border-color: var(--color-primary); }
+
+  .device-picker-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin: 22px 0 10px;
+  }
+  .device-picker-head h4 { font-size: 14px; font-weight: 600; }
+  .device-search {
+    display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm); background: var(--color-background); width: 240px; color: var(--color-muted-foreground);
+  }
+  .device-search input {
+    border: none; background: none; outline: none; font-size: 13px; width: 100%; color: var(--color-foreground);
+  }
+
+  .device-table-wrap { border: 1px solid var(--color-border); border-radius: var(--radius-md); overflow-x: auto; }
+  .device-table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 13.5px; }
+  .device-table th {
+    text-align: left; padding: 10px 14px; font-size: 11.5px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .03em; color: var(--color-muted-foreground); background: var(--color-muted);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .device-table td { padding: 10px 14px; border-bottom: 1px solid var(--color-border); vertical-align: middle; }
+  .device-table tr:last-child td { border-bottom: none; }
+  .device-table tr.checked td { background: #f5f9ff; }
+  .device-table .num { text-align: right; }
+  .device-name { font-weight: 600; }
+  .device-code { color: var(--color-muted-foreground); font-size: 12px; }
+  .device-line-total { font-weight: 700; }
+  .device-line-total.muted { font-weight: 400; color: var(--color-muted-foreground); }
+
+  .checkbox {
+    width: 19px; height: 19px; border-radius: 5px; border: 1.5px solid var(--color-border);
+    accent-color: var(--color-primary); cursor: pointer;
+  }
+
+  .qty-input-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .qty-input {
+    width: 66px; padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+    font-size: 13.5px; text-align: right; font-variant-numeric: tabular-nums;
+  }
+  .qty-input:disabled { background: var(--color-muted); color: var(--color-muted-foreground); }
+  .qty-hint { font-size: 11px; color: var(--color-muted-foreground); }
+  .qty-hint.full { color: var(--color-accent); }
+
+  .modal-foot {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 20px;
+    padding-top: 16px; border-top: 1px solid var(--color-border);
+  }
+  .modal-foot-summary { font-size: 13px; color: var(--color-muted-foreground); }
+  .modal-foot-summary strong { color: var(--color-foreground); font-variant-numeric: tabular-nums; }
+  .modal-actions { display: flex; gap: 10px; }
+  .btn-primary {
+    padding: 10px 20px; border: none; border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    color: #fff; font-family: var(--font-heading); font-weight: 600; font-size: 14px; cursor: pointer;
+    box-shadow: var(--shadow-button);
+  }
+  .modal-actions .btn-secondary { padding: 10px 18px; }
+
+  .annotation {
+    margin: 34px 0 0; padding: 14px 16px; border-radius: var(--radius-md);
+    background: #fffbeb; border: 1px solid #fde68a; color: #92400e; font-size: 12.5px; line-height: 1.6;
+  }
+  .annotation strong { font-weight: 700; }
+</style>
+
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-mark">N</div>
+      <div class="sidebar-word">NEXA One</div>
+    </div>
+    <div class="nav-group-label">Kho</div>
+    <a class="nav-item" href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/></svg>Sản phẩm</a>
+    <a class="nav-item" href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v14M6 11l6 6 6-6"/><path d="M5 21h14"/></svg>Nhập kho</a>
+    <a class="nav-item" href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V7M6 13l6-6 6 6"/><path d="M5 3h14"/></svg>Xuất kho</a>
+    <div class="nav-group-label">Dự án</div>
+    <a class="nav-item active" href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-6h6v6"/></svg>Dự án</a>
+    <div class="nav-group-label">Quỹ</div>
+    <a class="nav-item" href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg>Sổ quỹ</a>
+  </aside>
+
+  <main class="app-content">
+    <p class="page-eyebrow">Dự án</p>
+    <div class="page-header">
+      <div class="page-title-group">
+        <a class="btn-back" href="#" aria-label="Quay lại danh sách dự án"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></a>
+        <h2>Nhà máy Thành Phát – Khu B</h2>
+        <span class="status-badge">Đang thực hiện</span>
+      </div>
+      <a class="btn-secondary" href="#"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg>Sửa dự án</a>
+    </div>
+
+    <nav class="detail-tabs">
+      <button class="detail-tab">Tổng quan</button>
+      <button class="detail-tab">Giai đoạn</button>
+      <button class="detail-tab">Vật tư</button>
+      <button class="detail-tab">Thanh toán &amp; Công nợ</button>
+      <button class="detail-tab">Phát sinh</button>
+      <button class="detail-tab">Bảo hành</button>
+      <button class="detail-tab active">Nghiệm thu<span class="tab-new-dot" title="Tab mới"></span></button>
+    </nav>
+
+    <!-- ===== Thong ke tong quan ===== -->
+    <div class="stat-grid">
+      <div class="stat-card">
+        <p class="stat-card-label">Thiết bị đã xuất cho dự án</p>
+        <p class="stat-card-value">260 <span class="unit">đơn vị</span></p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-card-label">Đã đưa vào giải pháp</p>
+        <p class="stat-card-value stat-card-value--accent">198 <span class="unit">/ 260</span></p>
+        <div class="stat-card-bar"><div class="stat-card-bar-fill" style="width: 76%"></div></div>
+      </div>
+      <div class="stat-card">
+        <p class="stat-card-label">Chưa phân vào giải pháp nào</p>
+        <p class="stat-card-value stat-card-value--warning">62 <span class="unit">đơn vị</span></p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-card-label">Tổng giá trị đã xuất</p>
+        <p class="stat-card-value">333.000.000 <span class="unit">đ</span></p>
+      </div>
+    </div>
+
+    <div class="section-row">
+      <div>
+        <h3>Nghiệm thu theo giải pháp</h3>
+        <p>Mỗi giải pháp tương ứng 1 hạng mục đã ký với khách hàng — chọn thiết bị đã xuất cho dự án để đưa vào đúng giải pháp, phục vụ lập biên bản nghiệm thu.</p>
+      </div>
+      <button class="btn-add" onclick="document.getElementById('solution-modal').removeAttribute('hidden')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        Thêm giải pháp
+      </button>
+    </div>
+
+    <!-- ===== Danh sach the giai phap ===== -->
+    <div class="solution-list">
+
+      <div class="solution-card">
+        <div>
+          <div class="solution-head">
+            <div class="solution-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5 12 3l10 5.5-10 5.5-10-5.5Z"/><path d="M6 11v5.5L12 20l6-3.5V11"/><path d="M2 8.5v8L6 19"/></svg>
+            </div>
+            <div class="solution-title-group">
+              <p class="solution-title">Giải pháp Camera an ninh</p>
+              <p class="solution-meta">5 loại thiết bị · 96 đơn vị · 162.400.000 đ</p>
+            </div>
+          </div>
+          <div class="solution-devices">
+            <span class="device-chip">Camera IP 4MP Dome <span class="qty">40</span></span>
+            <span class="device-chip">Camera IP 4MP Thân trụ <span class="qty">20</span></span>
+            <span class="device-chip">Đầu ghi hình NVR 32 kênh <span class="qty">2</span></span>
+            <span class="device-chip more">+2 thiết bị khác</span>
+          </div>
+          <div class="solution-progress">
+            <div class="solution-progress-track"><div class="solution-progress-fill" style="width: 100%"></div></div>
+            <span class="solution-progress-label">96/96 đơn vị đã gán</span>
+          </div>
+        </div>
+        <div class="solution-actions">
+          <button class="icon-btn" title="Sửa giải pháp" onclick="document.getElementById('solution-modal').removeAttribute('hidden')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg></button>
+          <button class="icon-btn danger" title="Xóa giải pháp"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>
+        </div>
+      </div>
+
+      <div class="solution-card">
+        <div>
+          <div class="solution-head">
+            <div class="solution-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01"/></svg>
+            </div>
+            <div class="solution-title-group">
+              <p class="solution-title">Giải pháp Mạng LAN &amp; WiFi</p>
+              <p class="solution-meta">4 loại thiết bị · 58 đơn vị · 86.500.000 đ</p>
+            </div>
+          </div>
+          <div class="solution-devices">
+            <span class="device-chip">Switch PoE 24 port <span class="qty">6</span></span>
+            <span class="device-chip">Access Point WiFi 6 <span class="qty">18</span></span>
+            <span class="device-chip">Tủ mạng 27U <span class="qty">2</span></span>
+            <span class="device-chip more">+1 thiết bị khác</span>
+          </div>
+          <div class="solution-progress">
+            <div class="solution-progress-track"><div class="solution-progress-fill" style="width: 78%"></div></div>
+            <span class="solution-progress-label">58/74 đơn vị đã gán</span>
+          </div>
+        </div>
+        <div class="solution-actions">
+          <button class="icon-btn" title="Sửa giải pháp"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg></button>
+          <button class="icon-btn danger" title="Xóa giải pháp"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>
+        </div>
+      </div>
+
+      <div class="solution-card">
+        <div>
+          <div class="solution-head">
+            <div class="solution-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6a3 3 0 0 1 3 3v3a3 3 0 1 1-6 0V9a3 3 0 0 1 3-3Z"/><path d="M19 11v1a7 7 0 0 1-14 0v-1M12 19v3"/></svg>
+            </div>
+            <div class="solution-title-group">
+              <p class="solution-title">Giải pháp Âm thanh thông báo</p>
+              <p class="solution-meta">3 loại thiết bị · 44 đơn vị · 38.200.000 đ</p>
+            </div>
+          </div>
+          <div class="solution-devices">
+            <span class="device-chip">Loa âm trần 6W <span class="qty">36</span></span>
+            <span class="device-chip">Amply công suất 240W <span class="qty">4</span></span>
+            <span class="device-chip">Micro không dây <span class="qty">4</span></span>
+          </div>
+          <div class="solution-progress">
+            <div class="solution-progress-track"><div class="solution-progress-fill" style="width: 100%"></div></div>
+            <span class="solution-progress-label">44/44 đơn vị đã gán</span>
+          </div>
+        </div>
+        <div class="solution-actions">
+          <button class="icon-btn" title="Sửa giải pháp"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg></button>
+          <button class="icon-btn danger" title="Xóa giải pháp"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="annotation">
+      <strong>Giả định thiết kế cần bạn xác nhận:</strong> (1) 1 thiết bị đã xuất có thể chia số lượng vào NHIỀU giải pháp khác nhau (vd 40 camera → 2 giải pháp) — cột "còn lại chưa gán" trong bảng bên dưới trừ đúng phần đã dùng ở giải pháp khác. (2) Trang này chỉ gom nhóm thiết bị đã xuất — không tạo phiếu xuất kho mới, không đổi tồn kho. (3) Quyền thao tác dùng chung quyền <code>du_an</code> hiện có, chưa tách quyền riêng. (4) <strong>Đơn giá</strong> lấy đúng giá đã ghi trên phiếu xuất kho gốc (giá bán cho khách hàng) — nếu 1 sản phẩm được xuất nhiều đợt với giá khác nhau, sẽ hiện giá bình quân gia quyền theo đúng số lượng đã xuất, khớp với cách "Vật tư"/"Giá vốn" đang tính ở các tab khác. Nếu khác ý bạn, cứ phản hồi trực tiếp trên mockup này.
+    </div>
+  </main>
+</div>
+
+<!-- ===== Modal Them/Sua giai phap ===== -->
+<div class="modal-overlay" id="solution-modal" hidden>
+  <div class="modal-card">
+    <h3>Sửa giải pháp</h3>
+    <p class="modal-subtitle">Chọn thiết bị đã xuất cho dự án "Nhà máy Thành Phát – Khu B" để đưa vào giải pháp này.</p>
+
+    <div class="form-row">
+      <div class="form-field">
+        <label for="sol-name">Tên giải pháp</label>
+        <input type="text" id="sol-name" value="Giải pháp Camera an ninh">
+      </div>
+      <div class="form-field">
+        <label for="sol-note">Ghi chú (không bắt buộc)</label>
+        <input type="text" id="sol-note" placeholder="Vd: khu vực nhà xưởng + cổng bảo vệ">
+      </div>
+    </div>
+
+    <div class="device-picker-head">
+      <h4>Thiết bị đã xuất cho dự án</h4>
+      <div class="device-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="text" placeholder="Tìm theo mã hoặc tên sản phẩm...">
+      </div>
+    </div>
+
+    <div class="device-table-wrap">
+      <table class="device-table">
+        <thead>
+          <tr>
+            <th style="width:36px"></th>
+            <th>Sản phẩm</th>
+            <th>ĐVT</th>
+            <th class="num">Đơn giá</th>
+            <th class="num">Đã xuất</th>
+            <th class="num">SL vào giải pháp này</th>
+            <th class="num">Thành tiền</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="checked">
+            <td><input type="checkbox" class="checkbox" checked></td>
+            <td><div class="device-name">Camera IP 4MP Dome</div><div class="device-code">SP00045</div></td>
+            <td>Cái</td>
+            <td class="num">1.850.000</td>
+            <td class="num">40</td>
+            <td class="num">
+              <div class="qty-input-wrap">
+                <input type="text" class="qty-input" value="40">
+                <span class="qty-hint full">còn 0</span>
+              </div>
+            </td>
+            <td class="num device-line-total">74.000.000</td>
+          </tr>
+          <tr class="checked">
+            <td><input type="checkbox" class="checkbox" checked></td>
+            <td><div class="device-name">Camera IP 4MP Thân trụ</div><div class="device-code">SP00046</div></td>
+            <td>Cái</td>
+            <td class="num">1.650.000</td>
+            <td class="num">20</td>
+            <td class="num">
+              <div class="qty-input-wrap">
+                <input type="text" class="qty-input" value="20">
+                <span class="qty-hint full">còn 0</span>
+              </div>
+            </td>
+            <td class="num device-line-total">33.000.000</td>
+          </tr>
+          <tr class="checked">
+            <td><input type="checkbox" class="checkbox" checked></td>
+            <td><div class="device-name">Đầu ghi hình NVR 32 kênh</div><div class="device-code">SP00052</div></td>
+            <td>Cái</td>
+            <td class="num">12.500.000</td>
+            <td class="num">2</td>
+            <td class="num">
+              <div class="qty-input-wrap">
+                <input type="text" class="qty-input" value="2">
+                <span class="qty-hint full">còn 0</span>
+              </div>
+            </td>
+            <td class="num device-line-total">25.000.000</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" class="checkbox"></td>
+            <td><div class="device-name">Switch PoE 24 port</div><div class="device-code">SP00061</div></td>
+            <td>Cái</td>
+            <td class="num">4.200.000</td>
+            <td class="num">6</td>
+            <td class="num">
+              <div class="qty-input-wrap">
+                <input type="text" class="qty-input" value="0" disabled>
+                <span class="qty-hint">còn 6</span>
+              </div>
+            </td>
+            <td class="num device-line-total muted">—</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" class="checkbox"></td>
+            <td><div class="device-name">Bộ lưu điện UPS 1000VA</div><div class="device-code">SP00073</div></td>
+            <td>Bộ</td>
+            <td class="num">1.100.000</td>
+            <td class="num">8</td>
+            <td class="num">
+              <div class="qty-input-wrap">
+                <input type="text" class="qty-input" value="0" disabled>
+                <span class="qty-hint">còn 8</span>
+              </div>
+            </td>
+            <td class="num device-line-total muted">—</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" class="checkbox"></td>
+            <td><div class="device-name">Ổ cứng chuyên dụng 4TB</div><div class="device-code">SP00058</div></td>
+            <td>Cái</td>
+            <td class="num">2.300.000</td>
+            <td class="num">4</td>
+            <td class="num">
+              <div class="qty-input-wrap">
+                <input type="text" class="qty-input" value="0" disabled>
+                <span class="qty-hint">còn 4</span>
+              </div>
+            </td>
+            <td class="num device-line-total muted">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="modal-foot">
+      <p class="modal-foot-summary">Đã chọn <strong>3</strong> loại thiết bị · <strong>62</strong> đơn vị · <strong>132.000.000 đ</strong></p>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="document.getElementById('solution-modal').setAttribute('hidden','')">Hủy</button>
+        <button class="btn-primary">Lưu giải pháp</button>
+      </div>
+    </div>
+  </div>
+</div>
