@@ -17,15 +17,18 @@ function getProject(projectId) {
   return db.prepare('SELECT id FROM projects WHERE id = ?').get(projectId);
 }
 
-// SUM so luong theo product_id, chi tinh phieu DA gan dung project nay - dung Map de tra cuu
-// O(1) khi ghep voi danh sach du toan, tranh N+1 query.
+// SUM so luong theo product_id, chi tinh phieu DA gan dung project nay VA da xuat/nhap kho that
+// (status='da_tru_kho' - phieu xuat con dang nhap, 2026-08-20, chua thuc su xuat hang khong duoc
+// tinh). Ca stock_receipts lan stock_issues deu co cot status (mac dinh 'da_tru_kho', xem
+// migration 033/034) nen dieu kien nay an toan cho ca 2 bang. Dung Map de tra cuu O(1) khi ghep
+// voi danh sach du toan, tranh N+1 query.
 function sumQuantityByProduct(table, itemsTable, foreignKey, projectId) {
   const rows = db
     .prepare(`
       SELECT it.product_id, SUM(it.quantity) AS qty
       FROM ${itemsTable} it
       JOIN ${table} d ON d.id = it.${foreignKey}
-      WHERE d.project_id = ?
+      WHERE d.project_id = ? AND d.status = 'da_tru_kho'
       GROUP BY it.product_id
     `)
     .all(projectId);

@@ -8,9 +8,12 @@ let adjustableDocsCache = [];
 
 async function loadAdjustableDocs() {
   const [{ receipts }, { issues }] = await Promise.all([apiFetch('/stock-receipts'), apiFetch('/stock-issues')]);
+  // Chi hien phieu da 'da_tru_kho' - phieu con dang nhap (2026-08-20, quy trinh 2 buoc Luu tam/
+  // Xuat kho) chua chac chan se duoc xuat kho that, backend cung chan tuong tu neu chon nham
+  // (xem readAdjustment() trong stockIssues.routes.js/stockReceipts.routes.js).
   adjustableDocsCache = [
-    ...receipts.map((r) => ({ type: 'receipt', id: r.id, code: r.code, label: `${r.code} (Phiếu nhập)` })),
-    ...issues.map((i) => ({ type: 'issue', id: i.id, code: i.code, label: `${i.code} (Phiếu xuất)` })),
+    ...receipts.filter((r) => r.status === 'da_tru_kho').map((r) => ({ type: 'receipt', id: r.id, code: r.code, label: `${r.code} (Phiếu nhập)` })),
+    ...issues.filter((i) => i.status === 'da_tru_kho').map((i) => ({ type: 'issue', id: i.id, code: i.code, label: `${i.code} (Phiếu xuất)` })),
   ];
 }
 

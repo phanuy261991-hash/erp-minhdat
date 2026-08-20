@@ -29,6 +29,7 @@
               <th>Khách hàng</th>
               <th>Người lập</th>
               <th>Thanh toán</th>
+              <th>Trạng thái</th>
               <th>Ghi chú</th>
               <th>Ngày lập</th>
               <th>Thao tác</th>
@@ -77,7 +78,7 @@
 
   <div id="issue-modal" class="modal-overlay" hidden>
     <div class="modal-card modal-card-lg">
-      <h3>Lập phiếu xuất kho</h3>
+      <h3 id="issue-modal-title">Lập phiếu xuất kho</h3>
       <form id="issue-form">
         <div id="issue-form-error" class="alert alert-error" hidden>
           <span class="alert-icon-slot"></span>
@@ -172,7 +173,8 @@
 
         <div class="modal-actions">
           <button type="button" id="btn-cancel-issue" class="btn-secondary">Hủy</button>
-          <button type="submit" id="btn-submit-issue" class="btn-primary">Lưu phiếu</button>
+          <button type="button" id="btn-save-draft-issue" class="btn-secondary">Lưu tạm</button>
+          <button type="submit" id="btn-submit-issue" class="btn-primary">Xuất kho</button>
         </div>
       </form>
     </div>

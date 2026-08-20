@@ -9,6 +9,7 @@ const TEMPLATE_TYPE_LABELS = {
   stock_issue: 'Phiếu xuất kho',
   project_payment_advance: 'Đợt thanh toán dự án',
   acceptance_solution: 'Nghiệm thu theo giải pháp',
+  order_confirmation: 'Phiếu xác nhận đơn hàng',
 };
 
 const templatesTbody = document.getElementById('templates-tbody');

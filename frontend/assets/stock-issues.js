@@ -3,12 +3,18 @@
 // chiet khau tung dong - migration 013, thoi gian xuat tuy chinh), khac o cho co them toggle
 // payment_status ("Chua thu tien ngay" - xem docs/DECISIONS.md muc "Cong no phat sinh tu phieu
 // xuat") va khong co ma don hang (stock_issues khong co cot nay, khac stock_receipts).
+//
+// Quy trinh 2 buoc (2026-08-20, theo yeu cau nguoi dung - dung nguyen pattern stock-returns.js):
+// nut "Luu tam" chi ghi thong tin (POST/PUT khong xu ly), nut "Xuat kho" moi thuc su tru kho +
+// ghi cong no/so quy (tao moi: POST voi is_draft:false; phieu da luu: PUT luu lai sua doi truoc
+// roi goi POST /:id/process). Phieu 'cho_tru_kho' con sua duoc, phieu 'da_tru_kho' khoa vinh vien.
 
 let currentUser = null;
 let productsCache = [];
 let partnersCache = [];
 let projectsCache = [];
 let rowCounter = 0;
+let editingIssueId = null; // null = tao moi
 
 const issuesTbody = document.getElementById('issues-tbody');
 const issuesErrorBox = document.getElementById('issues-error');
@@ -16,10 +22,12 @@ const issuesErrorText = document.getElementById('issues-error-text');
 
 const btnAddIssue = document.getElementById('btn-add-issue');
 const issueModal = document.getElementById('issue-modal');
+const issueModalTitle = document.getElementById('issue-modal-title');
 const issueForm = document.getElementById('issue-form');
 const issueFormErrorBox = document.getElementById('issue-form-error');
 const issueFormErrorText = document.getElementById('issue-form-error-text');
 const btnCancelIssue = document.getElementById('btn-cancel-issue');
+const btnSaveDraftIssue = document.getElementById('btn-save-draft-issue');
 const btnSubmitIssue = document.getElementById('btn-submit-issue');
 
 const partnerSelect = document.getElementById('issue-partner');
@@ -52,6 +60,15 @@ function toSqliteDatetime(localValue) {
   return d.toISOString().slice(0, 19).replace('T', ' ');
 }
 
+// Chieu nguoc lai toSqliteDatetime() - dung khi mo Sua phieu nhap de dien lai dung gio dia phuong
+// da luu tren phieu (khong phai gio hien tai) vao o chon thoi gian xuat.
+function toDatetimeLocalValue(sqliteDateTime) {
+  const iso = sqliteDateTime.replace(' ', 'T') + 'Z';
+  const d = new Date(iso);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function formatMoney(value) {
   return Number(value).toLocaleString('vi-VN');
 }
@@ -68,14 +85,36 @@ function renderIssuesError(message) {
   issuesErrorBox.hidden = false;
 }
 
+let currentIssues = [];
+
 function renderIssueRow(issue) {
   const paymentBadge = issue.payment_status === 'cong_no'
     ? '<span class="badge badge-inactive">Công nợ</span>'
     : '<span class="badge badge-active">Đã thu tiền</span>';
 
+  const isDraft = issue.status === 'cho_tru_kho';
+  const statusBadge = isDraft
+    ? '<span class="badge badge-inactive">Nháp</span>'
+    : '<span class="badge badge-active">Đã xuất kho</span>';
+
   const noteHtml = issue.adjusts_code
     ? `<span class="badge badge-inactive" title="Điều chỉnh cho phiếu ${issue.adjusts_code}">Điều chỉnh ${issue.adjusts_code}</span> ${issue.note || ''}`
     : (issue.note || '-');
+
+  // Phieu 'cho_tru_kho' (nhap): cho sua + xuat kho nhanh tren danh sach + in "Phieu xac nhan don
+  // hang" de xem/chot truoc; phieu 'da_tru_kho' da khoa, chi con Xem chi tiet + In phieu (mau
+  // stock_issue) - dung dung pattern stock-returns.js.
+  const actions = isDraft
+    ? `
+      <button type="button" class="icon-btn" data-action="edit" data-id="${issue.id}" title="Sửa phiếu">${icon('pencil', 14)}</button>
+      <button type="button" class="icon-btn" data-action="process" data-id="${issue.id}" title="Xuất kho">${icon('check', 14)}</button>
+      <button type="button" class="icon-btn" data-action="print-confirmation" data-id="${issue.id}" title="In phiếu xác nhận đơn hàng">${icon('printer', 14)}</button>
+      <button type="button" class="icon-btn" data-action="view" data-id="${issue.id}" title="Xem chi tiết">${icon('eye', 14)}</button>
+    `
+    : `
+      <button type="button" class="icon-btn" data-action="view" data-id="${issue.id}" title="Xem chi tiết">${icon('eye', 14)}</button>
+      <button type="button" class="icon-btn" data-action="print" data-id="${issue.id}" title="In phiếu">${icon('printer', 14)}</button>
+    `;
 
   const tr = document.createElement('tr');
   tr.innerHTML = `
@@ -83,12 +122,10 @@ function renderIssueRow(issue) {
     <td>${issue.partner_name || '-'}</td>
     <td>${issue.created_by_name}</td>
     <td>${paymentBadge}</td>
+    <td>${statusBadge}</td>
     <td>${noteHtml}</td>
     <td>${formatDate(issue.created_at)}</td>
-    <td>
-      <button type="button" class="icon-btn" data-action="view" data-id="${issue.id}" title="Xem chi tiết">${icon('eye', 14)}</button>
-      <button type="button" class="icon-btn" data-action="print" data-id="${issue.id}" title="In phiếu">${icon('printer', 14)}</button>
-    </td>
+    <td>${actions}</td>
   `;
   return tr;
 }
@@ -96,6 +133,7 @@ function renderIssueRow(issue) {
 async function loadIssues() {
   try {
     const { issues } = await apiFetch('/stock-issues');
+    currentIssues = issues;
     issuesTbody.innerHTML = '';
     issues.forEach((i) => issuesTbody.appendChild(renderIssueRow(i)));
   } catch (err) {
@@ -103,13 +141,39 @@ async function loadIssues() {
   }
 }
 
-issuesTbody.addEventListener('click', (event) => {
+issuesTbody.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
-  if (button.dataset.action === 'view') {
-    openIssueDetailModal(button.dataset.id);
-  } else if (button.dataset.action === 'print') {
-    openPrintPreview(`print-issue.html?id=${button.dataset.id}`);
+  const { action, id } = button.dataset;
+
+  if (action === 'view') {
+    openIssueDetailModal(id);
+    return;
+  }
+  if (action === 'print') {
+    openPrintPreview(`print-issue.html?id=${id}`);
+    return;
+  }
+  if (action === 'print-confirmation') {
+    openPrintPreview(`print-order-confirmation.html?id=${id}`);
+    return;
+  }
+  if (action === 'edit') {
+    const issue = currentIssues.find((i) => String(i.id) === id);
+    if (issue) await openEditModal(issue);
+    return;
+  }
+  if (action === 'process') {
+    if (!confirm('Xác nhận xuất kho cho phiếu này? Sau khi xuất kho sẽ không sửa được nữa.')) return;
+    button.disabled = true;
+    issuesErrorBox.hidden = true;
+    try {
+      await apiFetch(`/stock-issues/${id}/process`, { method: 'POST' });
+      await loadIssues();
+    } catch (err) {
+      renderIssuesError(err.message);
+      button.disabled = false;
+    }
   }
 });
 
@@ -268,6 +332,17 @@ function selectProduct(row, productId, label) {
   updateTotalAmount();
 }
 
+// Dien lai 1 dong san pham co san (mo Sua phieu nhap) - khac selectProduct() o cho khong ghi de
+// don gia bang gia ban mac dinh cua san pham, giu dung don gia/chiet khau da luu tren phieu.
+function populateItemRow(row, item) {
+  row.querySelector('.item-product-id').value = item.product_id;
+  row.querySelector('.item-product-search').value = `${item.product_code} - ${item.product_name}`;
+  row.querySelector('.item-unit-display').textContent = item.unit;
+  row.querySelector('.item-quantity').value = item.quantity;
+  setMoneyValue(row.querySelector('.item-unit-price'), item.unit_price);
+  row.querySelector('.item-discount').value = item.discount_percent || 0;
+}
+
 itemRowsContainer.addEventListener('input', (event) => {
   if (event.target.classList.contains('item-product-search')) {
     const row = event.target.closest('.item-row');
@@ -324,9 +399,48 @@ function resetIssueForm() {
 }
 
 function openCreateModal() {
+  editingIssueId = null;
+  issueModalTitle.textContent = 'Lập phiếu xuất kho';
   resetIssueForm();
   issueFormErrorBox.hidden = true;
   issueModal.hidden = false;
+}
+
+// Sua 1 phieu dang 'cho_tru_kho' (nhap) - nap lai TOAN BO du lieu (goi GET /:id de co du items,
+// khac ban tom tat currentIssues khong co items) vao dung form Them/Sua dung chung.
+async function openEditModal(issueSummary) {
+  issuesErrorBox.hidden = true;
+  try {
+    const { issue } = await apiFetch(`/stock-issues/${issueSummary.id}`);
+
+    editingIssueId = issue.id;
+    issueModalTitle.textContent = 'Sửa phiếu xuất kho (nháp)';
+    issueForm.reset();
+    resetAdjustmentField();
+
+    partnerSelect.value = issue.partner_id ? String(issue.partner_id) : '';
+    newPartnerFields.hidden = true;
+    existingCustomerInfoRow.hidden = false;
+    updateCustomerInfoDisplay();
+
+    projectSelect.value = issue.project_id ? String(issue.project_id) : '';
+    noteInput.value = issue.note || '';
+    issueDateInput.value = toDatetimeLocalValue(issue.created_at);
+    paymentToggle.checked = issue.payment_status === 'cong_no';
+
+    itemRowsContainer.innerHTML = '';
+    issue.items.forEach((item) => {
+      const row = createItemRow();
+      itemRowsContainer.appendChild(row);
+      populateItemRow(row, item);
+    });
+    updateTotalAmount();
+
+    issueFormErrorBox.hidden = true;
+    issueModal.hidden = false;
+  } catch (err) {
+    renderIssuesError(err.message);
+  }
 }
 
 function closeIssueModal() {
@@ -374,6 +488,89 @@ function collectItems() {
   return { items };
 }
 
+// Doi tac dang chon co the la "__new__" (them nhanh khach hang moi ngay tren form) - tach rieng
+// vi ca 2 nut Luu tam/Xuat kho deu can goi lai y het logic nay.
+async function resolvePartnerId() {
+  let partnerId = partnerSelect.value || null;
+
+  if (partnerId === '__new__') {
+    const name = newPartnerNameInput.value.trim();
+    if (!name) {
+      throw new Error('Thiếu tên khách hàng mới');
+    }
+    const { partner } = await apiFetch('/partners', {
+      method: 'POST',
+      body: JSON.stringify({
+        type: 'khach_hang',
+        name,
+        phone: newPartnerPhoneInput.value.trim(),
+        address: newPartnerAddressInput.value.trim(),
+      }),
+    });
+    partnerId = partner.id;
+  }
+
+  return partnerId;
+}
+
+function buildIssueBody(partnerId, items) {
+  return {
+    partner_id: partnerId || null,
+    note: noteInput.value.trim(),
+    payment_status: paymentToggle.checked ? 'cong_no' : 'da_thu_tien',
+    issue_date: issueDateInput.value ? toSqliteDatetime(issueDateInput.value) : null,
+    project_id: projectSelect.value || null,
+    items,
+    ...getAdjustmentPayload(),
+  };
+}
+
+async function afterIssueSaveSuccess() {
+  closeIssueModal();
+  await Promise.all([loadIssues(), loadPartners()]);
+  renderPartnerOptions();
+}
+
+// Nut "Luu tam" (type="button", khong submit form) - chi ghi lai thong tin da nhap (tao moi hoac
+// cap nhat phieu dang cho_tru_kho), CHUA xuat kho/ghi cong no/so quy (xem stockIssue.service.js).
+btnSaveDraftIssue.addEventListener('click', async () => {
+  issueFormErrorBox.hidden = true;
+  const { items, error } = collectItems();
+  if (error) {
+    issueFormErrorText.textContent = error;
+    issueFormErrorBox.hidden = false;
+    return;
+  }
+
+  btnSaveDraftIssue.disabled = true;
+  btnSubmitIssue.disabled = true;
+  btnSaveDraftIssue.textContent = 'Đang lưu...';
+
+  try {
+    const partnerId = await resolvePartnerId();
+    const body = buildIssueBody(partnerId, items);
+
+    if (editingIssueId) {
+      await apiFetch(`/stock-issues/${editingIssueId}`, { method: 'PUT', body: JSON.stringify(body) });
+    } else {
+      await apiFetch('/stock-issues', { method: 'POST', body: JSON.stringify({ ...body, is_draft: true }) });
+    }
+
+    await afterIssueSaveSuccess();
+  } catch (err) {
+    issueFormErrorText.textContent = err.message;
+    issueFormErrorBox.hidden = false;
+  } finally {
+    btnSaveDraftIssue.disabled = false;
+    btnSubmitIssue.disabled = false;
+    btnSaveDraftIssue.textContent = 'Lưu tạm';
+  }
+});
+
+// Nut "Xuat kho" (submit form) - thuc su xuat kho + ghi cong no/so quy theo dung quy trinh
+// nghiep vu cu, khong doi. Tao moi: POST voi is_draft:false (1 buoc, dung y het hanh vi cu). Dang
+// sua 1 phieu da luu: luu lai sua doi truoc (PUT) roi moi goi POST /:id/process, tranh mat du
+// lieu vua sua neu nguoi dung bam thang "Xuat kho" ma chua bam "Luu tam".
 issueForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   issueFormErrorBox.hidden = true;
@@ -386,50 +583,28 @@ issueForm.addEventListener('submit', async (event) => {
   }
 
   btnSubmitIssue.disabled = true;
-  btnSubmitIssue.textContent = 'Đang lưu...';
+  btnSaveDraftIssue.disabled = true;
+  btnSubmitIssue.textContent = 'Đang xuất kho...';
 
   try {
-    let partnerId = partnerSelect.value || null;
+    const partnerId = await resolvePartnerId();
+    const body = buildIssueBody(partnerId, items);
 
-    if (partnerId === '__new__') {
-      const name = newPartnerNameInput.value.trim();
-      if (!name) {
-        throw new Error('Thiếu tên khách hàng mới');
-      }
-      const { partner } = await apiFetch('/partners', {
-        method: 'POST',
-        body: JSON.stringify({
-          type: 'khach_hang',
-          name,
-          phone: newPartnerPhoneInput.value.trim(),
-          address: newPartnerAddressInput.value.trim(),
-        }),
-      });
-      partnerId = partner.id;
+    if (editingIssueId) {
+      await apiFetch(`/stock-issues/${editingIssueId}`, { method: 'PUT', body: JSON.stringify(body) });
+      await apiFetch(`/stock-issues/${editingIssueId}/process`, { method: 'POST' });
+    } else {
+      await apiFetch('/stock-issues', { method: 'POST', body: JSON.stringify({ ...body, is_draft: false }) });
     }
 
-    await apiFetch('/stock-issues', {
-      method: 'POST',
-      body: JSON.stringify({
-        partner_id: partnerId || null,
-        note: noteInput.value.trim(),
-        payment_status: paymentToggle.checked ? 'cong_no' : 'da_thu_tien',
-        issue_date: issueDateInput.value ? toSqliteDatetime(issueDateInput.value) : null,
-        project_id: projectSelect.value || null,
-        items,
-        ...getAdjustmentPayload(),
-      }),
-    });
-
-    closeIssueModal();
-    await Promise.all([loadIssues(), loadPartners()]);
-    renderPartnerOptions();
+    await afterIssueSaveSuccess();
   } catch (err) {
     issueFormErrorText.textContent = err.message;
     issueFormErrorBox.hidden = false;
   } finally {
     btnSubmitIssue.disabled = false;
-    btnSubmitIssue.textContent = 'Lưu phiếu';
+    btnSaveDraftIssue.disabled = false;
+    btnSubmitIssue.textContent = 'Xuất kho';
   }
 });
 

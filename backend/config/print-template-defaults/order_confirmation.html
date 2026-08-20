@@ -1,0 +1,114 @@
+<style>
+  /* Tai dung dung khung .tpl-page/.tpl-table cua stock_issue.html - chi doi tieu de/chu ky, dung
+     chung 1 bo token nen giu nguyen cau truc bang san pham. */
+  .tpl-page { max-width: 800px; margin: 0 auto; background: #fff; border: 1px solid #E4ECFC; border-radius: 8px; padding: 40px; font-size: 14px; color: #000; }
+  @media print {
+    .tpl-page { max-width: 100%; border: none; border-radius: 0; box-shadow: none; padding: 12mm; }
+  }
+  .tpl-header { display: flex; justify-content: space-between; gap: 24px; padding-bottom: 16px; border-bottom: 2px solid #0F172A; margin-bottom: 20px; }
+  .tpl-company-name { font-size: 16px; font-weight: 700; margin: 0 0 4px; }
+  .tpl-header p { margin: 2px 0; font-size: 13px; font-weight: 500; }
+  .tpl-doc-title { text-align: right; }
+  .tpl-doc-title h1 { font-size: 20px; letter-spacing: 0.04em; margin: 0 0 6px; }
+  .tpl-doc-title p { margin: 2px 0; font-size: 13px; }
+  .tpl-doc-subtitle { font-style: italic; color: #64748B; }
+  .tpl-customer p { margin: 4px 0; font-size: 14px; }
+  .tpl-table { width: 100%; border-collapse: collapse; margin: 20px 0 24px; table-layout: fixed; }
+  .tpl-table th, .tpl-table td { border: 1px solid #0F172A; padding: 8px 10px; font-size: 13px; text-align: left; overflow-wrap: break-word; word-break: break-word; }
+  .tpl-table th { background: #F1F5FD; font-weight: 600; text-align: center; }
+  .tpl-table td.tpl-num { text-align: right; }
+  .tpl-table td.tpl-total-label { text-align: right; font-weight: 600; }
+  .tpl-table td.tpl-total-value { text-align: right; font-weight: 700; font-size: 15px; }
+  .tpl-amount-words { font-style: italic; font-size: 13px; }
+  .tpl-note { margin: 16px 0; padding: 10px 14px; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 6px; font-size: 12.5px; color: #92400E; }
+  .tpl-signatures { display: flex; justify-content: space-between; margin-top: 40px; text-align: center; }
+  .tpl-signatures > div { width: 45%; }
+  .tpl-signatures p { margin: 2px 0; }
+  .tpl-sign-hint { font-size: 12px; color: #64748B; font-style: italic; }
+  .tpl-sign-name { margin-top: 60px; font-weight: 600; }
+</style>
+
+<div class="tpl-page">
+<div class="tpl-header">
+  <div>
+    <p class="tpl-company-name">{{CompanyName}}</p>
+    <!-- if:CompanyAddress -->
+    <p>Địa chỉ: {{CompanyAddress}}</p>
+    <!-- endif -->
+    <!-- if:CompanyPhones -->
+    <p>Điện thoại: {{CompanyPhones}}</p>
+    <!-- endif -->
+    <!-- if:CompanyTaxCode -->
+    <p>MST: {{CompanyTaxCode}}</p>
+    <!-- endif -->
+  </div>
+  <div class="tpl-doc-title">
+    <h1>PHIẾU XÁC NHẬN ĐƠN HÀNG</h1>
+    <p>Mã phiếu: <strong>{{IssueCode}}</strong></p>
+    <p>Ngày: {{IssueDate}}</p>
+    <p class="tpl-doc-subtitle">(Chưa xuất kho)</p>
+  </div>
+</div>
+<div class="tpl-customer">
+  <p>Khách hàng: <strong>{{CustomerName}}</strong></p>
+  <p>Địa chỉ: {{CustomerAddress}}</p>
+  <p>Điện thoại: {{CustomerPhone}}</p>
+  <!-- if:ProjectName -->
+  <p>Công trình: {{ProjectName}}</p>
+  <!-- endif -->
+  <!-- if:IssueNote -->
+  <p>Ghi chú: {{IssueNote}}</p>
+  <!-- endif -->
+</div>
+
+<table class="tpl-table">
+  <colgroup>
+    <col style="width:5%"><col style="width:10%"><col style="width:22%"><col style="width:8%">
+    <col style="width:9%"><col style="width:12%"><col style="width:9%"><col style="width:12%"><col style="width:13%">
+  </colgroup>
+  <thead>
+    <tr>
+      <th>STT</th><th>Mã sản phẩm</th><th>Tên hàng hóa</th><th>ĐVT</th>
+      <th>Số lượng</th><th>Đơn giá</th><th>Chiết khấu</th><th>Đơn giá sau CK</th><th>Thành tiền</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- items:start -->
+    <tr>
+      <td class="tpl-num">{{Item.Stt}}</td>
+      <td>{{Item.ProductCode}}</td>
+      <td>{{Item.ProductName}}</td>
+      <td>{{Item.Unit}}</td>
+      <td class="tpl-num">{{Item.Quantity}}</td>
+      <td class="tpl-num">{{Item.UnitPrice}}</td>
+      <td class="tpl-num">{{Item.DiscountPercent}}</td>
+      <td class="tpl-num">{{Item.NetUnitPrice}}</td>
+      <td class="tpl-num">{{Item.LineTotal}}</td>
+    </tr>
+    <!-- items:end -->
+  </tbody>
+  <tfoot>
+    <tr>
+      <td colspan="8" class="tpl-total-label">Tổng cộng</td>
+      <td class="tpl-total-value">{{TotalAmount}}</td>
+    </tr>
+    <tr>
+      <td colspan="9" class="tpl-amount-words">Số tiền viết bằng chữ: <strong>{{AmountInWords}}</strong></td>
+    </tr>
+  </tfoot>
+</table>
+
+<div class="tpl-note">Đây là phiếu xác nhận đơn hàng để khách hàng xem và chốt trước, <strong>chưa phải chứng từ xuất kho chính thức</strong>. Số liệu có thể còn điều chỉnh cho tới khi hàng thực sự được xuất kho.</div>
+
+<div class="tpl-signatures">
+  <div>
+    <p>Người lập phiếu</p>
+    <p class="tpl-sign-hint">(Ký, ghi rõ họ tên)</p>
+    <p class="tpl-sign-name">{{CreatedByName}}</p>
+  </div>
+  <div>
+    <p>Khách hàng xác nhận</p>
+    <p class="tpl-sign-hint">(Ký, ghi rõ họ tên)</p>
+  </div>
+</div>
+</div>

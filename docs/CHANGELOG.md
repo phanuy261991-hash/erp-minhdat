@@ -2,6 +2,28 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-20 (Phiếu xuất kho: quy trình 2 bước "Lưu tạm"/"Xuất kho" + "Phiếu xác nhận đơn hàng")
+
+> Tái tạo đúng pattern "Trả hàng" (migration `033`/`034`, 2026-08-06) cho phiếu xuất kho thường, theo yêu cầu người dùng. Đã khảo sát kỹ code thật + lên kế hoạch qua `EnterPlanMode` trước khi code (không đoán). Chi tiết quyết định: `docs/DECISIONS.md` mục 2026-08-20.
+
+**1. Backend**
+- Không cần migration đổi schema `stock_issues` — cột `status`/`is_return` đã có sẵn từ migration `034`. Migration `042` (duy nhất) chỉ seed mẫu in mới `order_confirmation`.
+- `backend/services/stockIssue.service.js`: viết lại — tách `applyIssueProcessing(issueId, {createdBy})` dùng chung cho "tạo và xuất kho ngay" (`isDraft:false`) lẫn "xuất kho phiếu đã lưu trước đó" (`processStockIssue()`), đọc lại phiếu + items TỪ DATABASE (không nhận qua tham số); thêm `updateStockIssue(id, {...})` (chỉ sửa được khi `status='cho_tru_kho'`, thay toàn bộ items).
+- `backend/routes/stockIssues.routes.js`: `POST /` nhận thêm `is_draft`; thêm `PUT /:id` + `POST /:id/process`; `readAdjustment()` chặn chọn phiếu đang nháp làm "phiếu gốc bị điều chỉnh" (đối xứng ở `stockReceipts.routes.js`).
+- Rà soát toàn bộ query đọc `stock_issues` (16 file, dùng subagent Explore audit đầy đủ) — sửa 9 điểm chưa lọc `status='da_tru_kho'`: `stockReturn.service.js#getReturnReference()`, `sumQuantityByProduct()` (tab Vật tư dự án + tab Nghiệm thu), `getAverageUnitPriceMap()` (tab Nghiệm thu), biểu đồ "Bán hàng theo tháng" + cảnh báo "vượt dự toán vật tư" (`reports.routes.js`), `getTotalTransacted()` + `GET /documents` (`debts.routes.js`). Xác nhận qua code: tồn kho hiển thị trang Sản phẩm, phiếu Sổ quỹ tự động đều an toàn tuyệt đối (chỉ có dữ liệu khi phiếu đã xử lý thật).
+- `backend/config/printTemplateTokens.js` + `print-template-defaults/order_confirmation.html`: loại mẫu in mới, tái dùng đúng `STOCK_ISSUE_DOCUMENT_TOKENS`/`STOCK_ISSUE_ITEM_TOKENS` (không tạo token mới).
+
+**2. Frontend**
+- `frontend/print-order-confirmation.html`/`assets/print-order-confirmation.js` (mới, copy khung `print-issue.js`, tái dùng `buildStockIssueTokenValues()`) — bắt buộc Shadow DOM.
+- `frontend/stock-issues.html`/`assets/stock-issues.js`: cột "Trạng thái" mới; modal Thêm/Sửa dùng chung (`editingIssueId`) với 2 nút "Lưu tạm"/"Xuất kho"; icon thao tác đổi theo trạng thái (Nháp: Sửa/Xuất kho/In xác nhận đơn hàng/Xem; Đã xuất kho: Xem/In phiếu).
+- `frontend/assets/adjustment.js`: lọc client-side chỉ hiện phiếu `da_tru_kho` trong combobox "Điều chỉnh cho phiếu".
+- `frontend/assets/issue-detail.js`: thêm dòng "Trạng thái" vào modal xem chi tiết (dùng chung `stock-issues.html`/`product-detail.html`).
+
+**3. Test**
+- API thật (Node `fetch`): Lưu tạm không đụng tồn kho/công nợ/sổ quỹ; sửa nháp đổi số lượng rồi Xuất kho dùng đúng số MỚI (verify qua tồn kho giảm đúng số sau sửa, không phải số lúc tạo); khóa đúng sau khi xuất kho (400 khi sửa/xuất kho lại); validate tồn kho chỉ chặn lúc Xuất kho, không chặn lúc Lưu tạm; cả 9 điểm lọc status xác nhận đúng qua kịch bản tạo phiếu nháp số lượng/giá trị lớn — báo cáo/công nợ/tab Vật tư/tab Nghiệm thu KHÔNG đổi cho tới khi Xuất kho, rồi tăng đúng số sau khi Xuất kho; chặn đúng khi chọn phiếu đang nháp làm mốc điều chỉnh.
+- Trình duyệt thật (Chrome headless, CDP thô tự viết): luồng đầy đủ Lưu tạm → in "Phiếu xác nhận đơn hàng" (render không lỗi console) → Sửa số lượng → Xuất kho → badge/icon danh sách cập nhật đúng.
+- Dữ liệu test đã xóa sạch (đảo ngược đúng `stock_movements`/`debt_ledger`/`cash_vouchers` phát sinh trong lúc test). Đã restart server (bắt buộc, không có hot-reload).
+
 ## 2026-08-19 (Nghiệm thu theo giải pháp — tab mới trong Chi tiết dự án)
 
 > Tính năng đã dừng ở mockup/kế hoạch từ phiên trước (`docs/handoff/HANDOFF-NghiemThu-2026-08-19-v2.md`, 4 giả định kỹ thuật đã chốt qua `AskUserQuestion`) — phiên này code thẳng theo đúng checklist đã ghi, không hỏi lại. Chi tiết quyết định: `docs/DECISIONS.md` mục 2026-08-19 (Nghiệm thu).

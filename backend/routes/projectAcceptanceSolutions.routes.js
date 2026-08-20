@@ -35,13 +35,15 @@ function requireNghiemThuPermission(req, res) {
 // SUM so luong theo product_id - COPY NGUYEN XI cong thuc trong projectMaterials.routes.js (khong
 // viet lai khac di) de so "Da xuat" o tab Nghiem thu khop dung 100% voi tab "Vat tu" cung du an -
 // xem muc 3.2 file handoff.
+// status='da_tru_kho': phieu xuat con dang nhap (2026-08-20) chua thuc su xuat hang, khong duoc
+// tinh vao "da xuat" - ca stock_receipts lan stock_issues deu co cot nay (mac dinh 'da_tru_kho').
 function sumQuantityByProduct(table, itemsTable, foreignKey, projectId) {
   const rows = db
     .prepare(`
       SELECT it.product_id, SUM(it.quantity) AS qty
       FROM ${itemsTable} it
       JOIN ${table} d ON d.id = it.${foreignKey}
-      WHERE d.project_id = ?
+      WHERE d.project_id = ? AND d.status = 'da_tru_kho'
       GROUP BY it.product_id
     `)
     .all(projectId);
@@ -57,7 +59,7 @@ function getAverageUnitPriceMap(projectId) {
              SUM(it.quantity * it.unit_price * (1 - it.discount_percent / 100.0)) / SUM(it.quantity) AS avg_unit_price
       FROM stock_issue_items it
       JOIN stock_issues i ON i.id = it.issue_id
-      WHERE i.project_id = ?
+      WHERE i.project_id = ? AND i.status = 'da_tru_kho'
       GROUP BY it.product_id
     `)
     .all(projectId);

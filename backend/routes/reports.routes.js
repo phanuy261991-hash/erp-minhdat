@@ -172,13 +172,15 @@ router.get('/stock-movements', (req, res) => {
     `)
     .all(fromDate);
 
+  // status='da_tru_kho': phieu xuat con dang nhap (2026-08-20) chua thuc su xuat/ban hang, khong
+  // tinh vao doanh so thang do - tranh lam sai lech bieu do so voi thuc te.
   const salesRows = db
     .prepare(`
       SELECT strftime('%Y-%m', iss.created_at) AS month,
              COALESCE(SUM(it.quantity * it.unit_price * (1 - it.discount_percent / 100.0)), 0) AS total
       FROM stock_issues iss
       JOIN stock_issue_items it ON it.issue_id = iss.id
-      WHERE iss.created_at >= ?
+      WHERE iss.created_at >= ? AND iss.status = 'da_tru_kho'
       GROUP BY month
     `)
     .all(fromDate);
@@ -269,11 +271,13 @@ router.get('/projects', (req, res) => {
 
   const key = (projectId, productId) => `${projectId}:${productId}`;
 
+  // status='da_tru_kho': phieu xuat con dang nhap (2026-08-20) chua thuc su xuat hang, khong tinh
+  // vao "da xuat" - tranh bao sai du an "vuot du toan vat tu".
   const issuedRows = db
     .prepare(`
       SELECT i.project_id, it.product_id, SUM(it.quantity) AS qty
       FROM stock_issues i JOIN stock_issue_items it ON it.issue_id = i.id
-      WHERE i.project_id IS NOT NULL
+      WHERE i.project_id IS NOT NULL AND i.status = 'da_tru_kho'
       GROUP BY i.project_id, it.product_id
     `)
     .all();

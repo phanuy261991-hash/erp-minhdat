@@ -12,7 +12,7 @@ const router = express.Router();
 // project_name (migration 024, Dot 3): LEFT JOIN vi project_id khong bat buoc.
 const SELECT_RECEIPT = `
   SELECT r.id, r.code, r.order_code, r.partner_id, pa.name AS partner_name, r.created_by,
-         u.full_name AS created_by_name, r.note, r.payment_status, r.created_at,
+         u.full_name AS created_by_name, r.note, r.payment_status, r.created_at, r.status,
          r.adjusts_type, r.adjusts_id, r.project_id, pr.name AS project_name, r.is_opening_balance,
          CASE r.adjusts_type WHEN 'receipt' THEN ar.code WHEN 'issue' THEN ai.code ELSE NULL END AS adjusts_code
   FROM stock_receipts r
@@ -39,9 +39,14 @@ function readAdjustment(body) {
 
   const adjustsId = Number(rawAdjustsId);
   const table = adjustsType === 'receipt' ? 'stock_receipts' : 'stock_issues';
-  const exists = db.prepare(`SELECT id FROM ${table} WHERE id = ?`).get(adjustsId);
+  const exists = db.prepare(`SELECT id, status FROM ${table} WHERE id = ?`).get(adjustsId);
   if (!exists) {
     return { error: 'Khong tim thay phieu goc de dieu chinh' };
+  }
+  // Phieu dang nhap ('cho_tru_kho', 2026-08-20) chua chac chan se duoc xuat kho that - khong hop
+  // ly de chon lam moc "dieu chinh cho phieu nao" (xem docs/DECISIONS.md).
+  if (exists.status !== 'da_tru_kho') {
+    return { error: 'Phieu goc dang o trang thai nhap, chua the chon de dieu chinh' };
   }
 
   return { adjustsType, adjustsId };

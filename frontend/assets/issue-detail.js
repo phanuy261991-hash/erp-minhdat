@@ -33,12 +33,19 @@ function renderIssueDetail(issue) {
     ? '<span class="badge badge-inactive">Công nợ</span>'
     : '<span class="badge badge-active">Đã thu tiền</span>';
 
+  // status (2026-08-20, quy trinh 2 buoc Luu tam/Xuat kho) - phieu cu tao truoc khi co tinh nang
+  // nay luon la 'da_tru_kho' (gia tri mac dinh cua cot, xem migration 034), khong anh huong gi.
+  const statusBadge = issue.status === 'cho_tru_kho'
+    ? '<span class="badge badge-inactive">Nháp</span>'
+    : '<span class="badge badge-active">Đã xuất kho</span>';
+
   const infoItems = [
     issueDetailInfoItem('Mã phiếu', issue.code),
     issueDetailInfoItem('Ngày lập', formatDateIssueDetail(issue.created_at)),
     issueDetailInfoItem('Khách hàng', issue.partner_name || '-'),
     issueDetailInfoItem('Người lập', issue.created_by_name),
     issueDetailInfoItem('Thanh toán', paymentBadge),
+    issueDetailInfoItem('Trạng thái', statusBadge),
     issueDetailInfoItem('Dự án', issue.project_name || '-'),
     issueDetailInfoItem('Ghi chú', issue.note || '-', true),
   ];

@@ -4,7 +4,7 @@
 
 const express = require('express');
 const db = require('../db/database');
-const { createStockIssue, ServiceError } = require('../services/stockIssue.service');
+const { createStockIssue, updateStockIssue, processStockIssue, ServiceError } = require('../services/stockIssue.service');
 
 const router = express.Router();
 
@@ -17,7 +17,7 @@ const ADJUSTS_TYPES = ['receipt', 'issue'];
 const SELECT_ISSUE = `
   SELECT i.id, i.code, i.partner_id, pa.name AS partner_name, pa.phone AS partner_phone,
          pa.address AS partner_address, i.created_by,
-         u.full_name AS created_by_name, i.note, i.payment_status, i.created_at,
+         u.full_name AS created_by_name, i.note, i.payment_status, i.created_at, i.status,
          i.adjusts_type, i.adjusts_id, i.project_id, pr.name AS project_name,
          CASE i.adjusts_type WHEN 'receipt' THEN ar.code WHEN 'issue' THEN ai.code ELSE NULL END AS adjusts_code
   FROM stock_issues i
@@ -40,9 +40,14 @@ function readAdjustment(body) {
 
   const adjustsId = Number(rawAdjustsId);
   const table = adjustsType === 'receipt' ? 'stock_receipts' : 'stock_issues';
-  const exists = db.prepare(`SELECT id FROM ${table} WHERE id = ?`).get(adjustsId);
+  const exists = db.prepare(`SELECT id, status FROM ${table} WHERE id = ?`).get(adjustsId);
   if (!exists) {
     return { error: 'Khong tim thay phieu goc de dieu chinh' };
+  }
+  // Phieu dang nhap ('cho_tru_kho', 2026-08-20) chua chac chan se duoc xuat kho that - khong hop
+  // ly de chon lam moc "dieu chinh cho phieu nao" (xem docs/DECISIONS.md).
+  if (exists.status !== 'da_tru_kho') {
+    return { error: 'Phieu goc dang o trang thai nhap, chua the chon de dieu chinh' };
   }
 
   return { adjustsType, adjustsId };
@@ -130,6 +135,9 @@ router.get('/:id', (req, res) => {
   res.json({ issue: { ...issue, items, total_amount: totalAmount, adjusted_by: adjustedBy } });
 });
 
+// is_draft (tuy chon, mac dinh false, 2026-08-20): true = chi "Luu tam" (status='cho_tru_kho',
+// chua dong stock_movements/debt_ledger/cash_vouchers), khong truyen/false = xuat kho ngay (dung
+// y het hanh vi cu 1 buoc) - xem stockIssue.service.js.
 router.post('/', (req, res) => {
   const {
     partner_id: partnerId,
@@ -137,6 +145,7 @@ router.post('/', (req, res) => {
     payment_status: paymentStatus,
     issue_date: rawIssueDate,
     project_id: rawProjectId,
+    is_draft: isDraft,
   } = req.body || {};
   const { items, error } = readItems((req.body || {}).items);
 
@@ -170,8 +179,67 @@ router.post('/', (req, res) => {
       adjustsId,
       issueDate,
       projectId: rawProjectId ? Number(rawProjectId) : null,
+      isDraft: isDraft === true,
     });
     res.status(201).json({ issue });
+  } catch (err) {
+    if (err instanceof ServiceError) {
+      return res.status(400).json({ error: err.message });
+    }
+    throw err;
+  }
+});
+
+// Sua phieu dang 'cho_tru_kho' (nhap) - xem chu thich updateStockIssue() trong service.
+router.put('/:id', (req, res) => {
+  const id = Number(req.params.id);
+  const {
+    partner_id: partnerId,
+    note,
+    payment_status: paymentStatus,
+    issue_date: rawIssueDate,
+    project_id: rawProjectId,
+  } = req.body || {};
+  const { items, error } = readItems((req.body || {}).items);
+
+  if (error) {
+    return res.status(400).json({ error });
+  }
+
+  const resolvedPaymentStatus = paymentStatus || 'da_thu_tien';
+  if (!PAYMENT_STATUSES.includes(resolvedPaymentStatus)) {
+    return res.status(400).json({ error: `payment_status khong hop le: ${resolvedPaymentStatus}` });
+  }
+
+  const { issueDate, error: dateError } = readIssueDate(rawIssueDate);
+  if (dateError) {
+    return res.status(400).json({ error: dateError });
+  }
+
+  try {
+    const issue = updateStockIssue(id, {
+      partnerId: partnerId ? Number(partnerId) : null,
+      note: note ? String(note).trim() : '',
+      paymentStatus: resolvedPaymentStatus,
+      items,
+      issueDate,
+      projectId: rawProjectId ? Number(rawProjectId) : null,
+    });
+    res.json({ issue });
+  } catch (err) {
+    if (err instanceof ServiceError) {
+      return res.status(400).json({ error: err.message });
+    }
+    throw err;
+  }
+});
+
+// Xuat kho cho 1 phieu da "Luu tam" truoc do - xem chu thich processStockIssue() trong service.
+router.post('/:id/process', (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    const issue = processStockIssue(id, { createdBy: req.session.user.id });
+    res.json({ issue });
   } catch (err) {
     if (err instanceof ServiceError) {
       return res.status(400).json({ error: err.message });

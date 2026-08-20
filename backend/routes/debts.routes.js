@@ -82,12 +82,14 @@ function getTotalTransacted(partnerId, partnerType) {
     return row.total;
   }
 
+  // status='da_tru_kho': phieu xuat con dang nhap (2026-08-20) chua thuc su ban hang, khong tinh
+  // vao tong tien hang da giao dich.
   const row = db
     .prepare(`
       SELECT COALESCE(SUM(i.quantity * i.unit_price * (1 - i.discount_percent / 100.0)), 0) AS total
       FROM stock_issues iss
       JOIN stock_issue_items i ON i.issue_id = iss.id
-      WHERE iss.partner_id = ?
+      WHERE iss.partner_id = ? AND iss.status = 'da_tru_kho'
     `)
     .get(partnerId);
   return row.total;
@@ -164,7 +166,7 @@ router.get('/documents', (req, res) => {
     .map((r) => ({ type: 'receipt', id: r.id, code: r.code, created_at: r.created_at }));
 
   const issues = db
-    .prepare("SELECT id, code, created_at FROM stock_issues WHERE partner_id = ? AND payment_status = 'cong_no' ORDER BY created_at DESC")
+    .prepare("SELECT id, code, created_at FROM stock_issues WHERE partner_id = ? AND payment_status = 'cong_no' AND status = 'da_tru_kho' ORDER BY created_at DESC")
     .all(partnerId)
     .map((i) => ({ type: 'issue', id: i.id, code: i.code, created_at: i.created_at }));
 

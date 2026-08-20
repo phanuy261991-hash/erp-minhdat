@@ -690,6 +690,24 @@
 - [x] Đồng bộ `docs/PRD.md` mục 4.12, `docs/Plan.md`, `docs/erd.mermaid`
 - [x] Test qua API thật (Node `fetch`: chia 1 sản phẩm vào 2 giải pháp đúng số dư, chặn đúng 400 khi vượt số lượng, tài khoản chỉ có `du_an` xem được nhưng bị chặn đúng 403 ở POST/PUT/DELETE) + trình duyệt thật (Chrome headless CDP thô: tạo giải pháp qua UI, in biên bản render đúng trong Shadow DOM không lỗi console, ẩn đúng nút "Thêm giải pháp" cho tài khoản thiếu `nghiem_thu`) — phát hiện + sửa 1 lỗi CSS tự phát hiện qua ảnh chụp (`.qty-hint.full` gán ngược điều kiện). Dữ liệu/vai trò/tài khoản test đã xóa sạch. Đã restart server (bắt buộc, không có hot-reload).
 
+### Phiếu xuất kho: quy trình 2 bước "Lưu tạm"/"Xuất kho" + "Phiếu xác nhận đơn hàng" (ngoài phase, theo yêu cầu người dùng 2026-08-20)
+
+> Tái tạo đúng pattern "Trả hàng" (migration 033/034) cho phiếu xuất kho thường. Đã lên kế hoạch qua `EnterPlanMode` (khảo sát code thật bằng subagent Explore trước khi code). Chi tiết `docs/DECISIONS.md` mục 2026-08-20.
+
+- [x] Migration `042`: seed mẫu in mới `order_confirmation` (không cần đổi schema `stock_issues` — cột `status`/`is_return` đã có sẵn từ migration `034`)
+- [x] `backend/services/stockIssue.service.js`: viết lại — `applyIssueProcessing()` dùng chung cho tạo-và-xuất-ngay lẫn xuất-kho-phiếu-đã-lưu, `updateStockIssue()`, `processStockIssue()`
+- [x] `backend/routes/stockIssues.routes.js`: `POST /` nhận `is_draft`, thêm `PUT /:id` + `POST /:id/process`, `readAdjustment()` chặn chọn phiếu nháp làm mốc điều chỉnh
+- [x] `backend/routes/stockReceipts.routes.js`: `readAdjustment()` chặn tương tự (đối xứng)
+- [x] Rà soát + sửa 9 điểm SQL đọc `stock_issues` chưa lọc `status`: `stockReturn.service.js`, `projectMaterials.routes.js`, `projectAcceptanceSolutions.routes.js` (2 chỗ), `reports.routes.js` (2 chỗ), `debts.routes.js` (2 chỗ)
+- [x] `backend/config/printTemplateTokens.js` + `print-template-defaults/order_confirmation.html`: loại mẫu in mới, tái dùng token `stock_issue`
+- [x] `frontend/print-order-confirmation.html`/`assets/print-order-confirmation.js` (mới)
+- [x] `frontend/assets/print-template-render.js` + `print-templates.js`: đăng ký `order_confirmation`
+- [x] `frontend/stock-issues.html`/`.js`: cột "Trạng thái", modal Thêm/Sửa dùng chung, 2 nút Lưu tạm/Xuất kho, icon thao tác theo trạng thái
+- [x] `frontend/assets/adjustment.js`: lọc client-side chỉ hiện phiếu `da_tru_kho`
+- [x] `frontend/assets/issue-detail.js`: thêm dòng "Trạng thái" vào modal xem chi tiết
+- [x] Đồng bộ `docs/PRD.md` mục 4.3/4.5/4.6, `docs/Plan.md`
+- [x] Test qua API thật (Node `fetch`: Lưu tạm không đụng tồn kho/công nợ/sổ quỹ; sửa nháp rồi Xuất kho dùng đúng số liệu MỚI; khóa đúng sau khi xuất kho; validate tồn kho chỉ chặn lúc Xuất kho; cả 9 điểm lọc status xác nhận đúng qua kịch bản phiếu nháp số lượng/giá trị lớn) + trình duyệt thật (Chrome headless CDP thô: luồng đầy đủ Lưu tạm → in Phiếu xác nhận đơn hàng → Sửa → Xuất kho, không lỗi console). Dữ liệu test đã xóa sạch (đảo ngược đúng stock_movements/debt_ledger/cash_vouchers phát sinh). Đã restart server (bắt buộc, không có hot-reload).
+
 ## Open questions cần chốt trước khi code phần liên quan
 
 Xem `docs/DECISIONS.md` mục "Open questions".

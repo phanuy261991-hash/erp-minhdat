@@ -73,6 +73,7 @@ Web app nội bộ, kiến trúc đơn giản (không microservices, không clou
 - **Tồn đầu kỳ** (bổ sung 2026-08-15): công tắc riêng "Nhập tồn đầu kỳ" trên form lập phiếu nhập — phiếu được đánh dấu chỉ thay đổi số lượng tồn kho (vẫn ghi giá vốn theo lô để tính đúng FIFO/bình quân gia quyền cho lần xuất sau), **không** phát sinh công nợ nhà cung cấp dù chọn đối tác, và **không** tự tạo phiếu Chi trong Sổ quỹ (khác phiếu nhập thường mặc định luôn tạo phiếu Chi — xem mục 4.11). Loại khỏi biểu đồ "Tổng mua hàng theo tháng" (mục 4.6) vì không phải chi tiêu mua hàng thực sự.
 - Lịch sử biến động kho, tra cứu theo sản phẩm/khoảng thời gian.
 - **Sửa/hủy phiếu đã lập** (bổ sung 2026-07-31): không cho sửa/xóa trực tiếp phiếu nhập/xuất đã tạo — chỉ tạo được **phiếu điều chỉnh bù trừ** (1 phiếu nhập hoặc xuất mới, ghi ngược dấu, liên kết ngược lại phiếu gốc để truy vết) nhằm giữ lịch sử ledger đầy đủ. Không giới hạn hướng bù trừ (phiếu nhập sai có thể bù bằng phiếu nhập khác hoặc phiếu xuất, và ngược lại).
+- **Phiếu xuất kho: quy trình 2 bước "Lưu tạm" / "Xuất kho" (bổ sung 2026-08-20, theo yêu cầu người dùng)**: dùng chung nguyên tắc với "Trả hàng" (mục 4.15) — nút **"Lưu tạm"** chỉ ghi lại thông tin phiếu (đối tác, sản phẩm, số lượng, đơn giá, thanh toán...), **không đụng tồn kho, không ghi công nợ, không tự tạo phiếu Sổ quỹ**; phiếu ở trạng thái nháp vẫn sửa được toàn bộ. Nút **"Xuất kho"** mới thực sự trừ tồn kho (validate đủ hàng lúc này, không phải lúc Lưu tạm) + ghi công nợ/Sổ quỹ theo đúng `payment_status` đã lưu, sau đó khóa vĩnh viễn không sửa được nữa. Mỗi phiếu nháp có nút in riêng **"Phiếu xác nhận đơn hàng"** (mẫu in cấu hình được, mục 4.5) để gửi khách hàng xem/chốt số liệu trước khi hàng thực sự rời kho.
 
 ### 4.4 Quản lý công nợ nhà cung cấp & khách hàng (bổ sung 2026-07-31 — hoàn thành)
 - Ghi nhận công nợ dạng sổ cái (ledger): mỗi giao dịch nợ/trả là 1 dòng, số dư = tổng cộng dồn — không lưu "số dư hiện tại" như 1 trường cứng.
@@ -97,10 +98,11 @@ Web app nội bộ, kiến trúc đơn giản (không microservices, không clou
   - **Tải mẫu lên/Tải mẫu về** dạng file `.html` — tiện soạn thảo bằng công cụ code ngoài trình duyệt rồi nhập lại, không phải cơ chế lưu (vẫn phải bấm "Lưu mẫu").
   - Hỗ trợ cả loại phiếu KHÔNG có bảng sản phẩm (vd "Giấy đề nghị tạm ứng", mục 4.12) — ẩn hẳn panel token "Từng dòng sản phẩm" khi không cần.
   - Có thể tải lên và chèn tự do 1 hoặc nhiều hình ảnh (vd mã QR chuyển khoản) vào bất kỳ vị trí nào trong mã đang soạn, dùng chung cho mọi loại mẫu in.
+  - **Loại mẫu in "Phiếu xác nhận đơn hàng"** (bổ sung 2026-08-20): tái dùng đúng bộ token của "Phiếu xuất kho" (cùng dữ liệu hiển thị), chỉ khác tiêu đề/văn phong khi in — dùng cho phiếu xuất kho đang ở trạng thái nháp (mục 4.3).
 
 ### 4.6 Báo cáo (bổ sung 2026-08-01 — hoàn thành)
 - Báo cáo tồn kho hiện tại theo sản phẩm, kèm giá vốn (bình quân gia quyền) và giá trị tồn, tổng giá trị toàn kho.
-- Báo cáo mua hàng (nhập kho)/bán hàng (xuất kho) theo tháng — 6 tháng gần nhất, kèm % tăng trưởng so với tháng trước. Phiếu nhập đánh dấu "Nhập tồn đầu kỳ" (mục 4.3, bổ sung 2026-08-15) loại khỏi tổng mua hàng — không phải chi tiêu mua hàng thực sự.
+- Báo cáo mua hàng (nhập kho)/bán hàng (xuất kho) theo tháng — 6 tháng gần nhất, kèm % tăng trưởng so với tháng trước. Phiếu nhập đánh dấu "Nhập tồn đầu kỳ" (mục 4.3, bổ sung 2026-08-15) loại khỏi tổng mua hàng — không phải chi tiêu mua hàng thực sự. Phiếu xuất đang ở trạng thái nháp (mục 4.3, bổ sung 2026-08-20) cũng loại khỏi tổng bán hàng — chỉ tính khi đã thực sự xuất kho.
 - Báo cáo công nợ tổng hợp toàn hệ thống: tổng phải thu (khách hàng), tổng phải trả (NCC) — chi tiết theo từng đối tác xem trang Công nợ (mục 4.4).
 - Hiển thị dạng thẻ số liệu (card) cho các số tổng + bảng; **biểu đồ cột** cho xu hướng mua/bán hàng theo tháng — tự vẽ bằng SVG, không dùng thư viện ngoài (Chart.js) để giữ đúng nguyên tắc không phụ thuộc CDN/build step của dự án.
 

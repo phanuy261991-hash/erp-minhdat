@@ -140,6 +140,20 @@ const PRINT_TEMPLATE_TYPES = {
     defaultOrientation: 'portrait',
     defaultTemplatePath: path.join(PRINT_TEMPLATE_DEFAULTS_DIR, 'acceptance_solution.html'),
   },
+  // "Phieu xac nhan don hang" (2026-08-20, theo yeu cau nguoi dung) - in cho phieu xuat kho dang
+  // NHAP ("Luu tam") de khach hang xem/chot truoc khi xuat kho that. Tai dung DUNG bo token cua
+  // stock_issue (khong tao mang token moi) vi du lieu can hien thi giong het phieu xuat kho, chi
+  // khac tieu de/van phong khi in - xem backend/config/print-template-defaults/order_confirmation.html.
+  order_confirmation: {
+    name: 'Phiếu xác nhận đơn hàng',
+    hasItems: true,
+    tokens: {
+      document: STOCK_ISSUE_DOCUMENT_TOKENS,
+      item: STOCK_ISSUE_ITEM_TOKENS,
+    },
+    defaultOrientation: 'portrait',
+    defaultTemplatePath: path.join(PRINT_TEMPLATE_DEFAULTS_DIR, 'order_confirmation.html'),
+  },
 };
 
 module.exports = { PRINT_TEMPLATE_TYPES };

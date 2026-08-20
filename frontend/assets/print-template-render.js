@@ -417,4 +417,12 @@ const PRINT_TYPE_HANDLERS = {
     items: SAMPLE_ACCEPTANCE_SOLUTION_DATA.solution.items,
     itemTokenBuilder: buildAcceptanceSolutionItemTokenValues,
   },
+  // "Phieu xac nhan don hang" (2026-08-20) - tai dung DUNG du lieu mau + ham build token cua
+  // stock_issue (khong viet moi), vi day cung dung 1 bo token voi phieu xuat kho.
+  order_confirmation: {
+    sampleData: SAMPLE_STOCK_ISSUE_DATA,
+    buildTokenValues: (data) => buildStockIssueTokenValues(data.issue, data.company),
+    items: SAMPLE_STOCK_ISSUE_DATA.issue.items,
+    itemTokenBuilder: buildStockIssueItemTokenValues,
+  },
 };

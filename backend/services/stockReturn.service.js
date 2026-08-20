@@ -27,13 +27,15 @@ function generateReturnCode() {
 // tru gi nen khong duoc tinh, tranh chan nham cac phieu khac boi 1 phieu nhap con dang cho duyet
 // (co the bi sua/khong bao gio duoc tru).
 function getReturnReference(partnerId, productId, projectId) {
+  // status='da_tru_kho': phieu xuat con dang nhap (2026-08-20) chua thuc su xuat hang, khong
+  // duoc tinh vao "da xuat" - tranh cho phep khach "tra lai" hang chua tung duoc giao.
   const issuedRow = projectId
     ? db
         .prepare(`
           SELECT COALESCE(SUM(ii.quantity), 0) AS qty
           FROM stock_issue_items ii
           JOIN stock_issues i ON i.id = ii.issue_id
-          WHERE i.partner_id = ? AND ii.product_id = ? AND i.project_id = ?
+          WHERE i.partner_id = ? AND ii.product_id = ? AND i.project_id = ? AND i.status = 'da_tru_kho'
         `)
         .get(partnerId, productId, projectId)
     : db
@@ -41,7 +43,7 @@ function getReturnReference(partnerId, productId, projectId) {
           SELECT COALESCE(SUM(ii.quantity), 0) AS qty
           FROM stock_issue_items ii
           JOIN stock_issues i ON i.id = ii.issue_id
-          WHERE i.partner_id = ? AND ii.product_id = ?
+          WHERE i.partner_id = ? AND ii.product_id = ? AND i.status = 'da_tru_kho'
         `)
         .get(partnerId, productId);
 
