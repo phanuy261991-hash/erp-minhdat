@@ -3489,3 +3489,288 @@ input:focus-visible {
   font-size: 12.5px;
   color: var(--color-muted-foreground);
 }
+
+/* ---- Tab "Nghiem thu" o Chi tiet du an (migration 041, 2026-08-19) - dung lai token/bien mau
+   that cua he thong (:root trong tokens.css), khong phat minh mau/font moi - xem
+   docs/handoff/mockup-nghiem-thu-2026-08-19.html cho mockup goc da chot huong giao dien. ---- */
+
+/* Dong tieu de section kem mo ta ngan + nut "+ Them" ben phai - khac .page-header (khong co dong
+   mo ta) nen tach rieng thay vi doi .page-header mac dinh dang dung o nhieu tab khac. */
+.section-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.section-row-desc {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--color-muted-foreground);
+  max-width: 62ch;
+}
+
+/* Thanh tien do nho trong 1 the .stat-card (vd "Da dua vao giai phap 198/260") - khac
+   .phase-progress-track/.breakdown-bar-track o cho khong co nhan % rieng, chi la 1 vach mong duoi
+   con so, dung chung 1 gradient primary->accent cho moi truong hop dung trong .stat-card. */
+.stat-card-bar {
+  margin-top: 10px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-muted);
+  overflow: hidden;
+}
+
+.stat-card-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+}
+
+.solution-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.solution-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  padding: 20px 22px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 18px;
+  align-items: start;
+}
+
+.solution-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-muted);
+  color: var(--color-primary);
+}
+
+.solution-head {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.solution-title-group {
+  min-width: 0;
+}
+
+.solution-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 3px;
+}
+
+.solution-meta {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-muted-foreground);
+}
+
+.solution-devices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 14px;
+  padding-left: 56px;
+}
+
+.device-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 4px;
+  background: var(--color-muted);
+  border-radius: 999px;
+  font-size: 12.5px;
+  color: var(--color-foreground);
+}
+
+.device-chip .qty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.device-chip.more {
+  background: transparent;
+  border: 1px dashed var(--color-border);
+  color: var(--color-muted-foreground);
+}
+
+.solution-progress {
+  padding-left: 56px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.solution-progress-track {
+  flex: 1;
+  max-width: 260px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-muted);
+  overflow: hidden;
+}
+
+.solution-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--color-accent);
+}
+
+.solution-progress-label {
+  font-size: 12.5px;
+  color: var(--color-muted-foreground);
+  white-space: nowrap;
+}
+
+.solution-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* ---- Modal Them/Sua giai phap: bang chon thiet bi da xuat cho du an ---- */
+
+.device-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 22px 0 10px;
+}
+
+.device-picker-head h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.device-table-wrap {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.device-table {
+  width: 100%;
+  min-width: 720px;
+}
+
+.device-table th.num,
+.device-table td.num {
+  text-align: right;
+}
+
+.device-table tr.checked td {
+  background: #f5f9ff;
+}
+
+.device-name {
+  font-weight: 600;
+}
+
+.device-code {
+  color: var(--color-muted-foreground);
+  font-size: 12px;
+}
+
+.device-line-total {
+  font-weight: 700;
+}
+
+.device-line-total.muted {
+  font-weight: 400;
+  color: var(--color-muted-foreground);
+}
+
+.qty-input-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.qty-input {
+  width: 72px;
+  padding: 6px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  background: var(--color-surface);
+  color: var(--color-foreground);
+}
+
+.qty-input:disabled {
+  background: var(--color-muted);
+  color: var(--color-muted-foreground);
+}
+
+.qty-hint {
+  font-size: 11px;
+  color: var(--color-muted-foreground);
+}
+
+.qty-hint.full {
+  color: var(--color-accent);
+}
+
+.qty-hint.over {
+  color: var(--color-destructive);
+  font-weight: 600;
+}
+
+.modal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.modal-foot-summary {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-muted-foreground);
+}
+
+.modal-foot-summary strong {
+  color: var(--color-foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Modal "Them/Sua giai phap" can rong hon .modal-card-lg mac dinh (880px) de bang thiet bi 7 cot
+   khong bi chat - cung ky thuat scope rieng theo id da dung o #issue-modal. */
+#solution-modal .modal-card-lg {
+  width: 1040px;
+  max-width: 96vw;
+}

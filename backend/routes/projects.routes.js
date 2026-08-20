@@ -10,6 +10,7 @@ const projectTasksRoutes = require('./projectTasks.routes');
 const projectMaterialsRoutes = require('./projectMaterials.routes');
 const projectMilestonesRoutes = require('./projectMilestones.routes');
 const projectVariationsRoutes = require('./projectVariations.routes');
+const projectAcceptanceSolutionsRoutes = require('./projectAcceptanceSolutions.routes');
 
 const router = express.Router();
 
@@ -21,6 +22,10 @@ router.use('/:id/materials', projectMaterialsRoutes);
 // Long 2 router "Dot thanh toan"/"Phat sinh" (migration 025, Dot 4) - cung pattern mergeParams.
 router.use('/:id/milestones', projectMilestonesRoutes);
 router.use('/:id/variations', projectVariationsRoutes);
+// "Nghiem thu theo giai phap" (migration 041, 2026-08-19) - cung pattern mergeParams. Quyen
+// 'du_an' da du cho GET (xem), rieng thao tac ghi (POST/PUT/DELETE) tu kiem tra them 'nghiem_thu'
+// ngay trong router con - xem projectAcceptanceSolutions.routes.js.
+router.use('/:id/acceptance-solutions', projectAcceptanceSolutionsRoutes);
 
 const SELECT_PROJECT = `
   SELECT pr.*, p.name AS partner_name, p.phone AS partner_phone, u.full_name AS manager_name

@@ -75,6 +75,40 @@ const PROJECT_ADVANCE_DOCUMENT_TOKENS = [
   { key: 'PrintDate', label: 'Ngày in phiếu', hideable: false },
 ];
 
+// Token cap PHIEU cho "Bien ban nghiem thu theo giai phap" (migration 041, 2026-08-19) - tai su
+// dung nhom token cong ty giong stock_issue, them token rieng cua giai phap/du an.
+const ACCEPTANCE_SOLUTION_DOCUMENT_TOKENS = [
+  { key: 'CompanyName', label: 'Tên công ty', hideable: false },
+  { key: 'CompanyAddress', label: 'Địa chỉ công ty', hideable: true },
+  { key: 'CompanyPhones', label: 'Điện thoại công ty', hideable: true },
+  { key: 'CompanyTaxCode', label: 'Mã số thuế công ty', hideable: true },
+  { key: 'CompanyContact', label: 'Email/Website công ty', hideable: true },
+  { key: 'CompanyBankInfo', label: 'Thông tin ngân hàng', hideable: true },
+  { key: 'ProjectName', label: 'Tên dự án/công trình', hideable: false },
+  { key: 'ContractNo', label: 'Số hợp đồng dự án', hideable: true },
+  { key: 'CustomerName', label: 'Tên khách hàng', hideable: false },
+  { key: 'SiteAddress', label: 'Địa chỉ lắp đặt/công trình', hideable: false },
+  { key: 'SolutionName', label: 'Tên giải pháp', hideable: false },
+  { key: 'SolutionNote', label: 'Ghi chú giải pháp', hideable: true },
+  { key: 'AcceptanceDate', label: 'Ngày lập biên bản', hideable: false },
+  { key: 'TotalQuantity', label: 'Tổng số lượng thiết bị', hideable: false },
+  { key: 'TotalAmount', label: 'Tổng cộng (số)', hideable: false },
+  { key: 'AmountInWords', label: 'Tổng cộng bằng chữ', hideable: false },
+  { key: 'CreatedByName', label: 'Người tạo giải pháp', hideable: false },
+];
+
+// Token cap TUNG DONG thiet bi - chi dung duoc BEN TRONG khoi lap
+// <!-- items:start -->...<!-- items:end -->, prefix "Item." bat buoc (vd {{Item.ProductName}}).
+const ACCEPTANCE_SOLUTION_ITEM_TOKENS = [
+  { key: 'Item.Stt', label: 'STT', hideable: false },
+  { key: 'Item.ProductCode', label: 'Mã sản phẩm', hideable: false },
+  { key: 'Item.ProductName', label: 'Tên hàng hóa', hideable: false },
+  { key: 'Item.Unit', label: 'Đơn vị tính', hideable: false },
+  { key: 'Item.Quantity', label: 'Số lượng', hideable: false },
+  { key: 'Item.UnitPrice', label: 'Đơn giá', hideable: false },
+  { key: 'Item.LineTotal', label: 'Thành tiền', hideable: false },
+];
+
 const PRINT_TEMPLATE_TYPES = {
   stock_issue: {
     name: 'Mẫu in phiếu xuất kho',
@@ -95,6 +129,16 @@ const PRINT_TEMPLATE_TYPES = {
     },
     defaultOrientation: 'portrait',
     defaultTemplatePath: path.join(PRINT_TEMPLATE_DEFAULTS_DIR, 'project_payment_advance.html'),
+  },
+  acceptance_solution: {
+    name: 'Biên bản nghiệm thu theo giải pháp',
+    hasItems: true,
+    tokens: {
+      document: ACCEPTANCE_SOLUTION_DOCUMENT_TOKENS,
+      item: ACCEPTANCE_SOLUTION_ITEM_TOKENS,
+    },
+    defaultOrientation: 'portrait',
+    defaultTemplatePath: path.join(PRINT_TEMPLATE_DEFAULTS_DIR, 'acceptance_solution.html'),
   },
 };
 

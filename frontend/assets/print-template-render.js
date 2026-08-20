@@ -202,6 +202,50 @@ function buildProjectAdvanceTokenValues(project, milestone, company) {
   };
 }
 
+// ---- Bien ban nghiem thu theo giai phap (migration 041, 2026-08-19) ----
+
+// Gia tri token CAP GIAI PHAP - dung cho ca bien ban that (project/solution/company tu API) lan
+// du lieu mau co dinh trong khung xem truoc. AcceptanceDate luon la NGAY IN THAT (luc bam in/xem
+// truoc), khong phai ngay tao giai phap trong DB - dung nguyen tac PrintDate cua giay tam ung.
+function buildAcceptanceSolutionTokenValues(project, solution, company) {
+  const totalAmount = Math.round(solution.total_value);
+  return {
+    CompanyName: company.company_name || '(Chưa cấu hình tên công ty)',
+    CompanyAddress: buildCompanyAddressLine(company),
+    CompanyPhones: buildCompanyPhonesLine(company),
+    CompanyTaxCode: buildCompanyTaxCodeLine(company),
+    CompanyContact: buildCompanyContactLine(company),
+    CompanyBankInfo: buildCompanyBankLine(company),
+    ProjectName: project.name || '',
+    ContractNo: project.contract_no || '',
+    CustomerName: project.partner_name || '',
+    SiteAddress: project.site_address || '-',
+    SolutionName: solution.name || '',
+    SolutionNote: solution.note || '',
+    AcceptanceDate: formatDateVNLong(new Date()),
+    TotalQuantity: formatMoneyVN(solution.total_quantity),
+    TotalAmount: formatMoneyVN(totalAmount),
+    AmountInWords: numberToVietnameseWords(totalAmount),
+    CreatedByName: solution.created_by_name || '',
+  };
+}
+
+// Gia tri token CAP TUNG DONG thiet bi (prefix "Item." trong template_html) - khac
+// buildStockIssueItemTokenValues o cho khong co chiet khau (giai phap nghiem thu khong co khai
+// niem nay), unit_price/line_total da tinh san o backend (serializeSolution() trong
+// projectAcceptanceSolutions.routes.js, binh quan gia quyen theo gia ban).
+function buildAcceptanceSolutionItemTokenValues(item, index) {
+  return {
+    Stt: String(index + 1),
+    ProductCode: item.product_code,
+    ProductName: item.product_name,
+    Unit: item.unit,
+    Quantity: formatMoneyVN(item.quantity),
+    UnitPrice: formatMoneyVN(item.unit_price),
+    LineTotal: formatMoneyVN(item.line_total),
+  };
+}
+
 // ==== Render engine string-based (thay DOM-walk cu) ====
 
 function escapeHtml(value) {
@@ -329,6 +373,28 @@ const SAMPLE_PROJECT_ADVANCE_DATA = {
   },
 };
 
+const SAMPLE_ACCEPTANCE_SOLUTION_DATA = {
+  company: SAMPLE_STOCK_ISSUE_DATA.company,
+  project: {
+    name: 'Nhà máy Thành Phát – Khu B',
+    contract_no: 'MD/HDMB060426',
+    partner_name: 'Công ty Cổ Phần Kiến Trúc Xây Dựng Kim Long',
+    site_address: 'Khu Dân Cư Saigon Mystery Villas, P. Bình Trưng, Tp. Hồ Chí Minh',
+  },
+  solution: {
+    name: 'Giải pháp Camera an ninh',
+    note: 'Khu vực nhà xưởng và cổng bảo vệ',
+    total_quantity: 62,
+    total_value: 132000000,
+    created_by_name: 'Trần Thị B',
+    items: [
+      { product_code: 'SP00045', product_name: 'Camera IP 4MP Dome', unit: 'Cái', quantity: 40, unit_price: 1850000, line_total: 74000000 },
+      { product_code: 'SP00046', product_name: 'Camera IP 4MP Thân trụ', unit: 'Cái', quantity: 20, unit_price: 1650000, line_total: 33000000 },
+      { product_code: 'SP00052', product_name: 'Đầu ghi hình NVR 32 kênh', unit: 'Cái', quantity: 2, unit_price: 12500000, line_total: 25000000 },
+    ],
+  },
+};
+
 // ---- Registry tong quat: loai phieu -> du lieu mau + ham tinh token - de print-template-edit.js
 // dung CHUNG 1 logic cho moi loai phieu (khong hardcode rieng tung loai), them mau in moi sau nay
 // chi can them 1 entry o day. ----
@@ -344,5 +410,11 @@ const PRINT_TYPE_HANDLERS = {
     buildTokenValues: (data) => buildProjectAdvanceTokenValues(data.project, data.milestone, data.company),
     items: null,
     itemTokenBuilder: null,
+  },
+  acceptance_solution: {
+    sampleData: SAMPLE_ACCEPTANCE_SOLUTION_DATA,
+    buildTokenValues: (data) => buildAcceptanceSolutionTokenValues(data.project, data.solution, data.company),
+    items: SAMPLE_ACCEPTANCE_SOLUTION_DATA.solution.items,
+    itemTokenBuilder: buildAcceptanceSolutionItemTokenValues,
   },
 };

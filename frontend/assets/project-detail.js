@@ -69,6 +69,7 @@ const tabPanels = {
   payments: document.getElementById('tab-payments'),
   variations: document.getElementById('tab-variations'),
   warranties: document.getElementById('tab-warranties'),
+  acceptance: document.getElementById('tab-acceptance'),
 };
 
 const ganttSvg = document.getElementById('gantt-svg');
@@ -1585,6 +1586,351 @@ warrantyVisitForm.addEventListener('submit', async (event) => {
   }
 });
 
+// ----- Tab Nghiem thu (migration 041, "Nghiem thu theo giai phap") -----
+// Phan quyen 2 lop (kieu MOI - xem docs/handoff/HANDOFF-NghiemThu-2026-08-19-v2.md muc 3.6):
+// AI co quyen 'du_an' (da vao duoc trang nay) deu XEM duoc tab + so lieu + danh sach giai phap
+// binh thuong - KHONG an ca tab nhu Bao hanh. Chi AN/KHOA nut "Them giai phap" + icon Sua/Xoa tung
+// the theo quyen phu 'nghiem_thu'.
+let canManageAcceptance = false;
+let currentSolutions = [];
+let solutionDevices = []; // danh sach thiet bi con chon duoc, nap lai moi lan mo modal
+const solutionSelectedQuantities = new Map(); // product_id -> so luong dang chon trong modal
+let editingSolutionId = null; // null = tao moi
+
+const acceptanceStatsEl = document.getElementById('acceptance-stats');
+const btnAddSolution = document.getElementById('btn-add-solution');
+const solutionCardsEl = document.getElementById('solution-cards');
+const solutionsEmptyEl = document.getElementById('solutions-empty');
+
+const solutionModal = document.getElementById('solution-modal');
+const solutionModalTitleEl = document.getElementById('solution-modal-title');
+const solutionForm = document.getElementById('solution-form');
+const solutionFormErrorBox = document.getElementById('solution-form-error');
+const solutionFormErrorText = document.getElementById('solution-form-error-text');
+const btnCancelSolution = document.getElementById('btn-cancel-solution');
+const btnSubmitSolution = document.getElementById('btn-submit-solution');
+const solutionNameInput = document.getElementById('solution-name');
+const solutionNoteInput = document.getElementById('solution-note');
+const solutionDeviceSearchInput = document.getElementById('solution-device-search');
+const solutionDevicesEmptyEl = document.getElementById('solution-devices-empty');
+const solutionDeviceTableWrap = document.getElementById('solution-device-table-wrap');
+const solutionDeviceTbody = document.getElementById('solution-device-tbody');
+const solutionModalSummaryEl = document.getElementById('solution-modal-summary');
+
+function renderAcceptanceStats(summary) {
+  const percent = summary.issued_total > 0 ? Math.round((summary.assigned_total / summary.issued_total) * 100) : 0;
+  acceptanceStatsEl.innerHTML = `
+    <div class="stat-card">
+      <p class="stat-card-label">Thiết bị đã xuất cho dự án</p>
+      <p class="stat-card-value">${formatMoney(summary.issued_total)} đơn vị</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-card-label">Đã đưa vào giải pháp</p>
+      <p class="stat-card-value stat-card-value--accent">${formatMoney(summary.assigned_total)} / ${formatMoney(summary.issued_total)}</p>
+      <div class="stat-card-bar"><div class="stat-card-bar-fill" style="width:${Math.min(percent, 100)}%"></div></div>
+    </div>
+    <div class="stat-card">
+      <p class="stat-card-label">Chưa phân vào giải pháp nào</p>
+      <p class="stat-card-value${summary.unassigned_total > 0 ? ' stat-card-value--warning' : ''}">${formatMoney(summary.unassigned_total)} đơn vị</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-card-label">Tổng giá trị đã xuất</p>
+      <p class="stat-card-value">${formatMoney(summary.value_total)} đ</p>
+    </div>
+  `;
+}
+
+function renderSolutionCard(solution) {
+  const visibleItems = solution.items.slice(0, 3);
+  const chips = visibleItems
+    .map((it) => `<span class="device-chip">${it.product_name} <span class="qty">${formatMoney(it.quantity)}</span></span>`)
+    .join('');
+  const moreCount = solution.items.length - visibleItems.length;
+  const moreChip = moreCount > 0 ? `<span class="device-chip more">+${moreCount} thiết bị khác</span>` : '';
+
+  const progressPercent = solution.total_issued_net > 0
+    ? Math.round((solution.total_quantity / solution.total_issued_net) * 100)
+    : 0;
+
+  const manageButtons = canManageAcceptance
+    ? `
+      <button type="button" class="icon-btn" data-action="edit-solution" data-id="${solution.id}" title="Sửa giải pháp">${icon('pencil', 15)}</button>
+      <button type="button" class="icon-btn icon-btn-danger" data-action="delete-solution" data-id="${solution.id}" title="Xóa giải pháp">${icon('trash', 15)}</button>
+    `
+    : '';
+
+  return `
+    <div class="solution-card">
+      <div>
+        <div class="solution-head">
+          <div class="solution-icon">${icon('package', 20)}</div>
+          <div class="solution-title-group">
+            <p class="solution-title">${solution.name}</p>
+            <p class="solution-meta">${solution.item_type_count} loại thiết bị · ${formatMoney(solution.total_quantity)} đơn vị · ${formatMoney(solution.total_value)} đ</p>
+          </div>
+        </div>
+        <div class="solution-devices">${chips}${moreChip}</div>
+        <div class="solution-progress">
+          <div class="solution-progress-track"><div class="solution-progress-fill" style="width:${Math.min(progressPercent, 100)}%"></div></div>
+          <span class="solution-progress-label">${formatMoney(solution.total_quantity)}/${formatMoney(solution.total_issued_net)} đơn vị đã gán</span>
+        </div>
+      </div>
+      <div class="solution-actions">
+        <button type="button" class="icon-btn" data-action="print-solution" data-id="${solution.id}" title="In biên bản nghiệm thu">${icon('printer', 15)}</button>
+        ${manageButtons}
+      </div>
+    </div>
+  `;
+}
+
+function renderAcceptanceTab() {
+  btnAddSolution.hidden = !canManageAcceptance;
+  if (currentSolutions.length === 0) {
+    solutionsEmptyEl.hidden = false;
+    solutionCardsEl.innerHTML = '';
+    return;
+  }
+  solutionsEmptyEl.hidden = true;
+  solutionCardsEl.innerHTML = currentSolutions.map(renderSolutionCard).join('');
+}
+
+async function loadAcceptanceSolutions() {
+  try {
+    const { solutions, summary } = await apiFetch(`/projects/${projectId}/acceptance-solutions`);
+    currentSolutions = solutions;
+    renderAcceptanceStats(summary);
+    renderAcceptanceTab();
+  } catch (err) {
+    renderDetailError(err.message);
+  }
+}
+
+// ----- Modal Them/Sua giai phap -----
+
+function updateSolutionSummary() {
+  let typeCount = 0;
+  let totalQty = 0;
+  let totalValue = 0;
+  solutionSelectedQuantities.forEach((qty, productId) => {
+    if (!(qty > 0)) return;
+    const device = solutionDevices.find((d) => d.product_id === productId);
+    if (!device) return;
+    typeCount += 1;
+    totalQty += qty;
+    totalValue += Math.round(device.unit_price * qty);
+  });
+  solutionModalSummaryEl.innerHTML = `Đã chọn <strong>${typeCount}</strong> loại thiết bị · <strong>${formatMoney(totalQty)}</strong> đơn vị · <strong>${formatMoney(totalValue)} đ</strong>`;
+}
+
+// Bang chon thiet bi trong modal - render lai TOAN BO khi mo modal/doi bo loc tim kiem/tick chon
+// (khong anh huong go phim vi khong dung o input tim kiem hay o so luong, xem 2 listener input/
+// change ben duoi tach rieng: go so luong CHI cap nhat 1 o + tong ket, khong ve lai ca bang).
+function renderDeviceTable() {
+  if (solutionDevices.length === 0) {
+    solutionDevicesEmptyEl.hidden = false;
+    solutionDeviceTableWrap.hidden = true;
+    solutionDeviceTbody.innerHTML = '';
+    updateSolutionSummary();
+    return;
+  }
+  solutionDevicesEmptyEl.hidden = true;
+  solutionDeviceTableWrap.hidden = false;
+
+  const filter = (solutionDeviceSearchInput.value || '').trim().toLowerCase();
+  const filtered = filter
+    ? solutionDevices.filter((d) => d.product_code.toLowerCase().includes(filter) || d.product_name.toLowerCase().includes(filter))
+    : solutionDevices;
+
+  solutionDeviceTbody.innerHTML = filtered
+    .map((d) => {
+      const selectedQty = solutionSelectedQuantities.get(d.product_id);
+      const checked = selectedQty !== undefined;
+      const lineTotal = checked ? Math.round(d.unit_price * selectedQty) : null;
+      return `
+        <tr class="${checked ? 'checked' : ''}" data-product-id="${d.product_id}">
+          <td><input type="checkbox" class="checkbox" data-role="device-check" ${checked ? 'checked' : ''} ${canManageAcceptance ? '' : 'disabled'}></td>
+          <td><div class="device-name">${d.product_name}</div><div class="device-code">${d.product_code}</div></td>
+          <td>${d.unit}</td>
+          <td class="num">${formatMoney(d.unit_price)}</td>
+          <td class="num">${formatMoney(d.issued_net)}</td>
+          <td class="num">
+            <div class="qty-input-wrap">
+              <input type="text" class="qty-input" data-role="device-qty" value="${checked ? selectedQty : 0}" ${checked && canManageAcceptance ? '' : 'disabled'}>
+              <span class="qty-hint${d.remaining <= 0 ? ' full' : ''}">còn ${formatMoney(d.remaining)}</span>
+            </div>
+          </td>
+          <td class="num device-line-total${checked ? '' : ' muted'}">${checked ? formatMoney(lineTotal) : '—'}</td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  updateSolutionSummary();
+}
+
+async function openSolutionModal(solution) {
+  editingSolutionId = solution ? solution.id : null;
+  solutionModalTitleEl.textContent = solution ? 'Sửa giải pháp' : 'Thêm giải pháp';
+  solutionForm.reset();
+  solutionFormErrorBox.hidden = true;
+  solutionSelectedQuantities.clear();
+  solutionDeviceSearchInput.value = '';
+
+  if (solution) {
+    solutionNameInput.value = solution.name;
+    solutionNoteInput.value = solution.note || '';
+    solution.items.forEach((it) => solutionSelectedQuantities.set(it.product_id, it.quantity));
+  }
+
+  solutionModal.hidden = false;
+  solutionDeviceTbody.innerHTML = '<tr><td colspan="7" class="subtask-empty">Đang tải...</td></tr>';
+  solutionDevicesEmptyEl.hidden = true;
+  solutionDeviceTableWrap.hidden = false;
+
+  try {
+    const excludeParam = editingSolutionId ? `?exclude_solution_id=${editingSolutionId}` : '';
+    const { devices } = await apiFetch(`/projects/${projectId}/acceptance-solutions/available-devices${excludeParam}`);
+    solutionDevices = devices;
+
+    // Sua 1 giai phap: san pham da tra HET ve kho sau khi gan (issued_net thuc te = 0) se khong
+    // con nam trong "available-devices" (chi liet ke issued_net > 0) - van phai hien dong nay
+    // trong bang de nguoi dung thay + bo chon/giam so luong, khong am tham mat du lieu dang co.
+    if (solution) {
+      const listedIds = new Set(solutionDevices.map((d) => d.product_id));
+      solution.items.forEach((it) => {
+        if (!listedIds.has(it.product_id)) {
+          solutionDevices.push({
+            product_id: it.product_id,
+            product_code: it.product_code,
+            product_name: it.product_name,
+            unit: it.unit,
+            unit_price: it.unit_price,
+            issued_net: it.issued_net,
+            assigned_other: 0,
+            remaining: Math.max(it.issued_net, 0),
+          });
+        }
+      });
+    }
+
+    renderDeviceTable();
+  } catch (err) {
+    solutionFormErrorText.textContent = err.message;
+    solutionFormErrorBox.hidden = false;
+  }
+}
+
+function closeSolutionModal() {
+  solutionModal.hidden = true;
+  editingSolutionId = null;
+  solutionSelectedQuantities.clear();
+  solutionDevices = [];
+}
+
+btnAddSolution.addEventListener('click', () => openSolutionModal(null));
+btnCancelSolution.addEventListener('click', closeSolutionModal);
+solutionModal.addEventListener('click', (event) => {
+  if (event.target === solutionModal) closeSolutionModal();
+});
+solutionDeviceSearchInput.addEventListener('input', renderDeviceTable);
+
+// Go so luong: chi cap nhat 1 o thanh tien + dong tong ket, KHONG ve lai ca bang (tranh mat vi tri
+// con tro dang go giua chung).
+solutionDeviceTbody.addEventListener('input', (event) => {
+  if (event.target.dataset.role !== 'device-qty') return;
+  const row = event.target.closest('tr[data-product-id]');
+  if (!row) return;
+  const productId = Number(row.dataset.productId);
+  const device = solutionDevices.find((d) => d.product_id === productId);
+  if (!device) return;
+
+  const qty = Number(event.target.value) || 0;
+  solutionSelectedQuantities.set(productId, qty);
+  row.querySelector('.device-line-total').textContent = formatMoney(Math.round(device.unit_price * qty));
+  updateSolutionSummary();
+});
+
+// Tick/bo tick checkbox: ve lai ca bang (can doi lai thuoc tinh disabled cua o so luong) - it xay
+// ra hon go so luong nen chap nhan duoc, khong can toi uu nhu tren.
+solutionDeviceTbody.addEventListener('change', (event) => {
+  if (event.target.dataset.role !== 'device-check') return;
+  const row = event.target.closest('tr[data-product-id]');
+  if (!row) return;
+  const productId = Number(row.dataset.productId);
+  const device = solutionDevices.find((d) => d.product_id === productId);
+  if (!device) return;
+
+  if (event.target.checked) {
+    solutionSelectedQuantities.set(productId, device.remaining > 0 ? device.remaining : 1);
+  } else {
+    solutionSelectedQuantities.delete(productId);
+  }
+  renderDeviceTable();
+});
+
+solutionCardsEl.addEventListener('click', async (event) => {
+  const button = event.target.closest('button[data-action]');
+  if (!button) return;
+  const { action, id } = button.dataset;
+
+  if (action === 'print-solution') {
+    openPrintPreview(`print-acceptance-solution.html?project_id=${projectId}&solution_id=${id}`);
+    return;
+  }
+
+  if (action === 'edit-solution') {
+    const solution = currentSolutions.find((s) => String(s.id) === id);
+    if (solution) openSolutionModal(solution);
+    return;
+  }
+
+  if (action === 'delete-solution') {
+    if (!confirm('Xóa giải pháp này? Chỉ gỡ nhóm nghiệm thu, không đổi tồn kho/công nợ.')) return;
+    button.disabled = true;
+    try {
+      await apiFetch(`/projects/${projectId}/acceptance-solutions/${id}`, { method: 'DELETE' });
+      await loadAcceptanceSolutions();
+    } catch (err) {
+      renderDetailError(err.message);
+      button.disabled = false;
+    }
+  }
+});
+
+solutionForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  solutionFormErrorBox.hidden = true;
+  btnSubmitSolution.disabled = true;
+  btnSubmitSolution.textContent = 'Đang lưu...';
+
+  const items = [];
+  solutionSelectedQuantities.forEach((qty, productId) => {
+    if (qty > 0) items.push({ product_id: productId, quantity: qty });
+  });
+
+  const body = {
+    name: solutionNameInput.value.trim(),
+    note: solutionNoteInput.value.trim(),
+    items,
+  };
+
+  try {
+    if (editingSolutionId === null) {
+      await apiFetch(`/projects/${projectId}/acceptance-solutions`, { method: 'POST', body: JSON.stringify(body) });
+    } else {
+      await apiFetch(`/projects/${projectId}/acceptance-solutions/${editingSolutionId}`, { method: 'PUT', body: JSON.stringify(body) });
+    }
+    closeSolutionModal();
+    await loadAcceptanceSolutions();
+  } catch (err) {
+    solutionFormErrorText.textContent = err.message;
+    solutionFormErrorBox.hidden = false;
+  } finally {
+    btnSubmitSolution.disabled = false;
+    btnSubmitSolution.textContent = 'Lưu giải pháp';
+  }
+});
+
 // ----- Nap du lieu -----
 
 async function loadProjectDetail() {
@@ -1639,6 +1985,7 @@ async function loadProducts() {
   btnAddMilestone.innerHTML = `${icon('plus', 16)} Thêm đợt thanh toán`;
   btnAddVariation.innerHTML = `${icon('plus', 16)} Thêm phát sinh`;
   btnAddProjectWarranty.innerHTML = `${icon('plus', 16)} Thêm bảo hành`;
+  btnAddSolution.innerHTML = `${icon('plus', 16)} Thêm giải pháp`;
 
   if (!projectId) {
     renderDetailError('Thiếu id dự án trên đường dẫn');
@@ -1649,9 +1996,14 @@ async function loadProducts() {
   // qua AskUserQuestion) - an han ca nut tab neu thieu quyen thu 2, khong goi API bao hanh.
   canViewProjectWarranty = currentUser.permissions.includes('bao_hanh');
   tabBtnWarranties.hidden = !canViewProjectWarranty;
+  // Tab "Nghiem thu": khac Bao hanh, khong an tab - AI co 'du_an' (da vao duoc trang) deu XEM
+  // duoc, chi rieng nut "Them giai phap"/icon Sua/Xoa moi can them 'nghiem_thu' (xem
+  // renderAcceptanceTab()/renderSolutionCard()).
+  canManageAcceptance = currentUser.permissions.includes('nghiem_thu');
 
   await loadProducts();
   await loadProjectDetail();
+  await loadAcceptanceSolutions();
   if (canViewProjectWarranty) {
     btnAddProjectWarranty.href = `warranties.html?customer_id=${currentProject.partner_id}&project_id=${projectId}`;
     await Promise.all([loadStaff(), loadProjectWarranties()]);

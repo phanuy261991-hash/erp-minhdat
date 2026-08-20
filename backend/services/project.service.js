@@ -308,6 +308,19 @@ function deleteProject(id) {
     }
   }
 
+  // Migration 041 ("Nghiem thu theo giai phap"): chan xoa neu da co giai phap nghiem thu gan
+  // project_id - cung pattern check bang co ton tai truoc nhu warranties o tren (an toan neu
+  // server chua kip chay migration 041, dù thuc te migration luon tu chay truoc khi nhan request).
+  const acceptanceTableExists = db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'project_acceptance_solutions'")
+    .get();
+  if (acceptanceTableExists) {
+    const hasSolutions = db.prepare('SELECT COUNT(*) AS count FROM project_acceptance_solutions WHERE project_id = ?').get(id);
+    if (hasSolutions.count > 0) {
+      throw new ServiceError('Dự án đã có giải pháp nghiệm thu, không thể xóa - chỉ chuyển trạng thái "Hủy"');
+    }
+  }
+
   const run = db.transaction(() => {
     db.prepare('DELETE FROM project_members WHERE project_id = ?').run(id);
     db.prepare('DELETE FROM project_phases WHERE project_id = ?').run(id);

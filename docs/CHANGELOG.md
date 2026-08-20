@@ -2,6 +2,28 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-19 (Nghiệm thu theo giải pháp — tab mới trong Chi tiết dự án)
+
+> Tính năng đã dừng ở mockup/kế hoạch từ phiên trước (`docs/handoff/HANDOFF-NghiemThu-2026-08-19-v2.md`, 4 giả định kỹ thuật đã chốt qua `AskUserQuestion`) — phiên này code thẳng theo đúng checklist đã ghi, không hỏi lại. Chi tiết quyết định: `docs/DECISIONS.md` mục 2026-08-19 (Nghiệm thu).
+
+**1. Schema & backend**
+- Migration `041`: 2 bảng mới `project_acceptance_solutions` (1 giải pháp đã ký với khách hàng) + `project_acceptance_solution_items` (quan hệ nhiều-nhiều product↔solution, `UNIQUE(solution_id, product_id)`) — cho phép 1 thiết bị chia vào nhiều giải pháp khác nhau. Cùng migration, seed dòng `print_templates` mới cho type `acceptance_solution`.
+- `backend/config/modules.js`: thêm module `nghiem_thu` — kiểu phân quyền **2 lớp mới trong dự án**: quyền `du_an` (đã gán sẵn ở tầng mount `/api/projects`) đủ để XEM; quyền `nghiem_thu` (thêm) mới được THAO TÁC (tạo/sửa/xóa giải pháp) — kiểm tra thủ công bằng `userHasPermission()` ngay trong handler, không có helper "requireAll" sẵn.
+- `backend/routes/projectAcceptanceSolutions.routes.js` (mới, `mergeParams:true`, mount tại `/:id/acceptance-solutions` trong `projects.routes.js`): `computeAvailableDevices()` — copy nguyên xi công thức "đã xuất NET" của `projectMaterials.routes.js` (khớp đúng số với tab Vật tư) + đơn giá bình quân gia quyền theo **giá bán** trên `stock_issue_items` (không phải giá vốn). `GET /` (danh sách + 4 số liệu tổng hợp), `GET /available-devices?exclude_solution_id=`, `GET /:id`, `POST`/`PUT` (validate từng dòng không vượt "còn lại chưa gán", tính lại từ dữ liệu thật chứ không tin số client gửi), `DELETE`.
+- `backend/services/project.service.js#deleteProject()`: thêm chặn xóa dự án đã có giải pháp nghiệm thu gắn vào — cùng pattern với chặn đã có bảo hành/phiếu/công nợ.
+- `backend/config/printTemplateTokens.js` + `backend/config/print-template-defaults/acceptance_solution.html`: loại mẫu in mới "Biên bản nghiệm thu theo giải pháp" (`hasItems:true`), tái dùng đúng cơ chế "Mẫu in" (khung HTML/CSS thật + token `{{TenBien}}`) vừa xây xong cùng ngày.
+
+**2. Frontend**
+- `frontend/assets/print-template-render.js`: thêm `buildAcceptanceSolutionTokenValues()`/`buildAcceptanceSolutionItemTokenValues()` + dữ liệu mẫu cho khung xem trước ở trang "Mẫu in".
+- `frontend/print-acceptance-solution.html`/`assets/print-acceptance-solution.js` (mới, copy khung `print-issue.html`/`.js`): trang in độc lập, **bắt buộc Shadow DOM** (không `innerHTML` trực tiếp) để cô lập `<style>` riêng của mẫu — đúng bài học rút ra từ sự cố "Mẫu in" cùng ngày.
+- `frontend/project-detail.html`/`assets/project-detail.js`: tab "Nghiệm thu" mới (**không ẩn tab** như tab Bảo hành — ai có `du_an` đều xem được, chỉ ẩn/khóa nút "Thêm giải pháp" + icon Sửa/Xóa theo quyền `nghiem_thu`) — 4 thẻ số liệu, danh sách thẻ giải pháp (icon + chip thiết bị tiêu biểu + thanh tiến độ riêng từng giải pháp), modal Thêm/Sửa với bảng chọn thiết bị đã xuất (tick chọn + nhập số lượng, tính thành tiền/tổng kết ngay trên modal). Dựng lại đúng theo `docs/handoff/mockup-nghiem-thu-2026-08-19.html` (đổi CSS mockup sang đúng token/class thật của `style.css`, không copy nguyên).
+- `frontend/assets/style.css`: thêm CSS mới cho `.solution-card`/`.solution-progress`/`.device-chip`/`.device-table`/`.qty-input`/`.stat-card-bar`... (tái dùng token màu/font/radius có sẵn trong `tokens.css`, không phát minh mới).
+
+**3. Test**
+- API thật (Node `fetch`): chia 1 sản phẩm vào 2 giải pháp đúng số dư còn lại (`exclude_solution_id` tính lại đúng khi sửa); chặn đúng 400 khi vượt số lượng còn có thể gán; tài khoản chỉ có `du_an` (không có `nghiem_thu`) xem được (`GET` 200) nhưng bị chặn đúng 403 ở cả POST/PUT/DELETE; sửa giải pháp giữ đúng dữ liệu.
+- Trình duyệt thật (Chrome headless, CDP thô tự viết, không dùng thư viện ngoài): tạo giải pháp qua UI đúng luồng (tick chọn thiết bị → nhập số lượng → lưu), thẻ giải pháp hiển thị đúng, in biên bản render đúng nội dung trong Shadow DOM (không lỗi console), tài khoản chỉ có `du_an` thấy tab + số liệu nhưng nút "Thêm giải pháp" ẩn đúng. Phát hiện + sửa 1 lỗi CSS trong lúc tự kiểm (không phải từ người dùng): class `.qty-hint.full` (tô xanh dòng "còn X" khi đã hết số lượng) gán ngược điều kiện — hiện xanh khi CÒN nhiều thay vì khi ĐÃ HẾT, sửa lại đúng `remaining <= 0`.
+- Dữ liệu/vai trò/tài khoản test đã xóa sạch sau khi xong. Đã restart server (bắt buộc, không có hot-reload).
+
 ## 2026-08-19 (Viết lại cơ chế "Mẫu in": khung HTML/CSS thật + token binding)
 
 > Đảo ngược cách tiếp cận WYSIWYG contenteditable của migration `028`/`029` (2026-08-05) theo phản hồi người dùng ("khó dùng"). Chi tiết đầy đủ quá trình chốt hướng (so sánh phương án, các quyết định qua `AskUserQuestion`): `docs/DECISIONS.md` mục 2026-08-19 (Mẫu in).

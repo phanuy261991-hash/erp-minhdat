@@ -40,7 +40,7 @@ Web app nội bộ, kiến trúc đơn giản (không microservices, không clou
 
 **Vai trò động (bổ sung 2026-08-01 — thay cho danh sách 3 vai trò cố định ban đầu):**
 - Admin tạo được vai trò mới tùy ý (đặt tên, chọn các module được phép truy cập) — không giới hạn cứng 3 vai trò như bản đầu.
-- **Phân quyền theo module** (không chi tiết theo từng hành động xem/tạo/sửa/xóa): mỗi vai trò được cấp quyền truy cập vào các module nào (Kho, Nhà cung cấp, Khách hàng, Báo cáo, Người dùng, Cấu hình...) — trong module đã được cấp, làm được mọi thao tác thuộc module đó. Danh sách module đầy đủ, nguồn duy nhất: `backend/config/modules.js`. Module có thể tách nhỏ dần theo thời gian khi nhu cầu phân quyền chi tiết hơn phát sinh — đã tách 2 lần: `bao_hanh` (2026-08-08, tách khỏi module Công nợ chung) và `khach_hang` (2026-08-19, tách "Khách hàng"/"Công nợ khách hàng" khỏi module còn lại chỉ còn quản lý "Nhà cung cấp"/"Công nợ NCC", nay đổi tên còn lại thành `cong_no` = Nhà cung cấp) — mỗi lần tách đều backfill quyền cũ để không vai trò nào bị mất quyền đột ngột, xem `docs/DECISIONS.md`.
+- **Phân quyền theo module** (không chi tiết theo từng hành động xem/tạo/sửa/xóa): mỗi vai trò được cấp quyền truy cập vào các module nào (Kho, Nhà cung cấp, Khách hàng, Báo cáo, Người dùng, Cấu hình...) — trong module đã được cấp, làm được mọi thao tác thuộc module đó. Danh sách module đầy đủ, nguồn duy nhất: `backend/config/modules.js`. Module có thể tách nhỏ dần theo thời gian khi nhu cầu phân quyền chi tiết hơn phát sinh — đã tách 2 lần: `bao_hanh` (2026-08-08, tách khỏi module Công nợ chung) và `khach_hang` (2026-08-19, tách "Khách hàng"/"Công nợ khách hàng" khỏi module còn lại chỉ còn quản lý "Nhà cung cấp"/"Công nợ NCC", nay đổi tên còn lại thành `cong_no` = Nhà cung cấp) — mỗi lần tách đều backfill quyền cũ để không vai trò nào bị mất quyền đột ngột, xem `docs/DECISIONS.md`. Module `nghiem_thu` (2026-08-19, mục 4.12 "Nghiệm thu theo giải pháp") là kiểu **mới** trong hệ thống — không phải tách ra từ module khác, mà **phân quyền 2 lớp trong cùng 1 tab**: quyền `du_an` cho XEM, quyền `nghiem_thu` (thêm) mới cho THAO TÁC.
 - **Vai trò Admin là vai trò đặc biệt, cố định**: luôn có toàn quyền mọi module, không thể đổi tên/xóa/sửa quyền — đảm bảo hệ thống luôn có ít nhất 1 tài khoản quản trị đầy đủ, tránh trường hợp thao tác nhầm làm mất quyền quản trị.
 - Hệ thống vẫn seed sẵn 2 vai trò mặc định để dùng ngay: **Kế toán** (Công nợ + Báo cáo), **Thủ kho** (Kho) — nhưng đây chỉ là dữ liệu khởi tạo, Admin có thể sửa tên/đổi quyền/xóa 2 vai trò này như vai trò tự tạo bất kỳ.
 
@@ -193,6 +193,16 @@ Quản trị toàn bộ quá trình một dự án/công trình: theo giai đo�
 - Dùng chung 1 danh sách, phân biệt bằng trường **"Loại phát sinh"**:
   - **Chi phí** (có tiền): nội dung, số tiền, ngày, lý do, trạng thái duyệt. Khi được duyệt thì **cộng vào giá trị hợp đồng** của dự án (Giá trị hợp đồng thực tế = giá trị gốc + phát sinh đã duyệt).
   - **Vấn đề** (không tiền): nhật ký sự cố phát sinh trong quá trình (chậm tiến độ, thiếu vật tư, khách đổi yêu cầu...) kèm cách xử lý.
+
+**Nghiệm thu theo giải pháp** (bổ sung 2026-08-19, theo yêu cầu người dùng — hoàn thành)
+- Tab riêng "Nghiệm thu" trong Chi tiết dự án: gom nhóm thiết bị **đã xuất cho dự án** vào từng "giải pháp" đã ký với khách hàng, phục vụ lập biên bản nghiệm thu — **không tạo phiếu xuất kho mới, không đổi tồn kho**.
+- 1 dự án có nhiều giải pháp; **1 thiết bị (sản phẩm) được chia số lượng vào nhiều giải pháp khác nhau** (vd 40 camera → 20 vào giải pháp A, 20 vào giải pháp B) — hệ thống tự tính "còn lại chưa gán" theo đúng số đã xuất trừ đi phần đã gán ở giải pháp khác.
+- Mỗi giải pháp: tên, ghi chú, danh sách thiết bị kèm số lượng — chọn từ đúng danh sách thiết bị đã xuất cho dự án (không phải toàn bộ danh mục sản phẩm).
+- **Đơn giá** hiển thị = giá bán trên phiếu xuất kho gốc (bình quân gia quyền theo số lượng đã xuất nếu 1 sản phẩm xuất nhiều đợt giá khác nhau) — không phải giá vốn nội bộ.
+- 4 thẻ số liệu tổng quan đầu tab: Thiết bị đã xuất / Đã đưa vào giải pháp (kèm %) / Chưa phân vào giải pháp nào / Tổng giá trị đã xuất.
+- **In biên bản nghiệm thu**: mỗi giải pháp có nút in ra văn bản theo mẫu cấu hình được qua "Cấu hình mẫu in" (mục 4.5, loại `acceptance_solution`).
+- **Phân quyền 2 lớp** (khác các module khác trong hệ thống): module mới `nghiem_thu` — ai có quyền `du_an` (đã vào được trang) đều **xem** được tab + số liệu + danh sách giải pháp; chỉ ai có **thêm** quyền `nghiem_thu` mới **tạo/sửa/xóa** giải pháp/gán thiết bị.
+- Không xóa được dự án đã có giải pháp nghiệm thu gắn vào — cùng nguyên tắc với các dữ liệu con khác của dự án (chỉ chuyển trạng thái "Hủy").
 
 **Phân quyền**: module mới `du_an` (mục 4.1) — vai trò nào được cấp module này thì thao tác được mọi chức năng thuộc dự án, đúng triết lý phân quyền theo module.
 

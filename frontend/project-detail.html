@@ -34,6 +34,7 @@
         <button type="button" class="detail-tab" data-tab="payments">Thanh toán &amp; Công nợ</button>
         <button type="button" class="detail-tab" data-tab="variations">Phát sinh</button>
         <button type="button" class="detail-tab" data-tab="warranties" id="tab-btn-warranties" hidden>Bảo hành</button>
+        <button type="button" class="detail-tab" data-tab="acceptance">Nghiệm thu</button>
       </div>
 
       <div id="tab-overview" class="tab-panel">
@@ -186,6 +187,23 @@
           <p>Dự án chưa có bảo hành nào. Tạo bảo hành tại trang "Bảo hành" (menu Khách hàng), chọn đúng khách hàng và dự án này.</p>
         </div>
         <div id="project-warranty-cards" class="project-warranty-list"></div>
+      </div>
+
+      <div id="tab-acceptance" class="tab-panel" hidden>
+        <div class="stat-grid" id="acceptance-stats"></div>
+
+        <div class="section-row">
+          <div>
+            <h3 class="section-heading">Nghiệm thu theo giải pháp</h3>
+            <p class="section-row-desc">Mỗi giải pháp tương ứng 1 hạng mục đã ký với khách hàng - chọn thiết bị đã xuất cho dự án để đưa vào đúng giải pháp, phục vụ lập biên bản nghiệm thu.</p>
+          </div>
+          <button type="button" id="btn-add-solution" class="btn-add"></button>
+        </div>
+
+        <div id="solutions-empty" class="empty-state" hidden>
+          <p>Dự án chưa có giải pháp nghiệm thu nào.</p>
+        </div>
+        <div id="solution-cards" class="solution-list"></div>
       </div>
 
     </main>
@@ -534,6 +552,66 @@
         <div class="modal-actions">
           <button type="button" id="btn-cancel-warranty-visit" class="btn-secondary">Hủy</button>
           <button type="submit" id="btn-submit-warranty-visit" class="btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="solution-modal" class="modal-overlay" hidden>
+    <div class="modal-card modal-card-lg" id="solution-modal-card">
+      <h3 id="solution-modal-title">Thêm giải pháp</h3>
+      <p class="modal-subtitle">Chọn thiết bị đã xuất cho dự án để đưa vào giải pháp này.</p>
+      <form id="solution-form">
+        <div id="solution-form-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="solution-form-error-text"></span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="solution-name">Tên giải pháp</label>
+            <input type="text" id="solution-name" required autocomplete="off" />
+          </div>
+          <div class="form-field">
+            <label for="solution-note">Ghi chú (không bắt buộc)</label>
+            <input type="text" id="solution-note" autocomplete="off" placeholder="Vd: khu vực nhà xưởng + cổng bảo vệ" />
+          </div>
+        </div>
+
+        <div class="device-picker-head">
+          <h4>Thiết bị đã xuất cho dự án</h4>
+          <div class="search-box">
+            <span class="input-icon"></span>
+            <input type="text" id="solution-device-search" class="search-input" placeholder="Tìm theo mã hoặc tên sản phẩm..." autocomplete="off" />
+          </div>
+        </div>
+
+        <div id="solution-devices-empty" class="empty-state" hidden>
+          <p>Dự án chưa xuất thiết bị nào (hoặc đã trả hết) - chưa có gì để chọn vào giải pháp.</p>
+        </div>
+        <div class="device-table-wrap" id="solution-device-table-wrap">
+          <table class="data-table device-table">
+            <thead>
+              <tr>
+                <th style="width:36px"></th>
+                <th>Sản phẩm</th>
+                <th>ĐVT</th>
+                <th class="num">Đơn giá</th>
+                <th class="num">Đã xuất</th>
+                <th class="num">SL vào giải pháp này</th>
+                <th class="num">Thành tiền</th>
+              </tr>
+            </thead>
+            <tbody id="solution-device-tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="modal-foot">
+          <p class="modal-foot-summary" id="solution-modal-summary"></p>
+          <div class="modal-actions">
+            <button type="button" id="btn-cancel-solution" class="btn-secondary">Hủy</button>
+            <button type="submit" id="btn-submit-solution" class="btn-primary">Lưu giải pháp</button>
+          </div>
         </div>
       </form>
     </div>

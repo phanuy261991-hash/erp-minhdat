@@ -288,6 +288,9 @@ erDiagram
     PRODUCTS ||--o{ PROJECT_MATERIAL_PLAN : "duoc du toan"
     PROJECTS ||--o{ PROJECT_PAYMENT_MILESTONES : "co dot thanh toan"
     PROJECTS ||--o{ PROJECT_VARIATIONS : "co phat sinh"
+    PROJECTS ||--o{ PROJECT_ACCEPTANCE_SOLUTIONS : "co giai phap nghiem thu (migration 041)"
+    PROJECT_ACCEPTANCE_SOLUTIONS ||--o{ PROJECT_ACCEPTANCE_SOLUTION_ITEMS : "gom thiet bi"
+    PRODUCTS ||--o{ PROJECT_ACCEPTANCE_SOLUTION_ITEMS : "duoc gan (nhieu-nhieu voi solution)"
     PROJECTS ||--o{ STOCK_ISSUES : "duoc xuat vat tu (project_id nullable)"
     PROJECTS ||--o{ STOCK_RECEIPTS : "duoc tra vat tu ve kho (project_id nullable)"
     PROJECTS ||--o{ DEBT_LEDGER : "nhan phan loai (project_id nullable)"
@@ -392,6 +395,23 @@ erDiagram
         int created_by FK
         datetime created_at
         datetime updated_at
+    }
+
+    PROJECT_ACCEPTANCE_SOLUTIONS {
+        int id PK
+        int project_id FK
+        string name
+        string note
+        int created_by FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    PROJECT_ACCEPTANCE_SOLUTION_ITEMS {
+        int id PK
+        int solution_id FK "UNIQUE(solution_id, product_id)"
+        int product_id FK
+        real quantity "KHONG luu don gia/thanh tien - tinh on-the-fly tu gia ban binh quan gia quyen tren stock_issue_items"
     }
 
     CONTACTS {

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>In biên bản nghiệm thu</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="print-body">
+  <div class="print-toolbar no-print">
+    <button type="button" id="btn-back" class="btn-secondary"></button>
+    <button type="button" id="btn-print" class="btn-primary"></button>
+  </div>
+
+  <div id="print-error" class="alert alert-error no-print" hidden>
+    <span class="alert-icon-slot"></span>
+    <span id="print-error-text"></span>
+  </div>
+
+  <div class="print-sheet" id="print-sheet" hidden></div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/print-template-render.js"></script>
+  <script src="assets/print-preview.js"></script>
+  <script src="assets/print-acceptance-solution.js"></script>
+</body>
+</html>

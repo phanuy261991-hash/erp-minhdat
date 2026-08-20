@@ -15,7 +15,12 @@
 // nay 'cong_no' chi con gan voi "Nha cung cap" + "Cong no NCC". Cung pattern migration 036,
 // backfill o migration 039. Xem debts.routes.js/partners.routes.js: enforcement theo dung TYPE
 // cua doi tac (nha_cung_cap -> 'cong_no', khach_hang -> 'khach_hang'), khong con 1 quyen chung.
-const MODULE_KEYS = ['kho', 'cong_no', 'khach_hang', 'bao_cao', 'nguoi_dung', 'cau_hinh', 'so_quy', 'du_an', 'doi_tac', 'bao_hanh'];
+// nghiem_thu (2026-08-19, "Nghiem thu theo giai phap"): quyen THAO TAC rieng cho tab "Nghiem thu"
+// trong Chi tiet du an - khac cac module khac o cho AI co quyen 'du_an' deu XEM duoc tab nay (gan
+// o tang mount /api/projects), nhung chi ai co THEM 'nghiem_thu' moi tao/sua/xoa giai phap/gan
+// thiet bi - kiem tra thu cong trong tung route handler (xem projectAcceptanceSolutions.routes.js),
+// khong gan qua requirePermission() khi mount.
+const MODULE_KEYS = ['kho', 'cong_no', 'khach_hang', 'bao_cao', 'nguoi_dung', 'cau_hinh', 'so_quy', 'du_an', 'doi_tac', 'bao_hanh', 'nghiem_thu'];
 
 const MODULE_LABELS = {
   kho: 'Kho',
@@ -28,6 +33,7 @@ const MODULE_LABELS = {
   du_an: 'Dự án',
   doi_tac: 'Đối tác',
   bao_hanh: 'Bảo hành',
+  nghiem_thu: 'Nghiệm thu',
 };
 
 module.exports = { MODULE_KEYS, MODULE_LABELS };

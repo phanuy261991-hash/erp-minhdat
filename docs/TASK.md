@@ -674,6 +674,22 @@
 - [x] Cập nhật `docs/PRD.md` mục 4.5, `docs/erd.mermaid` (bảng `PRINT_TEMPLATES`), `docs/DESIGN-SYSTEM.md` (pattern editor mới)
 - [x] Test qua API thật (Node `fetch`: lưu mẫu thành công, chặn đúng 400 khi token sai tên hoặc dùng token `Item.*` ngoài khối lặp, 403 đúng khi thiếu quyền `cau_hinh`, `GET` vẫn mở cho mọi tài khoản) + trình duyệt thật (Chrome headless CDP thô: chèn token đúng vị trí con trỏ, tải mẫu lên/xuống round-trip đúng nội dung, đổi khổ giấy, xem trước không lỗi console) — dữ liệu/tài khoản test đã xóa sạch. Phát hiện + sửa 1 lỗi hiển thị thật trên mẫu đang dùng (thẻ `<img>` mã QR bị lồng cú pháp do chèn ảnh khi con trỏ đứng giữa 1 thẻ `<img>` chưa gõ xong) — sửa trực tiếp bằng script, xác nhận lại qua CDP (`naturalWidth` ảnh > 0). Đã restart server sau khi sửa backend (bắt buộc, không có hot-reload).
 
+### "Nghiệm thu theo giải pháp" — tab mới trong Chi tiết dự án (ngoài phase, theo yêu cầu người dùng 2026-08-19, code thẳng từ mockup/kế hoạch đã chốt phiên trước)
+
+> Mockup giao diện + 4 giả định kỹ thuật đã chốt qua `AskUserQuestion` ở phiên trước — xem `docs/handoff/HANDOFF-NghiemThu-2026-08-19-v2.md`. Phiên này code theo đúng checklist đã ghi, không hỏi lại. Chi tiết đầy đủ `docs/DECISIONS.md` mục 2026-08-19 (Nghiệm thu).
+
+- [x] Migration `041`: `project_acceptance_solutions` + `project_acceptance_solution_items` (quan hệ nhiều-nhiều product↔solution, `UNIQUE(solution_id, product_id)`) + seed dòng `print_templates` mới cho type `acceptance_solution`
+- [x] `backend/config/modules.js`: thêm module `nghiem_thu` — phân quyền 2 lớp mới (quyền `du_an` đủ để XEM, quyền `nghiem_thu` mới THAO TÁC)
+- [x] `backend/routes/projectAcceptanceSolutions.routes.js` (mới, `mergeParams:true`, mount tại `/:id/acceptance-solutions`): công thức "đã xuất NET" copy nguyên xi từ `projectMaterials.routes.js`; đơn giá bình quân gia quyền theo giá bán trên `stock_issue_items`; validate không vượt "còn lại chưa gán" tính lại từ dữ liệu thật
+- [x] `backend/services/project.service.js#deleteProject()`: chặn xóa dự án đã có giải pháp nghiệm thu
+- [x] `backend/config/printTemplateTokens.js` + `backend/config/print-template-defaults/acceptance_solution.html`: loại mẫu in mới "Biên bản nghiệm thu theo giải pháp"
+- [x] `frontend/assets/print-template-render.js`: `buildAcceptanceSolutionTokenValues()`/`buildAcceptanceSolutionItemTokenValues()` + dữ liệu mẫu
+- [x] `frontend/print-acceptance-solution.html`/`assets/print-acceptance-solution.js` (mới, copy khung `print-issue.html`/`.js`) — bắt buộc Shadow DOM
+- [x] `frontend/project-detail.html`/`assets/project-detail.js`: tab "Nghiệm thu" (không ẩn tab, chỉ ẩn/khóa nút "Thêm giải pháp"/icon Sửa-Xóa theo quyền `nghiem_thu`) — 4 thẻ số liệu, danh sách thẻ giải pháp, modal Thêm/Sửa với bảng chọn thiết bị đã xuất
+- [x] `frontend/assets/style.css`: CSS mới cho `.solution-card`/`.device-table`/`.stat-card-bar`... (tái dùng token có sẵn trong `tokens.css`)
+- [x] Đồng bộ `docs/PRD.md` mục 4.12, `docs/Plan.md`, `docs/erd.mermaid`
+- [x] Test qua API thật (Node `fetch`: chia 1 sản phẩm vào 2 giải pháp đúng số dư, chặn đúng 400 khi vượt số lượng, tài khoản chỉ có `du_an` xem được nhưng bị chặn đúng 403 ở POST/PUT/DELETE) + trình duyệt thật (Chrome headless CDP thô: tạo giải pháp qua UI, in biên bản render đúng trong Shadow DOM không lỗi console, ẩn đúng nút "Thêm giải pháp" cho tài khoản thiếu `nghiem_thu`) — phát hiện + sửa 1 lỗi CSS tự phát hiện qua ảnh chụp (`.qty-hint.full` gán ngược điều kiện). Dữ liệu/vai trò/tài khoản test đã xóa sạch. Đã restart server (bắt buộc, không có hot-reload).
+
 ## Open questions cần chốt trước khi code phần liên quan
 
 Xem `docs/DECISIONS.md` mục "Open questions".

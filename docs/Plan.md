@@ -191,6 +191,8 @@ project-root/
 | `project_material_plan` | id PK, project_id FK, product_id FK, quantity, note, UNIQUE(project_id, product_id) | **kế hoạch** migration `023` — dự toán vật tư; "Đã xuất" **không lưu ở đây**, tính bằng phiếu xuất gắn dự án **trừ** phiếu nhập gắn dự án |
 | `project_payment_milestones` | id PK, project_id FK, name, sort_order, amount, percent, due_date, note, created_at | **kế hoạch** migration `024` — đợt thanh toán theo hợp đồng. **Không lưu** số tiền đã thu hay trạng thái — suy ra từ `SUM(debt_ledger WHERE milestone_id)` so với `amount`: Chưa thu / Thu một phần / Đã thu đủ / Quá hạn |
 | `project_variations` | id PK, project_id FK, type, title, amount, occurred_date, description, status, resolution, created_by FK(users), created_at, updated_at | **kế hoạch** migration `024` — phát sinh; `type` ∈ {chi_phi, van_de}. Chỉ `type='chi_phi'` + đã duyệt mới cộng vào giá trị hợp đồng thực tế; `type='van_de'` là nhật ký sự cố, `amount=0` |
+| `project_acceptance_solutions` | id PK, project_id FK, name, note, created_by FK(users), created_at, updated_at | migration `041` (2026-08-19) — "Nghiệm thu theo giải pháp": 1 giải pháp đã ký với khách hàng, gom nhóm thiết bị đã xuất |
+| `project_acceptance_solution_items` | id PK, solution_id FK(project_acceptance_solutions), product_id FK(products), quantity, UNIQUE(solution_id, product_id) | migration `041` — quan hệ **nhiều-nhiều** product↔solution (1 sản phẩm chia được vào nhiều giải pháp khác nhau). Không lưu đơn giá/thành tiền (tính on-the-fly từ giá bán bình quân gia quyền trên `stock_issue_items`, giống nguyên tắc "không lưu giá trị suy ra được") |
 | `schema_migrations` | version PK, applied_at | migration runner đọc bảng này |
 
 **Cột thêm vào bảng có sẵn cho module Quản lý dự án** (kế hoạch, 2026-08-04 — tất cả đều là `ALTER TABLE ADD COLUMN` nullable, **không dựng lại bảng nào**):
@@ -214,7 +216,7 @@ Sơ đồ ERD tương ứng: xem file `erd.mermaid` đi kèm (cần bổ sung `r
 
 Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân quyền theo module**:
 
-- `module_key` là hằng số cố định trong code (không lưu thành bảng riêng vì đây là tập hợp module do ứng dụng định nghĩa, không phải dữ liệu người dùng tạo ra): `kho`, `cong_no`, `bao_cao`, `nguoi_dung`, `cau_hinh`, `so_quy` (Sổ quỹ, 2026-08-02), `du_an` (Quản lý dự án, kế hoạch 2026-08-04). Mở rộng thêm khi có module mới (vd `ban_hang` khi module Bán hàng/POS được lên kế hoạch). Thêm module mới phải sửa cả `MODULE_KEYS` lẫn `MODULE_LABELS` trong `backend/config/modules.js` (trang "Vai trò" đọc động qua `GET /api/roles/modules`) và `NAV_GROUPS` trong `frontend/assets/layout.js`.
+- `module_key` là hằng số cố định trong code (không lưu thành bảng riêng vì đây là tập hợp module do ứng dụng định nghĩa, không phải dữ liệu người dùng tạo ra): `kho`, `cong_no`, `khach_hang`, `bao_cao`, `nguoi_dung`, `cau_hinh`, `so_quy` (Sổ quỹ, 2026-08-02), `du_an` (Quản lý dự án, 2026-08-04), `doi_tac`, `bao_hanh` (2026-08-08), `nghiem_thu` (Nghiệm thu theo giải pháp, 2026-08-19). Mở rộng thêm khi có module mới (vd `ban_hang` khi module Bán hàng/POS được lên kế hoạch). Thêm module mới phải sửa cả `MODULE_KEYS` lẫn `MODULE_LABELS` trong `backend/config/modules.js` (trang "Vai trò" đọc động qua `GET /api/roles/modules`) và `NAV_GROUPS` trong `frontend/assets/layout.js` (**trừ** module chỉ dùng để phân quyền phụ trong 1 tab có sẵn như `nghiem_thu` — không có mục nav riêng, không sửa `layout.js`).
 - Vai trò Admin (`is_protected = 1`) mặc nhiên có mọi `module_key`, không lưu dòng nào trong `role_permissions` cho Admin — middleware luôn cho qua nếu `role.is_protected = 1`, không cần tra bảng.
 - Middleware `requireRole('admin')` kiểu cũ (so khớp tên vai trò) được thay bằng `requirePermission('module_key')` (tra `role_permissions` theo `role_id` của user, hoặc cho qua thẳng nếu vai trò `is_protected`).
 - `GET /api/auth/me` trả thêm danh sách `permissions` (mảng `module_key`) của user hiện tại, để frontend (`layout.js`) lọc menu mà không cần gọi thêm API.
@@ -305,6 +307,10 @@ Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân qu
 | GET | `/api/projects/:id/debts` | `du_an` | Công nợ của dự án: phát sinh, đã thu, còn phải thu (tính từ `debt_ledger` lọc theo `project_id`) | 4 |
 | GET/POST/PUT/DELETE | `/api/projects/:id/milestones(/:mid)` | `du_an` | CRUD đợt thanh toán; GET trả kèm số tiền đã thu + trạng thái suy ra | 4 |
 | GET/POST/PUT/DELETE | `/api/projects/:id/variations(/:vid)` | `du_an` | CRUD phát sinh (chi phí / vấn đề) | 4 |
+| GET | `/api/projects/:id/acceptance-solutions` | `du_an` | Danh sách giải pháp nghiệm thu + 4 số liệu tổng hợp (đã xuất/đã gán/chưa gán/tổng giá trị) | ngoài phase, 2026-08-19 |
+| GET | `/api/projects/:id/acceptance-solutions/available-devices` | `du_an` | Danh sách thiết bị đã xuất cho dự án còn có thể gán (query `exclude_solution_id` khi sửa) | ngoài phase, 2026-08-19 |
+| GET | `/api/projects/:id/acceptance-solutions/:sid` | `du_an` | Chi tiết 1 giải pháp kèm items | ngoài phase, 2026-08-19 |
+| POST/PUT/DELETE | `/api/projects/:id/acceptance-solutions(/:sid)` | `du_an` **+ `nghiem_thu`** | Tạo/sửa/xóa giải pháp — kiểm tra `nghiem_thu` thủ công trong handler (phân quyền 2 lớp, xem `docs/DECISIONS.md`) | ngoài phase, 2026-08-19 |
 
 **Route có sẵn cần sửa** (không đổi hành vi cũ khi không truyền tham số mới):
 
