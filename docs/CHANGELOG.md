@@ -2,6 +2,15 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-20 (Thu nhỏ cột "Ghi chú" - trang Xuất kho)
+
+> Theo phản hồi người dùng: cột "Ghi chú" trên `stock-issues.html` bị quá rộng do `table-layout:auto` của `.data-table` không giới hạn chiều rộng cột.
+
+- `frontend/assets/style.css`: thêm `.note-cell-truncate` (`max-width:220px`, `overflow:hidden`, `text-overflow:ellipsis`)
+- `frontend/assets/stock-issues.js#renderIssueRow()`: gắn class vào ô Ghi chú, gán `title` qua DOM property (không nối chuỗi vào HTML) để xem đủ nội dung khi rê chuột vào ô bị cắt
+- Test qua trình duyệt thật (Chrome headless CDP thô): đo `getComputedStyle`/`getBoundingClientRect` xác nhận `max-width` áp dụng đúng 220px trên toàn cột — không lỗi console
+- Chỉ sửa đúng phạm vi trang Xuất kho theo yêu cầu, chưa áp dụng cho cột Ghi chú tương tự ở các trang danh sách khác
+
 ## 2026-08-20 (Phiếu xuất kho: quy trình 2 bước "Lưu tạm"/"Xuất kho" + "Phiếu xác nhận đơn hàng")
 
 > Tái tạo đúng pattern "Trả hàng" (migration `033`/`034`, 2026-08-06) cho phiếu xuất kho thường, theo yêu cầu người dùng. Đã khảo sát kỹ code thật + lên kế hoạch qua `EnterPlanMode` trước khi code (không đoán). Chi tiết quyết định: `docs/DECISIONS.md` mục 2026-08-20.

@@ -801,6 +801,15 @@ input:focus-visible {
   background: var(--color-muted);
 }
 
+/* Cot "Ghi chu" trang Xuat kho (stock-issues.html) - noi dung tu do co the rat dai, cat bot
+   bang ellipsis thay vi de keo dan het chieu rong bang (table-layout:auto). Xem day du qua
+   title (gan qua DOM property trong stock-issues.js) khi re chuot vao. */
+.note-cell-truncate {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;

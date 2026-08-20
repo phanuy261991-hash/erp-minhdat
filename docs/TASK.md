@@ -708,6 +708,12 @@
 - [x] Đồng bộ `docs/PRD.md` mục 4.3/4.5/4.6, `docs/Plan.md`
 - [x] Test qua API thật (Node `fetch`: Lưu tạm không đụng tồn kho/công nợ/sổ quỹ; sửa nháp rồi Xuất kho dùng đúng số liệu MỚI; khóa đúng sau khi xuất kho; validate tồn kho chỉ chặn lúc Xuất kho; cả 9 điểm lọc status xác nhận đúng qua kịch bản phiếu nháp số lượng/giá trị lớn) + trình duyệt thật (Chrome headless CDP thô: luồng đầy đủ Lưu tạm → in Phiếu xác nhận đơn hàng → Sửa → Xuất kho, không lỗi console). Dữ liệu test đã xóa sạch (đảo ngược đúng stock_movements/debt_ledger/cash_vouchers phát sinh). Đã restart server (bắt buộc, không có hot-reload).
 
+### Thu nhỏ cột "Ghi chú" - trang Xuất kho (ngoài phase, theo phản hồi người dùng 2026-08-20)
+
+- [x] `frontend/assets/style.css`: thêm `.note-cell-truncate` (`max-width:220px` + `text-overflow:ellipsis`)
+- [x] `frontend/assets/stock-issues.js`: gắn class vào ô Ghi chú, gán `title` qua DOM property để xem đủ nội dung khi bị cắt
+- [x] Test qua trình duyệt thật (Chrome headless CDP thô, đo `getComputedStyle`/`getBoundingClientRect`): xác nhận `max-width` áp dụng đúng 220px
+
 ## Open questions cần chốt trước khi code phần liên quan
 
 Xem `docs/DECISIONS.md` mục "Open questions".

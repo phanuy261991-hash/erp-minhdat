@@ -123,10 +123,15 @@ function renderIssueRow(issue) {
     <td>${issue.created_by_name}</td>
     <td>${paymentBadge}</td>
     <td>${statusBadge}</td>
-    <td>${noteHtml}</td>
+    <td class="note-cell-truncate">${noteHtml}</td>
     <td>${formatDate(issue.created_at)}</td>
     <td>${actions}</td>
   `;
+  // title gan qua DOM property (khong noi chuoi vao HTML) de tranh loi escape neu ghi chu co
+  // dau nhay/ky tu dac biet - hien du noi dung khi re chuot vao o da bi cat bot bang CSS.
+  if (issue.note) {
+    tr.querySelector('.note-cell-truncate').title = issue.note;
+  }
   return tr;
 }
 
