@@ -165,7 +165,7 @@ erDiagram
         string payment_status "da_thanh_toan hoac cong_no - doi xung stock_issues (Phase 3)"
         string adjusts_type "nullable: 'receipt' hoac 'issue' - phieu nay dieu chinh bu tru cho phieu nao"
         int adjusts_id "nullable, ket hop adjusts_type de tro toi phieu goc"
-        int project_id "nullable (ke hoach migration 023) - can co de 'da xuat cho du an' tru duoc vat tu tra ve kho"
+        int project_id "nullable - tu 2026-08-20 CHI con dung boi 'Tra hang xuat' (is_return=1, stockReturn.service.js) de tru vao 'da xuat cho du an'; phieu nhap THUONG (is_return=0) khong con nhan truong nay tu client, luon NULL"
         datetime created_at "co the chinh khi lap phieu - anh huong thu tu FIFO/binh quan gia quyen"
         int is_return "migration 032, mac dinh 0 - 1 la phieu 'Tra hang' (khach hang tra lai hang da mua), an khoi danh sach Phieu nhap kho"
         string status "migration 033, mac dinh da_tru_kho - phieu tra hang: cho_tru_kho (moi Luu, chua dong stock_movements/debt_ledger) hoac da_tru_kho (da Tru kho, khoa vinh vien). Phieu nhap thuong luon da_tru_kho"

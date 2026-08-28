@@ -2,6 +2,23 @@
 
 > Ghi lại các quyết định đã chốt để không thảo luận lại trừ khi có lý do mới. Mỗi mục ghi ngày chốt.
 
+## 2026-08-20 — Bỏ trường "Dự án" khỏi phiếu nhập kho thường — đảo ngược 1 phần quyết định Đợt 3 (2026-08-04)
+
+**Bối cảnh phát hiện**: người dùng test tính năng "Nghiệm thu theo giải pháp" (mục 4.12) — tạo 1 phiếu nhập kho gắn dự án, sau đó tạo 1 phiếu xuất cùng sản phẩm/cùng số lượng cho đúng dự án đó. Phiếu xuất hiện đúng trong tab "Vật tư", nhưng tab "Nghiệm thu" lại KHÔNG hiện sản phẩm đó trong danh sách "đã xuất, có thể gán vào giải pháp" dù thực tế đã xuất kho thật.
+
+**Nguyên nhân (không phải bug)**: công thức "Đã xuất cho dự án" (`projectMaterials.routes.js#sumQuantityByProduct()`, copy y nguyên sang `projectAcceptanceSolutions.routes.js#computeAvailableDevices()` — quyết định 2026-08-19) luôn tính `issuedNet = tổng xuất - tổng nhập` cùng sản phẩm/dự án — đúng theo thiết kế Đợt 3 (2026-08-04): "Đã xuất tính bằng phiếu xuất TRỪ phiếu nhập gắn dự án, trường hợp trả vật tư thừa về kho". Vấn đề: **phiếu nhập kho THƯỜNG** (mua hàng từ NCC, `stockReceipts.routes.js`) cũng cho chọn "Dự án" (từ Đợt 3), nhưng ý nghĩa duy nhất hệ thống gán cho `stock_receipts.project_id` là "trả vật tư thừa" — nếu người dùng gắn 1 phiếu nhập mua hàng bình thường vào dự án (không phải trả hàng), nó bị trừ nhầm vào "đã xuất", khiến sản phẩm biến mất khỏi cả tab Vật tư lẫn tab Nghiệm thu dù đã xuất kho thật. Không có cơ chế nào phân biệt "phiếu nhập thường lỡ gắn dự án" với "phiếu trả vật tư thừa thật".
+
+**Quyết định** (người dùng chọn sau khi nghe phân tích 2 hướng — giữ nguyên/thêm cờ phân biệt — qua `AskUserQuestion`): **bỏ hẳn khả năng chọn "Dự án" trên phiếu nhập kho THƯỜNG**, thay vì thêm cờ phân biệt. Từ nay chỉ có đúng 1 luồng ghi được `stock_receipts.project_id`: **"Trả hàng xuất"** (mục 4.15, khách hàng trả hàng đã mua về kho, route/service hoàn toàn tách biệt `stockReturns.routes.js`/`stockReturn.service.js`) — đúng nghĩa "trả vật tư thừa", trừ hợp lý vào "đã xuất".
+
+**Quyết định kỹ thuật khi hiện thực hóa**:
+- `backend/services/stockReceipt.service.js#createStockReceipt()`: bỏ hẳn tham số `projectId` — `stock_receipts.project_id` luôn ghi `NULL` cho phiếu nhập thường; bỏ theo `projectId` khỏi lời gọi `recordDebtFromDocument()` (tham số vẫn tùy chọn ở `debt.service.js`, không phá hành vi khi thiếu).
+- `backend/routes/stockReceipts.routes.js`: `POST /` không còn đọc `project_id` từ request body.
+- **Không đụng** `stockReturns.routes.js`/`stockReturn.service.js` — route/service hoàn toàn tách biệt (kể cả insert SQL riêng, không dùng chung `createStockReceipt()`), nên việc bỏ `projectId` ở trên không ảnh hưởng luồng "Trả hàng xuất".
+- **Không đụng** `stock_issues.project_id` — phiếu xuất kho vẫn giữ nguyên trường "Dự án" như cũ (đây là nguồn tính "đã xuất", không phải nguồn gây lỗi).
+- Frontend `stock-receipts.html`/`.js`: bỏ hẳn select "Dự án" khỏi modal lập phiếu (gộp "Mã đơn hàng" + "Ghi chú" thành 1 hàng ngang theo đúng chuẩn 2-field/hàng của dự án); bỏ `loadProjects()`/`renderProjectOptions()`/biến `projectsCache` không còn dùng tới.
+- **Không xóa/sửa dữ liệu cũ**: các phiếu nhập thường đã lỡ gắn `project_id` từ trước (dữ liệu test cũ, migration 024 tới nay) vẫn giữ nguyên trong DB — chỉ chặn tạo mới, không dọn dữ liệu lịch sử (chưa được người dùng yêu cầu, có thể làm riêng nếu cần). `receipt-detail.js` vẫn hiển thị dòng "Dự án" (đọc, không sửa được) cho các phiếu cũ này nếu có.
+- Đã đồng bộ `docs/PRD.md` mục 4.12, `docs/Plan.md`, `docs/erd.mermaid`.
+
 ## 2026-08-20 — Phiếu xuất kho: quy trình 2 bước "Lưu tạm"/"Xuất kho" — tái tạo đúng pattern "Trả hàng"
 
 **Bối cảnh**: người dùng yêu cầu phiếu xuất kho có thêm nút "Lưu tạm" (chỉ lưu thông tin, không đụng tồn kho) và nút in "Phiếu xác nhận đơn hàng" để xem/chốt với khách trước khi xuất kho thật — giống hệt quy trình đã có cho "Trả hàng nhà cung cấp". Đã lên kế hoạch qua `EnterPlanMode`: dùng 2 subagent Explore khảo sát kỹ code thật (`stockReturn.service.js#applyProcessing()`, `stock-returns.js`, mọi query đọc `stock_issues`) trước khi thiết kế, thay vì đoán.

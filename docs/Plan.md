@@ -318,8 +318,9 @@ Thay cho danh sách vai trò cố định, hệ thống chuyển sang **phân qu
 
 | Path | Thay đổi | Đợt |
 |---|---|---|
-| `POST /api/stock-receipts`, `POST /api/stock-issues` | Nhận thêm `project_id` (tùy chọn); truyền xuống service để ghi lên phiếu **và** lên dòng `debt_ledger` sinh ra khi `payment_status='cong_no'` | 3 |
-| `GET /api/stock-receipts/:id`, `GET /api/stock-issues/:id` | Trả thêm `project_id`/`project_name` (dùng cho modal chi tiết + trang in) | 3 |
+| `POST /api/stock-issues` | Nhận thêm `project_id` (tùy chọn); truyền xuống service để ghi lên phiếu **và** lên dòng `debt_ledger` sinh ra khi `payment_status='cong_no'` | 3 |
+| `POST /api/stock-receipts` | ~~Nhận thêm `project_id`~~ **(bỏ 2026-08-20, xem `docs/DECISIONS.md`)** — phiếu nhập kho thường không còn nhận/ghi `project_id` nữa, luôn `NULL`. Riêng "Trả hàng xuất" (`stockReturns.routes.js`, route/service tách biệt hoàn toàn) vẫn giữ `project_id` như cũ | 3, đảo ngược 1 phần 2026-08-20 |
+| `GET /api/stock-receipts/:id`, `GET /api/stock-issues/:id` | Trả thêm `project_id`/`project_name` (dùng cho modal chi tiết + trang in) — riêng phiếu nhập thường từ 2026-08-20 luôn trả `null` | 3 |
 | `POST /api/debts/payment` | Nhận thêm `project_id` và `milestone_id` (đều tùy chọn) — **bắt buộc validate dự án thuộc đúng đối tác** đang ghi nhận, không tin dữ liệu gửi từ trình duyệt | 4 |
 | `POST /api/debts/adjustment` | Nhận thêm `project_id` (tùy chọn), cùng cách validate như trên — nếu thiếu, mỗi lần điều chỉnh sẽ làm lệch "Còn phải thu của dự án" | 4 |
 | `GET /api/debts?partner_id=` | Trả thêm `project_name` trên từng dòng lịch sử | 4 |

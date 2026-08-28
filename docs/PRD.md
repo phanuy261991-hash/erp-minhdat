@@ -175,8 +175,9 @@ Quản trị toàn bộ quá trình một dự án/công trình: theo giai đo�
 
 **Vật tư theo dự án**
 - Mỗi dự án có **bảng dự toán vật tư** (sản phẩm + số lượng dự kiến).
-- Phiếu nhập kho và phiếu xuất kho có thêm trường **"Dự án"** (không bắt buộc) — chọn khi lập phiếu. Không nhập lại số liệu ở đâu khác.
-- Trang dự án hiển thị bảng đối chiếu **Dự toán / Đã xuất / Còn lại**, cảnh báo rõ khi **vượt dự toán**. "Đã xuất" tính bằng phiếu xuất gắn dự án **trừ đi** phiếu nhập gắn dự án (trường hợp trả vật tư thừa về kho).
+- Phiếu xuất kho có thêm trường **"Dự án"** (không bắt buộc) — chọn khi lập phiếu, là nguồn tính "Đã xuất". Không nhập lại số liệu ở đâu khác.
+- **Phiếu nhập kho THƯỜNG (mua hàng từ NCC) KHÔNG có trường "Dự án"** (bỏ hẳn từ 2026-08-20, theo yêu cầu người dùng — trước đó có, xem `docs/DECISIONS.md`). Trường "Công trình" trên **"Trả hàng xuất"** (mục 4.15, khách hàng trả hàng đã mua về kho) vẫn giữ nguyên — đây mới là trường hợp đúng nghĩa "trả vật tư thừa về kho".
+- Trang dự án hiển thị bảng đối chiếu **Dự toán / Đã xuất / Còn lại**, cảnh báo rõ khi **vượt dự toán**. "Đã xuất" tính bằng phiếu xuất gắn dự án **trừ đi** phiếu "Trả hàng xuất" gắn dự án (trả vật tư thừa về kho) — phiếu nhập kho thường không còn tham gia công thức này.
 - Phiếu xuất kho khi in ra có hiện dòng "Công trình: …" (tự ẩn nếu phiếu không gắn dự án).
 
 **Công nợ theo dự án**

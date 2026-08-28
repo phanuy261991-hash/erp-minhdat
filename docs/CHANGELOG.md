@@ -2,6 +2,19 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-08-20 (Bỏ trường "Dự án" khỏi phiếu nhập kho thường)
+
+> Phát hiện qua test tính năng "Nghiệm thu theo giải pháp": phiếu nhập gắn dự án bị trừ nhầm vào "đã xuất cho dự án" (công thức coi mọi phiếu nhập gắn dự án là "trả vật tư thừa", chốt từ Đợt 3 2026-08-04), làm sản phẩm biến mất khỏi cả tab Vật tư lẫn Nghiệm thu dù đã xuất kho thật. Chi tiết quyết định: `docs/DECISIONS.md` mục 2026-08-20 "Bỏ trường Dự án khỏi phiếu nhập kho thường".
+
+- `backend/services/stockReceipt.service.js#createStockReceipt()`: bỏ tham số `projectId` — `stock_receipts.project_id` luôn ghi `NULL` cho phiếu nhập thường; bỏ `projectId` khỏi lời gọi `recordDebtFromDocument()`
+- `backend/routes/stockReceipts.routes.js`: `POST /` không còn đọc `project_id` từ request body
+- **Không đụng** `stockReturns.routes.js`/`stockReturn.service.js` ("Trả hàng xuất", route/service tách biệt hoàn toàn) — vẫn giữ nguyên khả năng gắn `project_id`, đúng nghĩa "trả vật tư thừa"; **không đụng** `stock_issues.project_id` (phiếu xuất kho không đổi)
+- `frontend/stock-receipts.html`: bỏ select "Dự án" khỏi modal lập phiếu, gộp "Mã đơn hàng" + "Ghi chú" thành 1 hàng ngang
+- `frontend/assets/stock-receipts.js`: bỏ `loadProjects()`/`renderProjectOptions()`/biến `projectsCache`, bỏ đọc `projectSelect.value` khi gửi `POST /stock-receipts`
+- Không xóa/sửa dữ liệu cũ đã lỡ gắn `project_id` từ trước — chỉ chặn tạo mới; `receipt-detail.js` vẫn hiển thị (đọc) dòng "Dự án" cho phiếu cũ nếu có
+- Đồng bộ `docs/PRD.md` mục 4.12, `docs/Plan.md`, `docs/erd.mermaid`
+- Cần restart server (sửa backend)
+
 ## 2026-08-20 (Thu nhỏ cột "Ghi chú" - trang Xuất kho)
 
 > Theo phản hồi người dùng: cột "Ghi chú" trên `stock-issues.html` bị quá rộng do `table-layout:auto` của `.data-table` không giới hạn chiều rộng cột.

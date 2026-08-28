@@ -142,7 +142,6 @@ router.post('/', (req, res) => {
     receipt_date: rawReceiptDate,
     order_code: orderCode,
     payment_status: paymentStatus,
-    project_id: rawProjectId,
     is_opening_balance: rawIsOpeningBalance,
   } = req.body || {};
   const { items, error } = readItems((req.body || {}).items);
@@ -178,7 +177,6 @@ router.post('/', (req, res) => {
       adjustsType,
       adjustsId,
       paymentStatus: resolvedPaymentStatus,
-      projectId: rawProjectId ? Number(rawProjectId) : null,
       isOpeningBalance,
     });
     res.status(201).json({ receipt });

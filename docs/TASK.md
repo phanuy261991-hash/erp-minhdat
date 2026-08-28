@@ -714,6 +714,14 @@
 - [x] `frontend/assets/stock-issues.js`: gắn class vào ô Ghi chú, gán `title` qua DOM property để xem đủ nội dung khi bị cắt
 - [x] Test qua trình duyệt thật (Chrome headless CDP thô, đo `getComputedStyle`/`getBoundingClientRect`): xác nhận `max-width` áp dụng đúng 220px
 
+### Bỏ trường "Dự án" khỏi phiếu nhập kho thường (ngoài phase, phát hiện qua test 2026-08-20)
+
+- [x] `backend/services/stockReceipt.service.js`: bỏ tham số `projectId` khỏi `createStockReceipt()`, luôn ghi `stock_receipts.project_id = NULL`
+- [x] `backend/routes/stockReceipts.routes.js`: `POST /` không còn đọc `project_id` từ body
+- [x] `frontend/stock-receipts.html`/`.js`: bỏ select "Dự án", gộp "Mã đơn hàng" + "Ghi chú" thành 1 hàng ngang, bỏ `loadProjects()`/`renderProjectOptions()`
+- [x] Đồng bộ `docs/PRD.md` mục 4.12, `docs/Plan.md`, `docs/erd.mermaid`, `docs/DECISIONS.md`
+- [x] Test qua API thật (Node `fetch`: gửi `project_id` vẫn bị bỏ qua, phiếu mới lưu đúng `project_id=null`) + trình duyệt thật (Chrome headless CDP thô: select "Dự án" đã biến mất khỏi modal, "Mã đơn hàng"/"Ghi chú" nằm cùng 1 hàng 2 cột đều nhau, không lỗi console). Xác nhận "Trả hàng xuất" (`stock-returns.html`) không bị ảnh hưởng, vẫn giữ nguyên trường "Công trình". Dữ liệu test đã hoàn tác (đảo ngược đúng tồn kho bằng phiếu xuất tương ứng — phiếu nhập không xóa được nên không thể xóa hẳn). Đã restart server (bắt buộc, không có hot-reload).
+
 ## Open questions cần chốt trước khi code phần liên quan
 
 Xem `docs/DECISIONS.md` mục "Open questions".

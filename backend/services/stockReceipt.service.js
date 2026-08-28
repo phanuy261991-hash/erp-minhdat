@@ -29,14 +29,19 @@ function generateReceiptCode() {
 // paymentStatus ('da_thanh_toan' mac dinh hoac 'cong_no', migration 011): 'cong_no' phat sinh
 // 1 dong debt_ledger (no phai tra NCC) trong CUNG transaction nay - bat buoc phai co partnerId
 // (khong the ghi no cho doi tac khong xac dinh).
-// projectId (tuy chon, migration 024): gan phieu voi 1 du an - dung de doi chieu vat tu du toan/
-// da xuat va loc cong no theo du an (module "Quan ly du an" Dot 3, xem docs/DECISIONS.md).
-// Validate ton tai o day (khong o tang route) vi phai chay TRONG transaction giong het cach
-// validate san pham ben duoi.
+// projectId: KHONG con nhan tu client tu 2026-08-20 (xem docs/DECISIONS.md) - phieu nhap kho
+// THUONG luon ghi project_id = NULL. Ly do: cong thuc "Da xuat cho du an" (tab Vat tu +
+// Nghiem thu, projectMaterials.routes.js/projectAcceptanceSolutions.routes.js) TRU di moi
+// phieu nhap gan cung du an (coi la "tra vat tu thua ve kho") - neu phieu nhap THUONG (mua hang
+// tu NCC, khong phai tra hang) bi gan nham du an, no se bi tru nham vao "da xuat", lam bien mat
+// khoi danh sach thiet bi co the nghiem thu du thuc te da xuat kho that. Rieng "Tra hang xuat"
+// (stockReturn.service.js#createStockReturn(), dung CHUNG bang stock_receipts nhung route/
+// service hoan toan tach biet) van gan project_id binh thuong - do dung THAT SU la "tra vat tu
+// thua", tru dung nghia.
 // isOpeningBalance (tuy chon, migration 037): phieu "Nhap ton dau ky" - danh dau de KHONG phat
 // sinh debt_ledger/cash_vouchers du payment_status la gi (bo qua ca 2 nhanh ben duoi), chi tao
 // stock_movements/stock_lots nhu phieu thuong de doi ton kho + luu gia von cho lan xuat sau.
-function createStockReceipt({ partnerId, createdBy, note, items, receiptDate, orderCode, adjustsType, adjustsId, paymentStatus, projectId, isOpeningBalance }) {
+function createStockReceipt({ partnerId, createdBy, note, items, receiptDate, orderCode, adjustsType, adjustsId, paymentStatus, isOpeningBalance }) {
   if (!Array.isArray(items) || items.length === 0) {
     throw new ServiceError('Phieu nhap phai co it nhat 1 dong san pham');
   }
@@ -45,13 +50,6 @@ function createStockReceipt({ partnerId, createdBy, note, items, receiptDate, or
   }
 
   const run = db.transaction(() => {
-    if (projectId) {
-      const project = db.prepare('SELECT id FROM projects WHERE id = ?').get(projectId);
-      if (!project) {
-        throw new ServiceError('Khong tim thay du an');
-      }
-    }
-
     items.forEach((item) => {
       const product = db.prepare('SELECT id, is_active FROM products WHERE id = ?').get(item.productId);
       if (!product) {
@@ -72,7 +70,7 @@ function createStockReceipt({ partnerId, createdBy, note, items, receiptDate, or
       .prepare(
         'INSERT INTO stock_receipts (code, partner_id, created_by, note, created_at, order_code, adjusts_type, adjusts_id, payment_status, project_id, is_opening_balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
       )
-      .run(code, partnerId || null, createdBy, note || '', timestamp, orderCode || '', adjustsType || null, adjustsId || null, resolvedPaymentStatus, projectId || null, isOpeningBalance ? 1 : 0);
+      .run(code, partnerId || null, createdBy, note || '', timestamp, orderCode || '', adjustsType || null, adjustsId || null, resolvedPaymentStatus, null, isOpeningBalance ? 1 : 0);
     const receiptId = receiptResult.lastInsertRowid;
 
     const insertItem = db.prepare(
@@ -109,7 +107,6 @@ function createStockReceipt({ partnerId, createdBy, note, items, receiptDate, or
         referenceType: 'receipt',
         referenceId: receiptId,
         createdBy,
-        projectId,
       });
     } else {
       // Thanh toan ngay (khong cong no) - tien mat/chuyen khoan THAT chi ra khoi cong ty ngay
