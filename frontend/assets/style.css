@@ -2119,6 +2119,28 @@ input:focus-visible {
   color: var(--color-muted-foreground);
 }
 
+/* Bien the mau canh bao cho hanh dong pha huy trong menu (vd "Xoa phieu nhap") - dat kem
+   .action-dropdown-item, khong thay the. */
+.action-dropdown-item-danger,
+.action-dropdown-item-danger svg {
+  color: var(--color-destructive);
+}
+
+.action-dropdown-item-danger:hover {
+  background: #fef2f2;
+}
+
+/* Nut "..." gom nhieu hanh dong trong 1 dong bang (.data-table) - tai dung dung co che
+   .action-dropdown/.action-dropdown-menu/.action-dropdown-item (von dung cho nut "+ Lap phieu"
+   dau trang), chi khac vi tri dat (trong 1 o <td> thay vi page-header-actions) - xem
+   docs/DESIGN-SYSTEM.md. .dropdown-open-up: gan qua JS khi menu mo o hang gan cuoi bang se
+   tran xuong duoi vung nhin thay (.data-table-wrap co overflow-y:auto ngam dinh do chi khai
+   bao overflow-x, se cat mat menu neu khong lat len tren). */
+.row-actions-menu.dropdown-open-up {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
 .module-option-box svg {
   opacity: 0;
   transform: scale(0.5);

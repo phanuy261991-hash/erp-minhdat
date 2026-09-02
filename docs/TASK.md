@@ -722,6 +722,17 @@
 - [x] Đồng bộ `docs/PRD.md` mục 4.12, `docs/Plan.md`, `docs/erd.mermaid`, `docs/DECISIONS.md`
 - [x] Test qua API thật (Node `fetch`: gửi `project_id` vẫn bị bỏ qua, phiếu mới lưu đúng `project_id=null`) + trình duyệt thật (Chrome headless CDP thô: select "Dự án" đã biến mất khỏi modal, "Mã đơn hàng"/"Ghi chú" nằm cùng 1 hàng 2 cột đều nhau, không lỗi console). Xác nhận "Trả hàng xuất" (`stock-returns.html`) không bị ảnh hưởng, vẫn giữ nguyên trường "Công trình". Dữ liệu test đã hoàn tác (đảo ngược đúng tồn kho bằng phiếu xuất tương ứng — phiếu nhập không xóa được nên không thể xóa hẳn). Đã restart server (bắt buộc, không có hot-reload).
 
+### Xóa phiếu nháp + gộp hành động dòng bảng vào menu "..." (ngoài phase, theo yêu cầu người dùng 2026-09-02)
+
+> Đảo ngược 1 phần quyết định "không xóa nháp" (2026-08-20). Chi tiết `docs/DECISIONS.md` mục 2026-09-02.
+
+- [x] `backend/services/stockIssue.service.js#deleteStockIssue()`, `stockReturn.service.js#deleteStockReturn()`, `supplierReturn.service.js#deleteSupplierReturn()`: xóa cứng items + phiếu trong transaction, chỉ khi `status='cho_tru_kho'`
+- [x] `backend/routes/stockIssues.routes.js`, `stockReturns.routes.js`, `supplierReturns.routes.js`: thêm `DELETE /:id`
+- [x] `frontend/assets/style.css`: `.action-dropdown-item-danger`, `.row-actions-menu.dropdown-open-up`
+- [x] `frontend/assets/stock-issues.js`, `stock-returns.js`: dòng "Nháp" gộp hành động vào menu "..." (dùng skill `ui-ux-pro-max` để thiết kế pattern, sửa lỗi UI phát sinh giữa phiên khi nút Xóa bị tràn/che khuất)
+- [x] Đồng bộ `docs/PRD.md` mục 4.3 + mục "Trả hàng", `docs/DESIGN-SYSTEM.md` mục "Bảng dữ liệu"
+- [x] Test qua API thật (Node `fetch`: xóa nháp thành công, xóa phiếu đã xử lý xong bị chặn 400 và không mutate, cả 3 module) + trình duyệt thật (Chrome headless CDP thô: mở menu "..." xác nhận đủ hành động không tràn viewport, xóa qua UI, không lỗi console). Dữ liệu test đã xóa sạch. Đã restart server (bắt buộc, không có hot-reload).
+
 ## Open questions cần chốt trước khi code phần liên quan
 
 Xem `docs/DECISIONS.md` mục "Open questions".

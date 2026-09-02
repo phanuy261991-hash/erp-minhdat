@@ -144,14 +144,22 @@ function renderReturnRow(r) {
   const statusBadge = isDraft
     ? '<span class="badge badge-inactive">Chờ trừ kho</span>'
     : '<span class="badge badge-active">Đã trừ kho</span>';
-  // Phieu con 'cho_tru_kho' (chua tru kho) - cho sua + tru kho nhanh ngay tren danh sach; phieu
-  // 'da_tru_kho' da khoa, chi con xem chi tiet (xem docs/DECISIONS.md). data-type gan kem de
-  // click handler biet goi API /stock-returns hay /supplier-returns.
+  // Phieu con 'cho_tru_kho' (chua tru kho) co 4 hanh dong - gom vao 1 menu "..." (dropdown, xem
+  // style.css .row-actions-menu) de tranh tran/che khuat nhu khi xep rieng tung icon-btn (phan
+  // hoi nguoi dung 2026-09-02). Phieu 'da_tru_kho' chi con 1 hanh dong (Xem), giu icon-btn rieng
+  // le. data-type gan kem tren tung nut de click handler biet goi API /stock-returns hay
+  // /supplier-returns.
   const actions = isDraft
     ? `
-      <button type="button" class="icon-btn" data-action="edit" data-id="${r.id}" data-type="${r.return_type}" title="Sửa phiếu">${icon('pencil', 14)}</button>
-      <button type="button" class="icon-btn" data-action="process" data-id="${r.id}" data-type="${r.return_type}" title="Trừ kho">${icon('check', 14)}</button>
-      <button type="button" class="icon-btn" data-action="view" data-id="${r.id}" data-type="${r.return_type}" title="Xem chi tiết">${icon('eye', 14)}</button>
+      <div class="action-dropdown row-actions">
+        <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+        <div class="action-dropdown-menu row-actions-menu" hidden>
+          <button type="button" class="action-dropdown-item" data-action="edit" data-id="${r.id}" data-type="${r.return_type}">${icon('pencil', 16)} Sửa phiếu</button>
+          <button type="button" class="action-dropdown-item" data-action="process" data-id="${r.id}" data-type="${r.return_type}">${icon('check', 16)} Trừ kho</button>
+          <button type="button" class="action-dropdown-item" data-action="view" data-id="${r.id}" data-type="${r.return_type}">${icon('eye', 16)} Xem chi tiết</button>
+          <button type="button" class="action-dropdown-item action-dropdown-item-danger" data-action="delete" data-id="${r.id}" data-type="${r.return_type}">${icon('trash', 16)} Xóa phiếu nháp</button>
+        </div>
+      </div>
     `
     : `<button type="button" class="icon-btn" data-action="view" data-id="${r.id}" data-type="${r.return_type}" title="Xem chi tiết">${icon('eye', 14)}</button>`;
 
@@ -196,7 +204,38 @@ searchInput.addEventListener('input', (event) => {
   renderReturns();
 });
 
+// Menu "..." gom hanh dong o dong 'cho_tru_kho' (xem renderReturnRow) - dong tat ca menu dang mo
+// truoc khi mo 1 menu khac/khi click ra ngoai, dinh vi mo len tren neu mo xuong se tran khoi
+// vung nhin thay (hang gan cuoi bang, xem .row-actions-menu.dropdown-open-up trong style.css).
+function closeAllRowMenus() {
+  returnsTbody.querySelectorAll('.row-actions-menu').forEach((menu) => {
+    menu.hidden = true;
+    menu.classList.remove('dropdown-open-up');
+  });
+}
+
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.row-actions')) closeAllRowMenus();
+});
+
 returnsTbody.addEventListener('click', async (event) => {
+  const toggleBtn = event.target.closest('button[data-action="toggle-menu"]');
+  if (toggleBtn) {
+    event.stopPropagation();
+    const menu = toggleBtn.nextElementSibling;
+    const wasHidden = menu.hidden;
+    closeAllRowMenus();
+    if (wasHidden) {
+      menu.hidden = false;
+      const triggerRect = toggleBtn.getBoundingClientRect();
+      const menuHeight = menu.offsetHeight;
+      menu.classList.toggle('dropdown-open-up', triggerRect.bottom + menuHeight > window.innerHeight);
+    }
+    return;
+  }
+
+  closeAllRowMenus();
+
   const viewBtn = event.target.closest('button[data-action="view"]');
   if (viewBtn) {
     openDetailModal(viewBtn.dataset.id, viewBtn.dataset.type);
@@ -224,6 +263,21 @@ returnsTbody.addEventListener('click', async (event) => {
     } catch (err) {
       renderReturnsError(err.message);
       processBtn.disabled = false;
+    }
+    return;
+  }
+
+  const deleteBtn = event.target.closest('button[data-action="delete"]');
+  if (deleteBtn) {
+    if (!confirm('Xóa phiếu nháp này? Phiếu chưa trừ kho nên không ảnh hưởng tồn kho/công nợ.')) return;
+    deleteBtn.disabled = true;
+    returnsErrorBox.hidden = true;
+    try {
+      await apiFetch(`${apiPrefixFor(deleteBtn.dataset.type)}/${deleteBtn.dataset.id}`, { method: 'DELETE' });
+      await loadReturns();
+    } catch (err) {
+      renderReturnsError(err.message);
+      deleteBtn.disabled = false;
     }
   }
 });

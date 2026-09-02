@@ -236,6 +236,28 @@ function updateStockIssue(id, { partnerId, note, paymentStatus, items, issueDate
   return db.prepare('SELECT * FROM stock_issues WHERE id = ?').get(issueId);
 }
 
+// Xoa cung 1 phieu dang 'cho_tru_kho' (nhap, 2026-09-02, theo yeu cau nguoi dung - dao nguoc 1
+// phan quyet dinh "khong co API xoa nhap" 2026-08-20, xem docs/DECISIONS.md). AN TOAN vi phieu
+// nhap chua ghi bat ky dong nao vao stock_movements/debt_ledger/cash_vouchers, va khong the bi
+// chon lam "phieu goc dieu chinh" boi phieu khac (readAdjustment() chi cho chon status=
+// 'da_tru_kho') - nen khong co bang nao tham chieu nguoc toi 1 phieu dang nhap.
+function deleteStockIssue(id) {
+  const run = db.transaction(() => {
+    const existing = db.prepare('SELECT id, status FROM stock_issues WHERE id = ? AND is_return = 0').get(id);
+    if (!existing) {
+      throw new ServiceError('Khong tim thay phieu xuat kho');
+    }
+    if (existing.status !== 'cho_tru_kho') {
+      throw new ServiceError('Phieu đã xuất kho, không thể xóa');
+    }
+
+    db.prepare('DELETE FROM stock_issue_items WHERE issue_id = ?').run(id);
+    db.prepare('DELETE FROM stock_issues WHERE id = ?').run(id);
+  });
+
+  run();
+}
+
 // "Xuat kho" cho 1 phieu da 'Luu tam' truoc do (nut rieng ngoai danh sach hoac trong modal sua) -
 // chi ap dung duoc khi phieu dang 'cho_tru_kho'. Sau khi chay xong, phieu khoa vinh vien.
 function processStockIssue(id, { createdBy }) {
@@ -256,4 +278,4 @@ function processStockIssue(id, { createdBy }) {
   return db.prepare('SELECT * FROM stock_issues WHERE id = ?').get(issueId);
 }
 
-module.exports = { createStockIssue, updateStockIssue, processStockIssue, ServiceError };
+module.exports = { createStockIssue, updateStockIssue, processStockIssue, deleteStockIssue, ServiceError };

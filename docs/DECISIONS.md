@@ -2,6 +2,16 @@
 
 > Ghi lại các quyết định đã chốt để không thảo luận lại trừ khi có lý do mới. Mỗi mục ghi ngày chốt.
 
+## 2026-09-02 — Cho phép xóa phiếu nháp (Phiếu xuất kho/Trả hàng xuất/Trả hàng NCC) — đảo ngược 1 phần quyết định 2026-08-20; gộp hành động dòng bảng vào menu "..."
+
+**Bối cảnh**: quyết định 2026-08-20 (mục ngay dưới) khi thiết kế quy trình 2 bước "Lưu tạm"/"Xuất kho" đã chốt **"Không có API xóa nháp — giữ nhất quán với Trả hàng"**. Người dùng sau đó yêu cầu thêm lại chức năng xóa, lý do: phiếu nháp chưa ghi bất kỳ dữ liệu nào vào tồn kho/công nợ/sổ quỹ nên xóa là an toàn tuyệt đối, không có rủi ro lệch ledger như phiếu đã xử lý.
+
+**Quyết định** (hỏi qua `AskUserQuestion`, người dùng chọn áp dụng đồng bộ cả 3 module dùng chung pattern "Lưu tạm"/"Xuất kho" thay vì chỉ riêng Phiếu xuất kho): thêm `DELETE /:id` cho cả **Phiếu xuất kho** (`stockIssues.routes.js`), **Trả hàng xuất** (`stockReturns.routes.js`), **Trả hàng nhà cung cấp** (`supplierReturns.routes.js`) — chỉ cho xóa khi `status='cho_tru_kho'`, chặn 400 nếu đã `da_tru_kho`. Xóa cứng `stock_issue_items`/`stock_receipt_items` rồi tới bản ghi phiếu, trong 1 transaction. **An toàn kỹ thuật đã xác nhận qua đọc code**: phiếu nháp không thể bị chọn làm "phiếu gốc điều chỉnh" bởi phiếu khác (`readAdjustment()` ở cả `stockIssues.routes.js`/`stockReceipts.routes.js` chỉ cho chọn `status='da_tru_kho'`) — nên không có bảng nào tham chiếu ngược tới 1 phiếu đang nháp, xóa không để lại orphan reference.
+
+**Phát sinh giữa phiên — sự cố UI phát hiện qua ảnh chụp người dùng gửi**: sau khi thêm nút xóa (icon `trash`) làm nút thứ 5 trên dòng "Nháp" của Phiếu xuất kho, cột "Thao tác" tràn ra ngoài khiến nút Xóa bị che khuất (5 `.icon-btn` xếp cạnh nhau quá rộng). **Quyết định UI** (dùng skill `ui-ux-pro-max`, nguyên tắc `overflow-menu`): gộp các hành động của dòng có ≥4 nút vào 1 menu "..." xổ xuống, tái dùng nguyên xi pattern `.action-dropdown`/`.action-dropdown-menu`/`.action-dropdown-item` đã có sẵn (vốn dùng cho nút "+ Lập phiếu" đầu trang) thay vì phát minh component mới — chi tiết kỹ thuật (định vị thông minh lật hướng menu, màu hành động phá hủy...) xem `docs/DESIGN-SYSTEM.md` mục "Bảng dữ liệu". Áp dụng cho dòng "Nháp" của cả 3 module (Phiếu xuất kho: 5 hành động; Trả hàng xuất/NCC: 4 hành động) — dòng đã xử lý xong (1-2 hành động) giữ nguyên `.icon-btn` rời, không gộp.
+
+Test qua API thật (Node/curl: tạo phiếu nháp → xóa → xác nhận 404; xóa phiếu đã xử lý xong → chặn đúng 400 và không bị mutate, thử trên cả 3 module) + trình duyệt thật (Chrome headless CDP thô: tạo phiếu nháp qua UI → mở menu "..." xác nhận đủ số hành động + không tràn khỏi viewport (chụp ảnh xác nhận) → xóa qua UI → dòng biến mất khỏi danh sách, cho cả 3 module) — không lỗi console. Dữ liệu test đã xóa sạch. Đã restart server (bắt buộc, không có hot-reload cho thay đổi backend).
+
 ## 2026-08-20 — Bỏ trường "Dự án" khỏi phiếu nhập kho thường — đảo ngược 1 phần quyết định Đợt 3 (2026-08-04)
 
 **Bối cảnh phát hiện**: người dùng test tính năng "Nghiệm thu theo giải pháp" (mục 4.12) — tạo 1 phiếu nhập kho gắn dự án, sau đó tạo 1 phiếu xuất cùng sản phẩm/cùng số lượng cho đúng dự án đó. Phiếu xuất hiện đúng trong tab "Vật tư", nhưng tab "Nghiệm thu" lại KHÔNG hiện sản phẩm đó trong danh sách "đã xuất, có thể gán vào giải pháp" dù thực tế đã xuất kho thật.

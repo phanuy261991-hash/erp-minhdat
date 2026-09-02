@@ -2,6 +2,18 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-09-02 (Xóa phiếu nháp + gộp hành động dòng bảng vào menu "...")
+
+> Đảo ngược 1 phần quyết định "Không có API xóa nháp" (2026-08-20) theo yêu cầu người dùng, kèm sửa lỗi UI phát sinh giữa phiên (nút Xóa bị tràn/che khuất). Chi tiết đầy đủ: `docs/DECISIONS.md` mục 2026-09-02.
+
+- `backend/services/stockIssue.service.js#deleteStockIssue()`, `backend/services/stockReturn.service.js#deleteStockReturn()`, `backend/services/supplierReturn.service.js#deleteSupplierReturn()`: xóa cứng phiếu + items trong transaction, chỉ khi `status='cho_tru_kho'`
+- `backend/routes/stockIssues.routes.js`, `backend/routes/stockReturns.routes.js`, `backend/routes/supplierReturns.routes.js`: thêm `DELETE /:id`, trả 400 nếu phiếu đã xử lý xong
+- `frontend/assets/style.css`: thêm `.action-dropdown-item-danger` (màu `--color-destructive`, hover `#fef2f2`) và `.row-actions-menu.dropdown-open-up` (lật hướng menu khi tràn viewport)
+- `frontend/assets/stock-issues.js`: dòng "Nháp" đổi từ 5 `.icon-btn` rời sang 1 nút "..." (`moreHorizontal`) xổ ra `.action-dropdown-menu` gồm Sửa/Xuất kho/In xác nhận/Xem/Xóa (thêm mới); dòng "Đã xuất kho" giữ nguyên `.icon-btn` rời
+- `frontend/assets/stock-returns.js`: dòng "Nháp" (cả Trả hàng xuất lẫn Trả hàng NCC) đổi tương tự sang menu "..." gồm Sửa/Trừ kho/Xem/Xóa (thêm mới); dòng "Đã trừ kho" giữ nguyên
+- Đồng bộ `docs/PRD.md` mục 4.3 (Phiếu xuất kho) và mục "Trả hàng", `docs/DESIGN-SYSTEM.md` mục "Bảng dữ liệu" (pattern menu gộp hành động, thiết kế qua skill `ui-ux-pro-max`)
+- Test qua API thật (curl/Node: xóa nháp thành công cả 3 module, xóa phiếu đã xử lý xong bị chặn 400 và không mutate dữ liệu) + trình duyệt thật (Chrome headless CDP thô: tạo nháp qua UI → mở menu "..." xác nhận đủ hành động + không tràn viewport → xóa qua UI → dòng biến mất, không lỗi console). Dữ liệu test đã xóa sạch. Đã restart server.
+
 ## 2026-08-20 (Bỏ trường "Dự án" khỏi phiếu nhập kho thường)
 
 > Phát hiện qua test tính năng "Nghiệm thu theo giải pháp": phiếu nhập gắn dự án bị trừ nhầm vào "đã xuất cho dự án" (công thức coi mọi phiếu nhập gắn dự án là "trả vật tư thừa", chốt từ Đợt 3 2026-08-04), làm sản phẩm biến mất khỏi cả tab Vật tư lẫn Nghiệm thu dù đã xuất kho thật. Chi tiết quyết định: `docs/DECISIONS.md` mục 2026-08-20 "Bỏ trường Dự án khỏi phiếu nhập kho thường".

@@ -101,15 +101,22 @@ function renderIssueRow(issue) {
     ? `<span class="badge badge-inactive" title="Điều chỉnh cho phiếu ${issue.adjusts_code}">Điều chỉnh ${issue.adjusts_code}</span> ${issue.note || ''}`
     : (issue.note || '-');
 
-  // Phieu 'cho_tru_kho' (nhap): cho sua + xuat kho nhanh tren danh sach + in "Phieu xac nhan don
-  // hang" de xem/chot truoc; phieu 'da_tru_kho' da khoa, chi con Xem chi tiet + In phieu (mau
-  // stock_issue) - dung dung pattern stock-returns.js.
+  // Phieu 'cho_tru_kho' (nhap) co toi 5 hanh dong - gom vao 1 menu "..." (dropdown, xem style.css
+  // .row-actions-menu) de tranh tran/che khuat nhu khi xep rieng tung icon-btn (phan hoi nguoi
+  // dung 2026-09-02). Phieu 'da_tru_kho' chi con 2 hanh dong (Xem/In), van vua du cho ca vo dong
+  // nen giu nguyen dang icon-btn rieng le, khong can gom.
   const actions = isDraft
     ? `
-      <button type="button" class="icon-btn" data-action="edit" data-id="${issue.id}" title="Sửa phiếu">${icon('pencil', 14)}</button>
-      <button type="button" class="icon-btn" data-action="process" data-id="${issue.id}" title="Xuất kho">${icon('check', 14)}</button>
-      <button type="button" class="icon-btn" data-action="print-confirmation" data-id="${issue.id}" title="In phiếu xác nhận đơn hàng">${icon('printer', 14)}</button>
-      <button type="button" class="icon-btn" data-action="view" data-id="${issue.id}" title="Xem chi tiết">${icon('eye', 14)}</button>
+      <div class="action-dropdown row-actions">
+        <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+        <div class="action-dropdown-menu row-actions-menu" hidden>
+          <button type="button" class="action-dropdown-item" data-action="edit" data-id="${issue.id}">${icon('pencil', 16)} Sửa phiếu</button>
+          <button type="button" class="action-dropdown-item" data-action="process" data-id="${issue.id}">${icon('check', 16)} Xuất kho</button>
+          <button type="button" class="action-dropdown-item" data-action="print-confirmation" data-id="${issue.id}">${icon('printer', 16)} In phiếu xác nhận đơn hàng</button>
+          <button type="button" class="action-dropdown-item" data-action="view" data-id="${issue.id}">${icon('eye', 16)} Xem chi tiết</button>
+          <button type="button" class="action-dropdown-item action-dropdown-item-danger" data-action="delete" data-id="${issue.id}">${icon('trash', 16)} Xóa phiếu nháp</button>
+        </div>
+      </div>
     `
     : `
       <button type="button" class="icon-btn" data-action="view" data-id="${issue.id}" title="Xem chi tiết">${icon('eye', 14)}</button>
@@ -146,10 +153,40 @@ async function loadIssues() {
   }
 }
 
+// Menu "..." gom hanh dong o dong 'cho_tru_kho' (xem renderIssueRow) - dong tat ca menu dang mo
+// truoc khi mo 1 menu khac/khi click ra ngoai, dinh vi mo len tren neu mo xuong se tran khoi
+// vung nhin thay (hang gan cuoi bang, xem .row-actions-menu.dropdown-open-up trong style.css).
+function closeAllRowMenus() {
+  issuesTbody.querySelectorAll('.row-actions-menu').forEach((menu) => {
+    menu.hidden = true;
+    menu.classList.remove('dropdown-open-up');
+  });
+}
+
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.row-actions')) closeAllRowMenus();
+});
+
 issuesTbody.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
   const { action, id } = button.dataset;
+
+  if (action === 'toggle-menu') {
+    event.stopPropagation();
+    const menu = button.nextElementSibling;
+    const wasHidden = menu.hidden;
+    closeAllRowMenus();
+    if (wasHidden) {
+      menu.hidden = false;
+      const triggerRect = button.getBoundingClientRect();
+      const menuHeight = menu.offsetHeight;
+      menu.classList.toggle('dropdown-open-up', triggerRect.bottom + menuHeight > window.innerHeight);
+    }
+    return;
+  }
+
+  closeAllRowMenus();
 
   if (action === 'view') {
     openIssueDetailModal(id);
@@ -174,6 +211,18 @@ issuesTbody.addEventListener('click', async (event) => {
     issuesErrorBox.hidden = true;
     try {
       await apiFetch(`/stock-issues/${id}/process`, { method: 'POST' });
+      await loadIssues();
+    } catch (err) {
+      renderIssuesError(err.message);
+      button.disabled = false;
+    }
+  }
+  if (action === 'delete') {
+    if (!confirm('Xóa phiếu nháp này? Phiếu chưa xuất kho nên không ảnh hưởng tồn kho/công nợ.')) return;
+    button.disabled = true;
+    issuesErrorBox.hidden = true;
+    try {
+      await apiFetch(`/stock-issues/${id}`, { method: 'DELETE' });
       await loadIssues();
     } catch (err) {
       renderIssuesError(err.message);

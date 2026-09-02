@@ -8,6 +8,7 @@ const {
   createSupplierReturn,
   updateSupplierReturn,
   processSupplierReturn,
+  deleteSupplierReturn,
   getSupplierReturnReference,
   getSupplierPrices,
   ServiceError,
@@ -187,6 +188,20 @@ router.post('/:id/process', (req, res) => {
   try {
     const stockReturn = processSupplierReturn(id, { createdBy: req.session.user.id });
     res.json({ return: stockReturn });
+  } catch (err) {
+    if (err instanceof ServiceError) {
+      return res.status(400).json({ error: err.message });
+    }
+    throw err;
+  }
+});
+
+// Xoa phieu dang 'cho_tru_kho' (chua tru kho) - xem chu thich deleteSupplierReturn() trong service.
+router.delete('/:id', (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    deleteSupplierReturn(id);
+    res.status(204).end();
   } catch (err) {
     if (err instanceof ServiceError) {
       return res.status(400).json({ error: err.message });

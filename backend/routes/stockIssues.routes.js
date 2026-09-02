@@ -4,7 +4,7 @@
 
 const express = require('express');
 const db = require('../db/database');
-const { createStockIssue, updateStockIssue, processStockIssue, ServiceError } = require('../services/stockIssue.service');
+const { createStockIssue, updateStockIssue, processStockIssue, deleteStockIssue, ServiceError } = require('../services/stockIssue.service');
 
 const router = express.Router();
 
@@ -240,6 +240,20 @@ router.post('/:id/process', (req, res) => {
   try {
     const issue = processStockIssue(id, { createdBy: req.session.user.id });
     res.json({ issue });
+  } catch (err) {
+    if (err instanceof ServiceError) {
+      return res.status(400).json({ error: err.message });
+    }
+    throw err;
+  }
+});
+
+// Xoa phieu dang 'cho_tru_kho' (nhap) - xem chu thich deleteStockIssue() trong service.
+router.delete('/:id', (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    deleteStockIssue(id);
+    res.status(204).end();
   } catch (err) {
     if (err instanceof ServiceError) {
       return res.status(400).json({ error: err.message });

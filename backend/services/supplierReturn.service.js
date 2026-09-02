@@ -260,6 +260,27 @@ function updateSupplierReturn(id, { partnerId, note, items, returnDate }) {
   return db.prepare('SELECT * FROM stock_issues WHERE id = ?').get(issueId);
 }
 
+// Xoa cung 1 phieu dang 'cho_tru_kho' (chua tru kho, 2026-09-02, theo yeu cau nguoi dung - dao
+// nguoc 1 phan quyet dinh "khong co API xoa nhap" 2026-08-20, xem docs/DECISIONS.md). AN TOAN
+// vi phieu chua ghi gi vao stock_movements/debt_ledger, va khong the bi chon lam "phieu goc
+// dieu chinh" boi phieu khac (readAdjustment() chi cho chon status='da_tru_kho').
+function deleteSupplierReturn(id) {
+  const run = db.transaction(() => {
+    const existing = db.prepare('SELECT id, status FROM stock_issues WHERE id = ? AND is_return = 1').get(id);
+    if (!existing) {
+      throw new ServiceError('Khong tim thay phieu tra hang');
+    }
+    if (existing.status !== 'cho_tru_kho') {
+      throw new ServiceError('Phieu đã trừ kho, không thể xóa');
+    }
+
+    db.prepare('DELETE FROM stock_issue_items WHERE issue_id = ?').run(id);
+    db.prepare('DELETE FROM stock_issues WHERE id = ?').run(id);
+  });
+
+  run();
+}
+
 // "Tru kho" cho 1 phieu da 'Luu' truoc do - chi ap dung duoc khi phieu dang 'cho_tru_kho'.
 function processSupplierReturn(id, { createdBy }) {
   const run = db.transaction(() => {
@@ -285,6 +306,7 @@ module.exports = {
   createSupplierReturn,
   updateSupplierReturn,
   processSupplierReturn,
+  deleteSupplierReturn,
   getSupplierReturnReference,
   getSupplierPrices,
   generateSupplierReturnCode,
