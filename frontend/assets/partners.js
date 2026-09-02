@@ -45,8 +45,13 @@ function renderRow(partner) {
     <td>${partner.phone || '-'}</td>
     <td>${partner.address || '-'}</td>
     <td>
-      <button type="button" class="icon-btn" data-action="edit" data-id="${partner.id}" title="Sửa nhà cung cấp">${icon('pencil', 14)}</button>
-      <button type="button" class="icon-btn icon-btn-danger" data-action="delete" data-id="${partner.id}" title="Xóa nhà cung cấp">${icon('trash', 14)}</button>
+      <div class="action-dropdown row-actions">
+        <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+        <div class="action-dropdown-menu row-actions-menu" hidden>
+          <button type="button" class="action-dropdown-item" data-action="edit" data-id="${partner.id}">${icon('pencil', 16)} Sửa nhà cung cấp</button>
+          <button type="button" class="action-dropdown-item action-dropdown-item-danger" data-action="delete" data-id="${partner.id}">${icon('trash', 16)} Xóa nhà cung cấp</button>
+        </div>
+      </div>
     </td>
   `;
   return tr;
@@ -103,11 +108,22 @@ partnerModal.addEventListener('click', (event) => {
   if (event.target === partnerModal) closePartnerModal();
 });
 
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.row-actions')) closeAllRowActionMenus(partnersTbody);
+});
+
 partnersTbody.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
 
   const { action, id } = button.dataset;
+
+  if (action === 'toggle-menu') {
+    event.stopPropagation();
+    toggleRowActionsMenu(button, partnersTbody);
+    return;
+  }
+  closeAllRowActionMenus(partnersTbody);
 
   if (action === 'edit') {
     const partner = partnersCache.find((p) => String(p.id) === id);

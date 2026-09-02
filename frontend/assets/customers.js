@@ -51,9 +51,14 @@ function renderRow(customer) {
     <td>${customer.phone || '-'}</td>
     <td>${customer.address || '-'}</td>
     <td>
-      <a href="customer-detail.html?id=${customer.id}" class="icon-btn" title="Xem chi tiết">${icon('eye', 14)}</a>
-      <button type="button" class="icon-btn" data-action="edit" data-id="${customer.id}" title="Sửa khách hàng">${icon('pencil', 14)}</button>
-      <button type="button" class="icon-btn icon-btn-danger" data-action="delete" data-id="${customer.id}" title="Xóa khách hàng">${icon('trash', 14)}</button>
+      <div class="action-dropdown row-actions">
+        <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+        <div class="action-dropdown-menu row-actions-menu" hidden>
+          <a href="customer-detail.html?id=${customer.id}" class="action-dropdown-item">${icon('eye', 16)} Xem chi tiết</a>
+          <button type="button" class="action-dropdown-item" data-action="edit" data-id="${customer.id}">${icon('pencil', 16)} Sửa khách hàng</button>
+          <button type="button" class="action-dropdown-item action-dropdown-item-danger" data-action="delete" data-id="${customer.id}">${icon('trash', 16)} Xóa khách hàng</button>
+        </div>
+      </div>
     </td>
   `;
   return tr;
@@ -224,11 +229,22 @@ customerModal.addEventListener('click', (event) => {
   if (event.target === customerModal) closeCustomerModal();
 });
 
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.row-actions')) closeAllRowActionMenus(customersTbody);
+});
+
 customersTbody.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
 
   const { action, id } = button.dataset;
+
+  if (action === 'toggle-menu') {
+    event.stopPropagation();
+    toggleRowActionsMenu(button, customersTbody);
+    return;
+  }
+  closeAllRowActionMenus(customersTbody);
 
   if (action === 'edit') {
     const customer = customersCache.find((c) => String(c.id) === id);

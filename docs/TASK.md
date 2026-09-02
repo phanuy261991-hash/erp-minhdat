@@ -733,6 +733,18 @@
 - [x] Đồng bộ `docs/PRD.md` mục 4.3 + mục "Trả hàng", `docs/DESIGN-SYSTEM.md` mục "Bảng dữ liệu"
 - [x] Test qua API thật (Node `fetch`: xóa nháp thành công, xóa phiếu đã xử lý xong bị chặn 400 và không mutate, cả 3 module) + trình duyệt thật (Chrome headless CDP thô: mở menu "..." xác nhận đủ hành động không tràn viewport, xóa qua UI, không lỗi console). Dữ liệu test đã xóa sạch. Đã restart server (bắt buộc, không có hot-reload).
 
+### Chuẩn hóa toàn app: gộp nút hành động ≥2 vào menu "..." (ngoài phase, theo yêu cầu người dùng 2026-09-02)
+
+> Đảo ngược ngưỡng "≥4" chốt sớm hơn cùng ngày ở mục trên. Chi tiết `docs/DECISIONS.md` mục 2026-09-02 "Chuẩn hóa toàn app".
+
+- [x] Audit toàn bộ `frontend/assets/*.js` qua subagent Explore (16 file, ~27 biến thể dòng cần chuyển đổi)
+- [x] `frontend/assets/row-actions.js` (mới): `toggleRowActionsMenu()`/`closeAllRowActionMenus()` dùng chung
+- [x] Chuyển đổi 16 file: `partners.js`, `customer-categories.js`, `project-phase-templates.js`, `cash-categories.js`, `stock-receipts.js`, `customers.js`, `products.js`, `projects.js`, `contacts.js`, `customer-debts.js`, `debts.js`, `warranties.js`, `roles.js`, `users.js`, `project-detail.js` (6 hàm render)
+- [x] Thêm `<script src="assets/row-actions.js">` vào 15 file HTML tương ứng
+- [x] `frontend/assets/style.css`: `.action-dropdown-item:disabled`
+- [x] Đồng bộ `docs/DESIGN-SYSTEM.md` mục "Bảng dữ liệu", `docs/DECISIONS.md`
+- [x] Test qua `node --check` toàn bộ 16 file (cú pháp) + trình duyệt thật (Chrome headless CDP thô: smoke test 15 trang + test sâu `roles.html`/`users.html`/`project-detail.html`, không lỗi console, không hồi quy hành vi mở rộng dòng giai đoạn). Không cần restart server (chỉ frontend tĩnh).
+
 ## Open questions cần chốt trước khi code phần liên quan
 
 Xem `docs/DECISIONS.md` mục "Open questions".

@@ -96,8 +96,13 @@ function renderReceiptRow(receipt) {
     <td>${noteHtml}</td>
     <td>${formatDate(receipt.created_at)}</td>
     <td>
-      <button type="button" class="icon-btn" data-action="view" data-id="${receipt.id}" title="Xem chi tiết">${icon('eye', 14)}</button>
-      <button type="button" class="icon-btn" data-action="edit-date" data-id="${receipt.id}" data-created-at="${receipt.created_at}" title="Sửa ngày nhập">${icon('pencil', 14)}</button>
+      <div class="action-dropdown row-actions">
+        <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+        <div class="action-dropdown-menu row-actions-menu" hidden>
+          <button type="button" class="action-dropdown-item" data-action="view" data-id="${receipt.id}">${icon('eye', 16)} Xem chi tiết</button>
+          <button type="button" class="action-dropdown-item" data-action="edit-date" data-id="${receipt.id}" data-created-at="${receipt.created_at}">${icon('pencil', 16)} Sửa ngày nhập</button>
+        </div>
+      </div>
     </td>
   `;
   return tr;
@@ -113,7 +118,19 @@ async function loadReceipts() {
   }
 }
 
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.row-actions')) closeAllRowActionMenus(receiptsTbody);
+});
+
 receiptsTbody.addEventListener('click', (event) => {
+  const toggleButton = event.target.closest('button[data-action="toggle-menu"]');
+  if (toggleButton) {
+    event.stopPropagation();
+    toggleRowActionsMenu(toggleButton, receiptsTbody);
+    return;
+  }
+  closeAllRowActionMenus(receiptsTbody);
+
   const viewButton = event.target.closest('button[data-action="view"]');
   if (viewButton) {
     openReceiptDetailModal(viewButton.dataset.id);

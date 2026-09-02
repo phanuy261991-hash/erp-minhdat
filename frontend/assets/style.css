@@ -2130,6 +2130,18 @@ input:focus-visible {
   background: #fef2f2;
 }
 
+/* Hanh dong khong thao tac duoc trong menu (vd "Khoa" tren chinh tai khoan dang dang nhap,
+   "Da thu du" khi doi thanh toan da xong) - giu nguyen trong danh sach de nguoi dung thay ly do
+   qua title, khong an han bot nhu cac icon-btn roi truoc day. */
+.action-dropdown-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.action-dropdown-item:disabled:hover {
+  background: none;
+}
+
 /* Nut "..." gom nhieu hanh dong trong 1 dong bang (.data-table) - tai dung dung co che
    .action-dropdown/.action-dropdown-menu/.action-dropdown-item (von dung cho nut "+ Lap phieu"
    dau trang), chi khac vi tri dat (trong 1 o <td> thay vi page-header-actions) - xem

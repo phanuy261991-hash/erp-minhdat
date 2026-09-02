@@ -53,19 +53,19 @@ function renderRow(user) {
 
   let lockActionHtml;
   if (isSelf) {
-    lockActionHtml = `<button type="button" class="icon-btn" disabled title="Không thể tự khóa tài khoản đang đăng nhập">${icon('lock', 14)} Khóa</button>`;
+    lockActionHtml = `<button type="button" class="action-dropdown-item" disabled title="Không thể tự khóa tài khoản đang đăng nhập">${icon('lock', 16)} Khóa tài khoản</button>`;
   } else if (isActive) {
-    lockActionHtml = `<button type="button" class="icon-btn icon-btn-danger" data-action="deactivate" data-id="${user.id}">${icon('lock', 14)} Khóa</button>`;
+    lockActionHtml = `<button type="button" class="action-dropdown-item action-dropdown-item-danger" data-action="deactivate" data-id="${user.id}">${icon('lock', 16)} Khóa tài khoản</button>`;
   } else {
-    lockActionHtml = `<button type="button" class="icon-btn" data-action="activate" data-id="${user.id}">${icon('lockOpen', 14)} Mở</button>`;
+    lockActionHtml = `<button type="button" class="action-dropdown-item" data-action="activate" data-id="${user.id}">${icon('lockOpen', 16)} Mở khóa tài khoản</button>`;
   }
 
-  const editActionHtml = `<button type="button" class="icon-btn" data-action="edit" data-id="${user.id}" title="Sửa tài khoản">${icon('pencil', 14)}</button>`;
+  const editActionHtml = `<button type="button" class="action-dropdown-item" data-action="edit" data-id="${user.id}">${icon('pencil', 16)} Sửa tài khoản</button>`;
 
   // Xoa cung chi Admin (is_protected) moi thay nut, va khong the tu xoa chinh minh - giong het
   // dieu kien o backend (xem users.routes.js).
   const deleteActionHtml = currentUser.is_protected && !isSelf
-    ? `<button type="button" class="icon-btn icon-btn-danger" data-action="delete" data-id="${user.id}" title="Xóa tài khoản">${icon('trash', 14)}</button>`
+    ? `<button type="button" class="action-dropdown-item action-dropdown-item-danger" data-action="delete" data-id="${user.id}">${icon('trash', 16)} Xóa tài khoản</button>`
     : '';
 
   const tr = document.createElement('tr');
@@ -75,7 +75,16 @@ function renderRow(user) {
     <td>${user.role_name}</td>
     <td>${badge}</td>
     <td>${formatDate(user.created_at)}</td>
-    <td>${editActionHtml} ${lockActionHtml} ${deleteActionHtml}</td>
+    <td>
+      <div class="action-dropdown row-actions">
+        <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+        <div class="action-dropdown-menu row-actions-menu" hidden>
+          ${editActionHtml}
+          ${lockActionHtml}
+          ${deleteActionHtml}
+        </div>
+      </div>
+    </td>
   `;
   return tr;
 }
@@ -91,11 +100,22 @@ async function loadUsers() {
   }
 }
 
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.row-actions')) closeAllRowActionMenus(usersTbody);
+});
+
 usersTbody.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
 
   const { action, id } = button.dataset;
+
+  if (action === 'toggle-menu') {
+    event.stopPropagation();
+    toggleRowActionsMenu(button, usersTbody);
+    return;
+  }
+  closeAllRowActionMenus(usersTbody);
 
   if (action === 'edit') {
     const user = usersCache.find((u) => String(u.id) === id);

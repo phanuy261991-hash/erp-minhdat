@@ -128,11 +128,11 @@ function statusBadge(warranty) {
 function renderRow(warranty) {
   const tr = document.createElement('tr');
   const deleteActionHtml = currentUser.is_protected
-    ? `<button type="button" class="icon-btn icon-btn-danger" data-action="delete" data-id="${warranty.id}" title="Xóa thông tin bảo hành">${icon('trash', 14)}</button>`
+    ? `<button type="button" class="action-dropdown-item action-dropdown-item-danger" data-action="delete" data-id="${warranty.id}">${icon('trash', 16)} Xóa thông tin bảo hành</button>`
     : '';
   const toggleActionHtml = warranty.is_active
-    ? `<button type="button" class="icon-btn" data-action="deactivate" data-id="${warranty.id}" title="Vô hiệu hóa">${icon('lock', 14)}</button>`
-    : `<button type="button" class="icon-btn" data-action="activate" data-id="${warranty.id}" title="Kích hoạt lại">${icon('lockOpen', 14)}</button>`;
+    ? `<button type="button" class="action-dropdown-item" data-action="deactivate" data-id="${warranty.id}">${icon('lock', 16)} Vô hiệu hóa</button>`
+    : `<button type="button" class="action-dropdown-item" data-action="activate" data-id="${warranty.id}">${icon('lockOpen', 16)} Kích hoạt lại</button>`;
 
   const projectCellHtml = warranty.project_id
     ? `${warranty.project_code} - ${warranty.project_name}`
@@ -147,10 +147,15 @@ function renderRow(warranty) {
     <td>${formatWarrantyDuration(warranty.duration_value, warranty.duration_unit)}</td>
     <td>${statusBadge(warranty)}</td>
     <td>
-      <button type="button" class="icon-btn" data-action="view" data-id="${warranty.id}" title="Xem chi tiết + lịch sử bảo hành">${icon('eye', 14)}</button>
-      <button type="button" class="icon-btn" data-action="edit" data-id="${warranty.id}" title="Sửa thông tin bảo hành">${icon('pencil', 14)}</button>
-      ${toggleActionHtml}
-      ${deleteActionHtml}
+      <div class="action-dropdown row-actions">
+        <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+        <div class="action-dropdown-menu row-actions-menu" hidden>
+          <button type="button" class="action-dropdown-item" data-action="view" data-id="${warranty.id}">${icon('eye', 16)} Xem chi tiết + lịch sử bảo hành</button>
+          <button type="button" class="action-dropdown-item" data-action="edit" data-id="${warranty.id}">${icon('pencil', 16)} Sửa thông tin bảo hành</button>
+          ${toggleActionHtml}
+          ${deleteActionHtml}
+        </div>
+      </div>
     </td>
   `;
   return tr;
@@ -398,8 +403,13 @@ function renderVisitRow(visit) {
       <td><span class="badge ${VISIT_RESULT_BADGE_CLASS[visit.result]}">${VISIT_RESULT_LABELS[visit.result]}</span></td>
       <td>${visit.note || '-'}</td>
       <td>
-        <button type="button" class="icon-btn" data-action="edit-visit" data-visit-id="${visit.id}" title="Sửa lần bảo hành">${icon('pencil', 14)}</button>
-        <button type="button" class="icon-btn icon-btn-danger" data-action="delete-visit" data-visit-id="${visit.id}" title="Xóa lần bảo hành">${icon('trash', 14)}</button>
+        <div class="action-dropdown row-actions">
+          <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+          <div class="action-dropdown-menu row-actions-menu" hidden>
+            <button type="button" class="action-dropdown-item" data-action="edit-visit" data-visit-id="${visit.id}">${icon('pencil', 16)} Sửa lần bảo hành</button>
+            <button type="button" class="action-dropdown-item action-dropdown-item-danger" data-action="delete-visit" data-visit-id="${visit.id}">${icon('trash', 16)} Xóa lần bảo hành</button>
+          </div>
+        </div>
       </td>
     </tr>
   `;
@@ -493,6 +503,13 @@ warrantyVisitsTbody.addEventListener('click', async (event) => {
   if (!button) return;
   const { action, visitId } = button.dataset;
 
+  if (action === 'toggle-menu') {
+    event.stopPropagation();
+    toggleRowActionsMenu(button, warrantyVisitsTbody);
+    return;
+  }
+  closeAllRowActionMenus(warrantyVisitsTbody);
+
   if (action === 'edit-visit') {
     openEditVisitModal(visitId);
     return;
@@ -542,11 +559,25 @@ warrantyVisitForm.addEventListener('submit', async (event) => {
   }
 });
 
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.row-actions')) {
+    closeAllRowActionMenus(warrantiesTbody);
+    closeAllRowActionMenus(warrantyVisitsTbody);
+  }
+});
+
 warrantiesTbody.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
 
   const { action, id } = button.dataset;
+
+  if (action === 'toggle-menu') {
+    event.stopPropagation();
+    toggleRowActionsMenu(button, warrantiesTbody);
+    return;
+  }
+  closeAllRowActionMenus(warrantiesTbody);
 
   if (action === 'view') {
     const warranty = warrantiesCache.find((w) => String(w.id) === id);

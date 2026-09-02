@@ -51,7 +51,7 @@ function getVisibleContacts() {
 function renderRow(contact) {
   const tr = document.createElement('tr');
   const deleteActionHtml = currentUser.is_protected
-    ? `<button type="button" class="icon-btn icon-btn-danger" data-action="delete" data-id="${contact.id}" title="Xóa đối tác">${icon('trash', 14)}</button>`
+    ? `<button type="button" class="action-dropdown-item action-dropdown-item-danger" data-action="delete" data-id="${contact.id}">${icon('trash', 16)} Xóa đối tác</button>`
     : '';
 
   tr.innerHTML = `
@@ -62,9 +62,14 @@ function renderRow(contact) {
     <td>${formatDateVN(contact.date_of_birth)}</td>
     <td>${contact.hobby || '-'}</td>
     <td>
-      <a href="contact-detail.html?id=${contact.id}" class="icon-btn" title="Xem chi tiết">${icon('eye', 14)}</a>
-      <button type="button" class="icon-btn" data-action="edit" data-id="${contact.id}" title="Sửa thông tin">${icon('pencil', 14)}</button>
-      ${deleteActionHtml}
+      <div class="action-dropdown row-actions">
+        <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+        <div class="action-dropdown-menu row-actions-menu" hidden>
+          <a href="contact-detail.html?id=${contact.id}" class="action-dropdown-item">${icon('eye', 16)} Xem chi tiết</a>
+          <button type="button" class="action-dropdown-item" data-action="edit" data-id="${contact.id}">${icon('pencil', 16)} Sửa thông tin</button>
+          ${deleteActionHtml}
+        </div>
+      </div>
     </td>
   `;
   return tr;
@@ -166,11 +171,22 @@ contactForm.addEventListener('submit', async (event) => {
   }
 });
 
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.row-actions')) closeAllRowActionMenus(contactsTbody);
+});
+
 contactsTbody.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
 
   const { action, id } = button.dataset;
+
+  if (action === 'toggle-menu') {
+    event.stopPropagation();
+    toggleRowActionsMenu(button, contactsTbody);
+    return;
+  }
+  closeAllRowActionMenus(contactsTbody);
 
   if (action === 'edit') {
     const contact = contactsCache.find((c) => String(c.id) === id);

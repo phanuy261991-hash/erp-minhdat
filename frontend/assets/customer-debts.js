@@ -105,9 +105,14 @@ function renderRow(item) {
     <td>${item.phone || '-'}</td>
     <td>${balanceHtml} ${warningIcon}</td>
     <td>
-      <button type="button" class="icon-btn" data-action="history" data-id="${item.partner_id}" title="Xem lịch sử">${icon('eye', 14)}</button>
-      <button type="button" class="icon-btn" data-action="pay" data-id="${item.partner_id}" title="Ghi nhận thanh toán">${icon('check', 14)}</button>
-      <button type="button" class="icon-btn" data-action="adjust" data-id="${item.partner_id}" title="Điều chỉnh công nợ">${icon('sliders', 14)}</button>
+      <div class="action-dropdown row-actions">
+        <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+        <div class="action-dropdown-menu row-actions-menu" hidden>
+          <button type="button" class="action-dropdown-item" data-action="history" data-id="${item.partner_id}">${icon('eye', 16)} Xem lịch sử</button>
+          <button type="button" class="action-dropdown-item" data-action="pay" data-id="${item.partner_id}">${icon('check', 16)} Ghi nhận thanh toán</button>
+          <button type="button" class="action-dropdown-item" data-action="adjust" data-id="${item.partner_id}">${icon('sliders', 16)} Điều chỉnh công nợ</button>
+        </div>
+      </div>
     </td>
   `;
   return tr;
@@ -486,11 +491,23 @@ adjustmentForm.addEventListener('submit', async (event) => {
   }
 });
 
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.row-actions')) closeAllRowActionMenus(debtsTbody);
+});
+
 debtsTbody.addEventListener('click', (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
 
   const { action, id } = button.dataset;
+
+  if (action === 'toggle-menu') {
+    event.stopPropagation();
+    toggleRowActionsMenu(button, debtsTbody);
+    return;
+  }
+  closeAllRowActionMenus(debtsTbody);
+
   if (action === 'history') {
     openHistoryModal(id);
   } else if (action === 'pay') {

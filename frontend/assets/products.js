@@ -82,11 +82,11 @@ function renderRow(product) {
     : '<span class="badge badge-inactive">Ngừng kinh doanh</span>';
 
   const toggleAction = product.is_active
-    ? `<button type="button" class="icon-btn" data-action="deactivate" data-id="${product.id}" title="Ngừng kinh doanh">${icon('lock', 14)}</button>`
-    : `<button type="button" class="icon-btn" data-action="activate" data-id="${product.id}" title="Mở lại">${icon('lockOpen', 14)}</button>`;
+    ? `<button type="button" class="action-dropdown-item" data-action="deactivate" data-id="${product.id}">${icon('lock', 16)} Ngừng kinh doanh</button>`
+    : `<button type="button" class="action-dropdown-item" data-action="activate" data-id="${product.id}">${icon('lockOpen', 16)} Mở lại</button>`;
 
   const deleteAction = currentUser.is_protected
-    ? `<button type="button" class="icon-btn icon-btn-danger" data-action="delete" data-id="${product.id}" title="Xóa sản phẩm">${icon('trash', 14)}</button>`
+    ? `<button type="button" class="action-dropdown-item action-dropdown-item-danger" data-action="delete" data-id="${product.id}">${icon('trash', 16)} Xóa sản phẩm</button>`
     : '';
 
   const tr = document.createElement('tr');
@@ -99,10 +99,15 @@ function renderRow(product) {
     <td>${stockHtml}</td>
     <td>${statusBadge}</td>
     <td>
-      <a class="icon-btn" href="product-detail.html?id=${product.id}" title="Xem chi tiết">${icon('eye', 14)}</a>
-      <button type="button" class="icon-btn" data-action="edit" data-id="${product.id}" title="Sửa sản phẩm">${icon('pencil', 14)}</button>
-      ${toggleAction}
-      ${deleteAction}
+      <div class="action-dropdown row-actions">
+        <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+        <div class="action-dropdown-menu row-actions-menu" hidden>
+          <a class="action-dropdown-item" href="product-detail.html?id=${product.id}">${icon('eye', 16)} Xem chi tiết</a>
+          <button type="button" class="action-dropdown-item" data-action="edit" data-id="${product.id}">${icon('pencil', 16)} Sửa sản phẩm</button>
+          ${toggleAction}
+          ${deleteAction}
+        </div>
+      </div>
     </td>
   `;
   return tr;
@@ -174,11 +179,22 @@ productModal.addEventListener('click', (event) => {
   if (event.target === productModal) closeProductModal();
 });
 
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.row-actions')) closeAllRowActionMenus(productsTbody);
+});
+
 productsTbody.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
 
   const { action, id } = button.dataset;
+
+  if (action === 'toggle-menu') {
+    event.stopPropagation();
+    toggleRowActionsMenu(button, productsTbody);
+    return;
+  }
+  closeAllRowActionMenus(productsTbody);
 
   if (action === 'edit') {
     const product = productsCache.find((p) => String(p.id) === id);

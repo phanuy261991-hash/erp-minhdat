@@ -37,8 +37,13 @@ function renderRow(category) {
     <td>${category.name}</td>
     <td>${category.debt_limit === null ? 'Không giới hạn' : `${formatMoney(category.debt_limit)} đ`}</td>
     <td>
-      <button type="button" class="icon-btn" data-action="edit" data-id="${category.id}" title="Sửa loại khách hàng">${icon('pencil', 14)}</button>
-      <button type="button" class="icon-btn icon-btn-danger" data-action="delete" data-id="${category.id}" title="Xóa loại khách hàng">${icon('trash', 14)}</button>
+      <div class="action-dropdown row-actions">
+        <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+        <div class="action-dropdown-menu row-actions-menu" hidden>
+          <button type="button" class="action-dropdown-item" data-action="edit" data-id="${category.id}">${icon('pencil', 16)} Sửa loại khách hàng</button>
+          <button type="button" class="action-dropdown-item action-dropdown-item-danger" data-action="delete" data-id="${category.id}">${icon('trash', 16)} Xóa loại khách hàng</button>
+        </div>
+      </div>
     </td>
   `;
   return tr;
@@ -88,11 +93,22 @@ categoryModal.addEventListener('click', (event) => {
   if (event.target === categoryModal) closeCategoryModal();
 });
 
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.row-actions')) closeAllRowActionMenus(categoriesTbody);
+});
+
 categoriesTbody.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
 
   const { action, id } = button.dataset;
+
+  if (action === 'toggle-menu') {
+    event.stopPropagation();
+    toggleRowActionsMenu(button, categoriesTbody);
+    return;
+  }
+  closeAllRowActionMenus(categoriesTbody);
 
   if (action === 'edit') {
     const category = categoriesCache.find((c) => String(c.id) === id);

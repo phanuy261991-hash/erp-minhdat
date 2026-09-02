@@ -38,8 +38,13 @@ function renderRow(category) {
   const actions = isSystem
     ? ''
     : `
-      <button type="button" class="icon-btn" data-action="edit" data-id="${category.id}" title="Sửa loại thu chi">${icon('pencil', 14)}</button>
-      <button type="button" class="icon-btn icon-btn-danger" data-action="delete" data-id="${category.id}" title="Xóa loại thu chi">${icon('trash', 14)}</button>
+      <div class="action-dropdown row-actions">
+        <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+        <div class="action-dropdown-menu row-actions-menu" hidden>
+          <button type="button" class="action-dropdown-item" data-action="edit" data-id="${category.id}">${icon('pencil', 16)} Sửa loại thu chi</button>
+          <button type="button" class="action-dropdown-item action-dropdown-item-danger" data-action="delete" data-id="${category.id}">${icon('trash', 16)} Xóa loại thu chi</button>
+        </div>
+      </div>
     `;
   tr.innerHTML = `
     <td>${category.name}${systemBadge}</td>
@@ -93,11 +98,22 @@ categoryModal.addEventListener('click', (event) => {
   if (event.target === categoryModal) closeCategoryModal();
 });
 
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.row-actions')) closeAllRowActionMenus(categoriesTbody);
+});
+
 categoriesTbody.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
 
   const { action, id } = button.dataset;
+
+  if (action === 'toggle-menu') {
+    event.stopPropagation();
+    toggleRowActionsMenu(button, categoriesTbody);
+    return;
+  }
+  closeAllRowActionMenus(categoriesTbody);
 
   if (action === 'edit') {
     const category = categoriesCache.find((c) => String(c.id) === id);

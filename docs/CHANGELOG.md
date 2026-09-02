@@ -2,6 +2,19 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-09-02 (Chuẩn hóa toàn app: gộp nút hành động ≥2 vào menu "...")
+
+> Đảo ngược ngưỡng "≥4" chốt sớm hơn cùng ngày (mục ngay dưới) sau khi người dùng nhận thấy các trang khác không đồng bộ. Chi tiết đầy đủ: `docs/DECISIONS.md` mục 2026-09-02 "Chuẩn hóa toàn app".
+
+- `frontend/assets/row-actions.js` (mới): `toggleRowActionsMenu(triggerButton, tbody)`/`closeAllRowActionMenus(tbody)` — logic mở/đóng/định vị dùng chung, tách ra để tránh copy 16 lần
+- Chuyển 16 file sang menu "..." gộp hành động: `partners.js`, `customer-categories.js`, `project-phase-templates.js`, `cash-categories.js`, `stock-receipts.js`, `customers.js`, `products.js`, `projects.js`, `contacts.js`, `customer-debts.js`, `debts.js`, `warranties.js` (2 hàm render), `roles.js`, `users.js`, `project-detail.js` (6 hàm render: công việc, giai đoạn, dự toán vật tư, đợt thanh toán, phát sinh, lịch sử bảo hành)
+- 15 file HTML tương ứng: thêm `<script src="assets/row-actions.js">`
+- `frontend/assets/style.css`: thêm `.action-dropdown-item:disabled`
+- Hành động `<a>` điều hướng (Xem chi tiết) chuyển thành `<a class="action-dropdown-item">`; hành động không thao tác được xử lý khóa nút kích hoạt (nếu cả dòng không còn gì khả thi, vd vai trò `is_protected`) hoặc khóa từng item trong menu (nếu chỉ 1 hành động bị khóa, vd tự khóa chính mình)
+- `project-detail.js`: nút "Lưu" (sửa nhanh inline công việc) giữ ngoài menu; thêm chặn bấm vào khoảng trống trong menu đang mở không vô tình mở/thu gọn dòng giai đoạn
+- Đồng bộ `docs/DESIGN-SYSTEM.md` mục "Bảng dữ liệu" (đổi ngưỡng "≥4" → "≥2 tuyệt đối")
+- Test qua `node --check` toàn bộ 16 file + trình duyệt thật (Chrome headless CDP thô: smoke test 15 trang, test sâu `roles.html`/`users.html`/`project-detail.html`, không lỗi console). Không cần restart server (chỉ frontend tĩnh).
+
 ## 2026-09-02 (Xóa phiếu nháp + gộp hành động dòng bảng vào menu "...")
 
 > Đảo ngược 1 phần quyết định "Không có API xóa nháp" (2026-08-20) theo yêu cầu người dùng, kèm sửa lỗi UI phát sinh giữa phiên (nút Xóa bị tràn/che khuất). Chi tiết đầy đủ: `docs/DECISIONS.md` mục 2026-09-02.

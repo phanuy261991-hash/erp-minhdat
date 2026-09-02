@@ -33,8 +33,13 @@ function renderRow(template) {
     <td>${template.sort_order}</td>
     <td>${template.name}</td>
     <td>
-      <button type="button" class="icon-btn" data-action="edit" data-id="${template.id}" title="Sửa giai đoạn mẫu">${icon('pencil', 14)}</button>
-      <button type="button" class="icon-btn icon-btn-danger" data-action="delete" data-id="${template.id}" title="Xóa giai đoạn mẫu">${icon('trash', 14)}</button>
+      <div class="action-dropdown row-actions">
+        <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+        <div class="action-dropdown-menu row-actions-menu" hidden>
+          <button type="button" class="action-dropdown-item" data-action="edit" data-id="${template.id}">${icon('pencil', 16)} Sửa giai đoạn mẫu</button>
+          <button type="button" class="action-dropdown-item action-dropdown-item-danger" data-action="delete" data-id="${template.id}">${icon('trash', 16)} Xóa giai đoạn mẫu</button>
+        </div>
+      </div>
     </td>
   `;
   return tr;
@@ -85,11 +90,22 @@ templateModal.addEventListener('click', (event) => {
   if (event.target === templateModal) closeTemplateModal();
 });
 
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.row-actions')) closeAllRowActionMenus(templatesTbody);
+});
+
 templatesTbody.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
 
   const { action, id } = button.dataset;
+
+  if (action === 'toggle-menu') {
+    event.stopPropagation();
+    toggleRowActionsMenu(button, templatesTbody);
+    return;
+  }
+  closeAllRowActionMenus(templatesTbody);
 
   if (action === 'edit') {
     const template = templatesCache.find((t) => String(t.id) === id);

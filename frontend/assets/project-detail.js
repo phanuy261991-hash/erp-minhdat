@@ -554,8 +554,13 @@ function renderPhaseTasksContent(phase) {
             <td>
               <div class="subtask-actions">
                 <button type="button" class="btn-secondary btn-sm" data-action="save-task" data-id="${task.id}">Lưu</button>
-                <button type="button" class="icon-btn" data-action="edit-task" data-id="${task.id}" title="Sửa đầy đủ">${icon('pencil', 14)}</button>
-                <button type="button" class="icon-btn icon-btn-danger" data-action="delete-task" data-id="${task.id}" title="Xóa công việc">${icon('trash', 14)}</button>
+                <div class="action-dropdown row-actions">
+                  <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+                  <div class="action-dropdown-menu row-actions-menu" hidden>
+                    <button type="button" class="action-dropdown-item" data-action="edit-task" data-id="${task.id}">${icon('pencil', 16)} Sửa đầy đủ</button>
+                    <button type="button" class="action-dropdown-item action-dropdown-item-danger" data-action="delete-task" data-id="${task.id}">${icon('trash', 16)} Xóa công việc</button>
+                  </div>
+                </div>
               </div>
             </td>
           </tr>
@@ -602,8 +607,13 @@ function renderPhasesTable(phases) {
           </td>
           <td>${renderPhaseProgressCell(phase.progress_percent)}</td>
           <td>
-            <button type="button" class="icon-btn" data-action="edit-phase" data-id="${phase.id}" title="Sửa giai đoạn">${icon('pencil', 14)}</button>
-            <button type="button" class="icon-btn icon-btn-danger" data-action="delete-phase" data-id="${phase.id}" title="Xóa giai đoạn">${icon('trash', 14)}</button>
+            <div class="action-dropdown row-actions">
+              <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+              <div class="action-dropdown-menu row-actions-menu" hidden>
+                <button type="button" class="action-dropdown-item" data-action="edit-phase" data-id="${phase.id}">${icon('pencil', 16)} Sửa giai đoạn</button>
+                <button type="button" class="action-dropdown-item action-dropdown-item-danger" data-action="delete-phase" data-id="${phase.id}">${icon('trash', 16)} Xóa giai đoạn</button>
+              </div>
+            </div>
           </td>
         </tr>
       `;
@@ -660,10 +670,21 @@ phaseModal.addEventListener('click', (event) => {
 // Delegation dung chung cho ca dong giai doan lan bang cong viec long ben trong (khi mo rong) -
 // gom du: sua/xoa giai doan, them/sua/xoa cong viec, luu nhanh ngay thuc te + trang thai cong
 // viec, va bam vao dong giai doan (ngoai vung nut) de mo/thu danh sach cong viec.
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.row-actions')) closeAllRowActionMenus(phasesTbody);
+});
+
 phasesTbody.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-action]');
   if (button) {
     const { action, id } = button.dataset;
+
+    if (action === 'toggle-menu') {
+      event.stopPropagation();
+      toggleRowActionsMenu(button, phasesTbody);
+      return;
+    }
+    closeAllRowActionMenus(phasesTbody);
 
     if (action === 'edit-phase') {
       const phase = currentPhases.find((p) => String(p.id) === id);
@@ -747,6 +768,9 @@ phasesTbody.addEventListener('click', async (event) => {
 
   // Khong bam vao nut hanh dong nao - kiem tra co phai bam vao dong giai doan (khong phai vao
   // input/select ben trong bang cong viec da mo rong, vi do la <tr> khac, khong khop .phase-row).
+  // Loai tru vung menu "..." (.row-actions) - bam vao khoang trong trong menu dang mo khong nen
+  // vo tinh dong/mo rong giai doan.
+  if (event.target.closest('.row-actions')) return;
   const row = event.target.closest('tr.phase-row');
   if (row) {
     togglePhaseExpand(Number(row.dataset.id));
@@ -909,8 +933,13 @@ function renderMaterialsTable(materials) {
           ${m.is_over ? `<span class="delay-badge">${icon('warningTriangle', 12)} Vượt dự toán</span>` : ''}
         </td>
         <td>
-          <button type="button" class="icon-btn" data-action="edit-material" data-id="${m.id}" title="Sửa dự toán">${icon('pencil', 14)}</button>
-          <button type="button" class="icon-btn icon-btn-danger" data-action="delete-material" data-id="${m.id}" title="Xóa dự toán">${icon('trash', 14)}</button>
+          <div class="action-dropdown row-actions">
+            <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+            <div class="action-dropdown-menu row-actions-menu" hidden>
+              <button type="button" class="action-dropdown-item" data-action="edit-material" data-id="${m.id}">${icon('pencil', 16)} Sửa dự toán</button>
+              <button type="button" class="action-dropdown-item action-dropdown-item-danger" data-action="delete-material" data-id="${m.id}">${icon('trash', 16)} Xóa dự toán</button>
+            </div>
+          </div>
         </td>
       </tr>
     `)
@@ -997,10 +1026,21 @@ materialModal.addEventListener('click', (event) => {
   if (event.target === materialModal) closeMaterialModal();
 });
 
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.row-actions')) closeAllRowActionMenus(materialsTbody);
+});
+
 materialsTbody.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
   const { action, id } = button.dataset;
+
+  if (action === 'toggle-menu') {
+    event.stopPropagation();
+    toggleRowActionsMenu(button, materialsTbody);
+    return;
+  }
+  closeAllRowActionMenus(materialsTbody);
 
   if (action === 'edit-material') {
     const material = currentMaterials.find((m) => String(m.id) === id);
@@ -1105,10 +1145,15 @@ function renderMilestonesTable(milestones) {
         <td>${formatMoney(m.remaining_amount)}</td>
         <td><span class="badge ${MILESTONE_STATUS_BADGE_CLASS[m.status]}">${MILESTONE_STATUS_LABELS[m.status]}</span></td>
         <td>
-          <button type="button" class="icon-btn" data-action="print-milestone" data-id="${m.id}" title="In giấy đề nghị tạm ứng">${icon('printer', 14)}</button>
-          <button type="button" class="icon-btn" data-action="collect-milestone" data-id="${m.id}" title="${m.status === 'da_thu_du' ? 'Đợt này đã thu đủ' : 'Ghi nhận đã thu'}" ${m.status === 'da_thu_du' ? 'disabled' : ''}>${icon('check', 14)}</button>
-          <button type="button" class="icon-btn" data-action="edit-milestone" data-id="${m.id}" title="Sửa đợt thanh toán">${icon('pencil', 14)}</button>
-          <button type="button" class="icon-btn icon-btn-danger" data-action="delete-milestone" data-id="${m.id}" title="Xóa đợt thanh toán">${icon('trash', 14)}</button>
+          <div class="action-dropdown row-actions">
+            <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+            <div class="action-dropdown-menu row-actions-menu" hidden>
+              <button type="button" class="action-dropdown-item" data-action="print-milestone" data-id="${m.id}">${icon('printer', 16)} In giấy đề nghị tạm ứng</button>
+              <button type="button" class="action-dropdown-item" data-action="collect-milestone" data-id="${m.id}" title="${m.status === 'da_thu_du' ? 'Đợt này đã thu đủ' : ''}" ${m.status === 'da_thu_du' ? 'disabled' : ''}>${icon('check', 16)} ${m.status === 'da_thu_du' ? 'Đã thu đủ' : 'Ghi nhận đã thu'}</button>
+              <button type="button" class="action-dropdown-item" data-action="edit-milestone" data-id="${m.id}">${icon('pencil', 16)} Sửa đợt thanh toán</button>
+              <button type="button" class="action-dropdown-item action-dropdown-item-danger" data-action="delete-milestone" data-id="${m.id}">${icon('trash', 16)} Xóa đợt thanh toán</button>
+            </div>
+          </div>
         </td>
       </tr>
     `)
@@ -1169,10 +1214,21 @@ function goToRecordPayment(milestoneId) {
   window.location.href = url.toString();
 }
 
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.row-actions')) closeAllRowActionMenus(milestonesTbody);
+});
+
 milestonesTbody.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
   const { action, id } = button.dataset;
+
+  if (action === 'toggle-menu') {
+    event.stopPropagation();
+    toggleRowActionsMenu(button, milestonesTbody);
+    return;
+  }
+  closeAllRowActionMenus(milestonesTbody);
 
   if (action === 'collect-milestone') {
     goToRecordPayment(id);
@@ -1262,8 +1318,13 @@ function renderVariationsTable(variations) {
         <td><span class="badge ${VARIATION_STATUS_BADGE_CLASS[v.status]}">${VARIATION_STATUS_LABELS[v.status]}</span></td>
         <td>${v.created_by_name}</td>
         <td>
-          <button type="button" class="icon-btn" data-action="edit-variation" data-id="${v.id}" title="Sửa phát sinh">${icon('pencil', 14)}</button>
-          <button type="button" class="icon-btn icon-btn-danger" data-action="delete-variation" data-id="${v.id}" title="Xóa phát sinh">${icon('trash', 14)}</button>
+          <div class="action-dropdown row-actions">
+            <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+            <div class="action-dropdown-menu row-actions-menu" hidden>
+              <button type="button" class="action-dropdown-item" data-action="edit-variation" data-id="${v.id}">${icon('pencil', 16)} Sửa phát sinh</button>
+              <button type="button" class="action-dropdown-item action-dropdown-item-danger" data-action="delete-variation" data-id="${v.id}">${icon('trash', 16)} Xóa phát sinh</button>
+            </div>
+          </div>
         </td>
       </tr>
     `)
@@ -1319,10 +1380,21 @@ variationModal.addEventListener('click', (event) => {
   if (event.target === variationModal) closeVariationModal();
 });
 
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.row-actions')) closeAllRowActionMenus(variationsTbody);
+});
+
 variationsTbody.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
   const { action, id } = button.dataset;
+
+  if (action === 'toggle-menu') {
+    event.stopPropagation();
+    toggleRowActionsMenu(button, variationsTbody);
+    return;
+  }
+  closeAllRowActionMenus(variationsTbody);
 
   if (action === 'edit-variation') {
     const variation = currentVariations.find((v) => String(v.id) === id);
@@ -1398,8 +1470,13 @@ function renderVisitRow(warranty, visit) {
       <td><span class="badge ${VISIT_RESULT_BADGE_CLASS[visit.result]}">${VISIT_RESULT_LABELS[visit.result]}</span></td>
       <td>${visit.note || '-'}</td>
       <td>
-        <button type="button" class="icon-btn" data-action="edit-visit" data-warranty-id="${warranty.id}" data-visit-id="${visit.id}" title="Sửa lần bảo hành">${icon('pencil', 14)}</button>
-        <button type="button" class="icon-btn icon-btn-danger" data-action="delete-visit" data-warranty-id="${warranty.id}" data-visit-id="${visit.id}" title="Xóa lần bảo hành">${icon('trash', 14)}</button>
+        <div class="action-dropdown row-actions">
+          <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+          <div class="action-dropdown-menu row-actions-menu" hidden>
+            <button type="button" class="action-dropdown-item" data-action="edit-visit" data-warranty-id="${warranty.id}" data-visit-id="${visit.id}">${icon('pencil', 16)} Sửa lần bảo hành</button>
+            <button type="button" class="action-dropdown-item action-dropdown-item-danger" data-action="delete-visit" data-warranty-id="${warranty.id}" data-visit-id="${visit.id}">${icon('trash', 16)} Xóa lần bảo hành</button>
+          </div>
+        </div>
       </td>
     </tr>
   `;
@@ -1528,10 +1605,21 @@ warrantyVisitModal.addEventListener('click', (event) => {
   if (event.target === warrantyVisitModal) closeWarrantyVisitModal();
 });
 
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.row-actions')) closeAllRowActionMenus(projectWarrantyCardsEl);
+});
+
 projectWarrantyCardsEl.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
   const { action, warrantyId, visitId } = button.dataset;
+
+  if (action === 'toggle-menu') {
+    event.stopPropagation();
+    toggleRowActionsMenu(button, projectWarrantyCardsEl);
+    return;
+  }
+  closeAllRowActionMenus(projectWarrantyCardsEl);
 
   if (action === 'add-visit') {
     openCreateVisitModal(warrantyId);

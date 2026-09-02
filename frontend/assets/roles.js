@@ -48,11 +48,23 @@ function renderRow(role) {
 
   let actionHtml;
   if (role.is_protected) {
-    actionHtml = `<button type="button" class="icon-btn" disabled title="Không thể sửa vai trò Admin">${icon('pencil', 14)}</button>
-      <button type="button" class="icon-btn" disabled title="Không thể xóa vai trò Admin">${icon('trash', 14)}</button>`;
+    // Ca sua lan xoa deu khong lam duoc voi vai tro is_protected - khoa thang nut kich hoat
+    // thay vi mo menu roi lai disable tung item ben trong (khong co hanh dong nao kha thi).
+    actionHtml = `
+      <div class="action-dropdown row-actions">
+        <button type="button" class="icon-btn" disabled title="Vai trò Admin không thể sửa/xóa">${icon('moreHorizontal', 16)}</button>
+      </div>
+    `;
   } else {
-    actionHtml = `<button type="button" class="icon-btn" data-action="edit" data-id="${role.id}" title="Sửa vai trò">${icon('pencil', 14)}</button>
-      <button type="button" class="icon-btn icon-btn-danger" data-action="delete" data-id="${role.id}" title="Xóa vai trò">${icon('trash', 14)}</button>`;
+    actionHtml = `
+      <div class="action-dropdown row-actions">
+        <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+        <div class="action-dropdown-menu row-actions-menu" hidden>
+          <button type="button" class="action-dropdown-item" data-action="edit" data-id="${role.id}">${icon('pencil', 16)} Sửa vai trò</button>
+          <button type="button" class="action-dropdown-item action-dropdown-item-danger" data-action="delete" data-id="${role.id}">${icon('trash', 16)} Xóa vai trò</button>
+        </div>
+      </div>
+    `;
   }
 
   const tr = document.createElement('tr');
@@ -122,11 +134,22 @@ roleModal.addEventListener('click', (event) => {
   if (event.target === roleModal) closeRoleModal();
 });
 
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.row-actions')) closeAllRowActionMenus(rolesTbody);
+});
+
 rolesTbody.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
 
   const { action, id } = button.dataset;
+
+  if (action === 'toggle-menu') {
+    event.stopPropagation();
+    toggleRowActionsMenu(button, rolesTbody);
+    return;
+  }
+  closeAllRowActionMenus(rolesTbody);
 
   if (action === 'edit') {
     const role = rolesCache.find((r) => String(r.id) === id);

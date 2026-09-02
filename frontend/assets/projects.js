@@ -98,9 +98,14 @@ function renderRow(project) {
     <td>${progressText}</td>
     <td><span class="project-status-badge project-status-badge--${project.status}">${STATUS_LABELS[project.status]}</span></td>
     <td>
-      <a href="project-detail.html?id=${project.id}" class="icon-btn" title="Xem chi tiết">${icon('eye', 14)}</a>
-      <button type="button" class="icon-btn" data-action="edit" data-id="${project.id}" title="Sửa dự án">${icon('pencil', 14)}</button>
-      <button type="button" class="icon-btn icon-btn-danger" data-action="delete" data-id="${project.id}" title="Xóa dự án">${icon('trash', 14)}</button>
+      <div class="action-dropdown row-actions">
+        <button type="button" class="icon-btn" data-action="toggle-menu" title="Thao tác">${icon('moreHorizontal', 16)}</button>
+        <div class="action-dropdown-menu row-actions-menu" hidden>
+          <a href="project-detail.html?id=${project.id}" class="action-dropdown-item">${icon('eye', 16)} Xem chi tiết</a>
+          <button type="button" class="action-dropdown-item" data-action="edit" data-id="${project.id}">${icon('pencil', 16)} Sửa dự án</button>
+          <button type="button" class="action-dropdown-item action-dropdown-item-danger" data-action="delete" data-id="${project.id}">${icon('trash', 16)} Xóa dự án</button>
+        </div>
+      </div>
     </td>
   `;
   return tr;
@@ -264,11 +269,22 @@ projectModal.addEventListener('click', (event) => {
   if (event.target === projectModal) closeProjectModal();
 });
 
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.row-actions')) closeAllRowActionMenus(projectsTbody);
+});
+
 projectsTbody.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
 
   const { action, id } = button.dataset;
+
+  if (action === 'toggle-menu') {
+    event.stopPropagation();
+    toggleRowActionsMenu(button, projectsTbody);
+    return;
+  }
+  closeAllRowActionMenus(projectsTbody);
 
   if (action === 'edit') {
     const project = projectsCache.find((p) => String(p.id) === id);
