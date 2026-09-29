@@ -3,7 +3,13 @@
 
 const express = require('express');
 const db = require('../db/database');
-const { createStockReceipt, updateStockReceiptDate, ServiceError } = require('../services/stockReceipt.service');
+const {
+  createStockReceipt,
+  updateStockReceiptDate,
+  assignStockReceiptPartner,
+  updateStockReceiptPricing,
+  ServiceError,
+} = require('../services/stockReceipt.service');
 
 const router = express.Router();
 
@@ -205,6 +211,71 @@ router.patch('/:id/date', (req, res) => {
     if (!receipt) {
       return res.status(404).json({ error: 'Khong tim thay phieu nhap' });
     }
+    res.json({ receipt });
+  } catch (err) {
+    if (err instanceof ServiceError) {
+      return res.status(400).json({ error: err.message });
+    }
+    throw err;
+  }
+});
+
+function readPricingItems(rawItems) {
+  if (!Array.isArray(rawItems) || rawItems.length === 0) {
+    return { error: 'Phieu nhap phai co it nhat 1 dong san pham' };
+  }
+
+  const items = [];
+  for (const raw of rawItems) {
+    const itemId = Number(raw.item_id);
+    const unitPrice = Number(raw.unit_price);
+    const discountPercent = raw.discount_percent === undefined || raw.discount_percent === null || raw.discount_percent === ''
+      ? 0
+      : Number(raw.discount_percent);
+
+    if (!itemId || !(unitPrice >= 0)) {
+      return { error: 'Du lieu dong san pham khong hop le (thieu item_id, unit_price phai >= 0)' };
+    }
+    if (Number.isNaN(discountPercent) || discountPercent < 0 || discountPercent > 100) {
+      return { error: 'Chiet khau tung dong phai tu 0 den 100%' };
+    }
+
+    items.push({ itemId, unitPrice, discountPercent });
+  }
+
+  return { items };
+}
+
+// Sua don gia/chiet khau tung dong - chi khi CHUA co lo hang nao cua phieu bi xuat dung, xem chu
+// thich updateStockReceiptPricing().
+router.patch('/:id/pricing', (req, res) => {
+  const id = Number(req.params.id);
+  const { items, error } = readPricingItems((req.body || {}).items);
+  if (error) {
+    return res.status(400).json({ error });
+  }
+
+  try {
+    const receipt = updateStockReceiptPricing(id, items, req.session.user.id);
+    res.json({ receipt });
+  } catch (err) {
+    if (err instanceof ServiceError) {
+      return res.status(400).json({ error: err.message });
+    }
+    throw err;
+  }
+});
+
+// Gan bo sung NCC cho phieu dang trong (partner_id NULL) - xem chu thich assignStockReceiptPartner().
+router.patch('/:id/partner', (req, res) => {
+  const id = Number(req.params.id);
+  const partnerId = Number((req.body || {}).partner_id);
+  if (!partnerId) {
+    return res.status(400).json({ error: 'Thieu nha cung cap can gan' });
+  }
+
+  try {
+    const receipt = assignStockReceiptPartner(id, partnerId);
     res.json({ receipt });
   } catch (err) {
     if (err instanceof ServiceError) {

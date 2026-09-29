@@ -95,102 +95,40 @@
     </div>
   </div>
 
-  <div id="receipt-modal" class="modal-overlay" hidden>
+  <div id="edit-receipt-pricing-modal" class="modal-overlay" hidden>
     <div class="modal-card modal-card-lg">
-      <h3>Lập phiếu nhập kho</h3>
-      <form id="receipt-form">
-        <div id="receipt-form-error" class="alert alert-error" hidden>
+      <h3>Sửa đơn giá / chiết khấu</h3>
+      <p class="modal-subtitle">Chỉ sửa được khi lô hàng của phiếu chưa bị xuất dùng — số lượng/sản phẩm giữ nguyên.</p>
+      <form id="edit-receipt-pricing-form">
+        <div id="edit-receipt-pricing-error" class="alert alert-error" hidden>
           <span class="alert-icon-slot"></span>
-          <span id="receipt-form-error-text"></span>
+          <span id="edit-receipt-pricing-error-text"></span>
         </div>
-
-        <div class="form-row">
-          <div class="form-field">
-            <label for="receipt-partner">Nhà cung cấp</label>
-            <select id="receipt-partner"></select>
-          </div>
-          <div class="form-field">
-            <label for="receipt-date">Thời gian nhập</label>
-            <input type="datetime-local" id="receipt-date" />
-          </div>
-        </div>
-
-        <div id="new-partner-fields" class="form-field" hidden>
-          <label>Nhà cung cấp mới</label>
-          <div class="new-partner-inputs">
-            <input type="text" id="new-partner-name" placeholder="Tên nhà cung cấp" />
-            <input type="text" id="new-partner-phone" placeholder="Số điện thoại (không bắt buộc)" />
-            <input type="text" id="new-partner-address" placeholder="Địa chỉ (không bắt buộc)" />
-          </div>
-        </div>
-
-        <div class="setting-row">
-          <div class="setting-row-info">
-            <p class="setting-row-title">Nhập tồn đầu kỳ</p>
-            <p class="setting-row-desc">Chỉ dùng khi ghi nhận tồn kho có sẵn trước khi dùng hệ thống — phiếu sẽ chỉ thay đổi số lượng tồn, không phát sinh công nợ NCC hay phiếu chi tiền.</p>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="receipt-opening-balance-toggle" />
-            <span class="switch-track"></span>
-            <span class="switch-thumb"></span>
-          </label>
-        </div>
-
-        <div class="setting-row" id="receipt-payment-row">
-          <div class="setting-row-info">
-            <p class="setting-row-title">Chưa thanh toán ngay</p>
-            <p class="setting-row-desc">Bật nếu chưa trả tiền NCC ngay — phiếu sẽ được đánh dấu công nợ phải trả.</p>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="receipt-payment-toggle" />
-            <span class="switch-track"></span>
-            <span class="switch-thumb"></span>
-          </label>
-        </div>
-
-        <div class="form-row">
-          <div class="form-field">
-            <label for="receipt-order-code">Mã đơn hàng</label>
-            <input type="text" id="receipt-order-code" placeholder="Số hóa đơn/đơn hàng của NCC (không bắt buộc)" autocomplete="off" />
-          </div>
-          <div class="form-field">
-            <label for="receipt-note">Ghi chú</label>
-            <input type="text" id="receipt-note" placeholder="vd: Nhập tồn đầu kỳ" autocomplete="off" />
-          </div>
-        </div>
-
-        <div class="form-field">
-          <label for="adjusts-search">Điều chỉnh cho phiếu (không bắt buộc)</label>
-          <div class="combobox">
-            <input type="text" id="adjusts-search" placeholder="Tìm theo mã phiếu nhập/xuất cần điều chỉnh (vd: PN000003, PX000001)..." autocomplete="off" />
-            <input type="hidden" id="adjusts-type" />
-            <input type="hidden" id="adjusts-id" />
-            <div class="combobox-suggestions" id="adjusts-suggestions"></div>
-          </div>
-        </div>
-
-        <div class="form-field">
-          <label>Danh sách sản phẩm</label>
-          <div class="item-rows-header">
-            <span>Sản phẩm</span>
-            <span>ĐVT</span>
-            <span>Số lượng</span>
-            <span>Đơn giá</span>
-            <span>Chiết khấu (%)</span>
-            <span>Thành tiền</span>
-            <span></span>
-          </div>
-          <div class="item-rows" id="item-rows"></div>
-          <button type="button" id="btn-add-item-row" class="btn-secondary btn-add-row">+ Thêm dòng</button>
-          <div class="receipt-total-row">
-            <span>Tổng thành tiền</span>
-            <span id="receipt-total-amount">0</span>
-          </div>
-        </div>
-
+        <div id="edit-receipt-pricing-items"></div>
         <div class="modal-actions">
-          <button type="button" id="btn-cancel-receipt" class="btn-secondary">Hủy</button>
-          <button type="submit" id="btn-submit-receipt" class="btn-primary">Lưu phiếu</button>
+          <button type="button" id="btn-cancel-edit-receipt-pricing" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-edit-receipt-pricing" class="btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="assign-receipt-partner-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3>Gán nhà cung cấp</h3>
+      <p class="modal-subtitle">Phiếu này đang chưa gắn nhà cung cấp (thường do lập lúc "Nhập tồn đầu kỳ") — gán bổ sung để có thể lập "Trả hàng NCC" cho các sản phẩm trong phiếu sau này.</p>
+      <form id="assign-receipt-partner-form">
+        <div id="assign-receipt-partner-error" class="alert alert-error" hidden>
+          <span class="alert-icon-slot"></span>
+          <span id="assign-receipt-partner-error-text"></span>
+        </div>
+        <div class="form-field">
+          <label for="assign-receipt-partner-select">Nhà cung cấp</label>
+          <select id="assign-receipt-partner-select" required></select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-assign-receipt-partner" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-assign-receipt-partner" class="btn-primary">Gán</button>
         </div>
       </form>
     </div>
@@ -201,7 +139,6 @@
   <script src="assets/layout.js"></script>
   <script src="assets/money-input.js"></script>
   <script src="assets/receipt-detail.js"></script>
-  <script src="assets/adjustment.js"></script>
   <script src="assets/row-actions.js"></script>
   <script src="assets/stock-receipts.js"></script>
 </body>

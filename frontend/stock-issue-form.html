@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lập phiếu xuất kho - Quản lý Kho &amp; Công nợ</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="app-body" id="stock-issue-form-page">
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <main class="app-content">
+      <p class="page-eyebrow">Kho</p>
+      <div class="page-header">
+        <div class="page-title-group">
+          <div>
+            <a href="stock-issues.html" class="form-page-back-link" id="back-link"></a>
+            <h2 id="page-title">Lập phiếu xuất kho</h2>
+          </div>
+        </div>
+      </div>
+
+      <div id="issue-form-error" class="alert alert-error" hidden>
+        <span class="alert-icon-slot"></span>
+        <span id="issue-form-error-text"></span>
+      </div>
+
+      <form id="issue-form" class="form-page-grid">
+        <div class="form-page-main">
+          <div class="combobox form-page-search">
+            <input type="text" id="quick-add-search" placeholder="Tìm sản phẩm theo mã hoặc tên để thêm vào phiếu..." autocomplete="off" />
+            <div class="combobox-suggestions" id="quick-add-suggestions"></div>
+          </div>
+
+          <div class="item-rows-header">
+            <span>Sản phẩm</span>
+            <span>ĐVT</span>
+            <span>Số lượng</span>
+            <span>Đơn giá</span>
+            <span>Chiết khấu (%)</span>
+            <span>Đơn giá sau CK</span>
+            <span>Thành tiền</span>
+            <span></span>
+          </div>
+          <div class="item-rows" id="item-rows"></div>
+        </div>
+
+        <aside class="form-page-side">
+        <div class="form-page-side-scroll">
+          <div class="form-field">
+            <label for="issue-partner">Khách hàng</label>
+            <select id="issue-partner"></select>
+          </div>
+
+          <div id="new-partner-fields" class="form-field" hidden>
+            <label>Khách hàng mới</label>
+            <div class="new-partner-inputs">
+              <input type="text" id="new-partner-name" placeholder="Tên khách hàng" />
+              <input type="text" id="new-partner-phone" placeholder="Số điện thoại (không bắt buộc)" />
+              <input type="text" id="new-partner-address" placeholder="Địa chỉ (không bắt buộc)" />
+            </div>
+          </div>
+
+          <div id="existing-customer-info-row" class="form-row">
+            <div class="form-field">
+              <label for="issue-customer-phone">Số điện thoại khách hàng</label>
+              <input type="text" id="issue-customer-phone" disabled placeholder="-" />
+            </div>
+            <div class="form-field">
+              <label for="issue-customer-address">Địa chỉ khách hàng</label>
+              <input type="text" id="issue-customer-address" disabled placeholder="-" />
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="issue-date">Thời gian xuất</label>
+            <input type="datetime-local" id="issue-date" />
+          </div>
+
+          <div class="form-field">
+            <label for="issue-project">Dự án (không bắt buộc)</label>
+            <select id="issue-project">
+              <option value="">-- Không gắn dự án --</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="issue-note">Ghi chú</label>
+            <input type="text" id="issue-note" placeholder="vd: Xuất bán lẻ" autocomplete="off" />
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-row-info">
+              <p class="setting-row-title">Chưa thu tiền ngay</p>
+              <p class="setting-row-desc">Bật nếu khách hàng chưa thanh toán ngay — phiếu sẽ được đánh dấu công nợ.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="issue-payment-toggle" />
+              <span class="switch-track"></span>
+              <span class="switch-thumb"></span>
+            </label>
+          </div>
+
+          <button type="button" id="btn-toggle-adjustment" class="table-link-btn form-page-disclosure">+ Điều chỉnh cho phiếu (không bắt buộc)</button>
+          <div class="form-field" id="adjustment-field-wrap" hidden>
+            <label for="adjusts-search">Điều chỉnh cho phiếu</label>
+            <div class="combobox">
+              <input type="text" id="adjusts-search" placeholder="Tìm theo mã phiếu (vd: PN000003, PX000001)..." autocomplete="off" />
+              <input type="hidden" id="adjusts-type" />
+              <input type="hidden" id="adjusts-id" />
+              <div class="combobox-suggestions" id="adjusts-suggestions"></div>
+            </div>
+          </div>
+        </div>
+        <div class="form-page-side-footer">
+          <div class="receipt-total-row">
+            <span>Tổng thành tiền</span>
+            <span id="issue-total-amount">0</span>
+          </div>
+
+          <div class="form-page-side-actions form-page-side-actions-stacked">
+            <div class="form-page-side-actions">
+              <button type="button" id="btn-cancel-issue" class="btn-secondary">Hủy</button>
+              <button type="button" id="btn-save-draft-issue" class="btn-secondary">Lưu tạm</button>
+            </div>
+            <button type="submit" id="btn-submit-issue" class="btn-primary">Xuất kho</button>
+          </div>
+        </div>
+        </aside>
+      </form>
+    </main>
+  </div>
+
+  <script src="assets/api.js"></script>
+  <script src="assets/icons.js"></script>
+  <script src="assets/layout.js"></script>
+  <script src="assets/money-input.js"></script>
+  <script src="assets/adjustment.js"></script>
+  <script src="assets/stock-issue-form.js"></script>
+</body>
+</html>

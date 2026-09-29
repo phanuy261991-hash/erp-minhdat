@@ -26,6 +26,10 @@ function generateReturnCode() {
 // luu. CHI tinh cac phieu tra DA 'da_tru_kho' vao "da tra" - phieu con 'cho_tru_kho' chua thuc su
 // tru gi nen khong duoc tinh, tranh chan nham cac phieu khac boi 1 phieu nhap con dang cho duyet
 // (co the bi sua/khong bao gio duoc tru).
+// partnerId co the NULL ("khach le", 2026-09-28 - xem docs/DECISIONS.md muc cung ngay): dung
+// "IS ?" thay vi "= ?" de so khop dung ca truong hop NULL (SQL "x = NULL" khong bao gio dung) -
+// nho vay 1 phieu xuat khach le co the duoc "tra lai" boi 1 phieu tra hang cung khong chon
+// khach hang, dung nguyen tac gop chung "khach le" ca 2 chieu, khong doi tuong nao khac chen vao.
 function getReturnReference(partnerId, productId, projectId) {
   // status='da_tru_kho': phieu xuat con dang nhap (2026-08-20) chua thuc su xuat hang, khong
   // duoc tinh vao "da xuat" - tranh cho phep khach "tra lai" hang chua tung duoc giao.
@@ -35,7 +39,7 @@ function getReturnReference(partnerId, productId, projectId) {
           SELECT COALESCE(SUM(ii.quantity), 0) AS qty
           FROM stock_issue_items ii
           JOIN stock_issues i ON i.id = ii.issue_id
-          WHERE i.partner_id = ? AND ii.product_id = ? AND i.project_id = ? AND i.status = 'da_tru_kho'
+          WHERE i.partner_id IS ? AND ii.product_id = ? AND i.project_id = ? AND i.status = 'da_tru_kho'
         `)
         .get(partnerId, productId, projectId)
     : db
@@ -43,7 +47,7 @@ function getReturnReference(partnerId, productId, projectId) {
           SELECT COALESCE(SUM(ii.quantity), 0) AS qty
           FROM stock_issue_items ii
           JOIN stock_issues i ON i.id = ii.issue_id
-          WHERE i.partner_id = ? AND ii.product_id = ? AND i.status = 'da_tru_kho'
+          WHERE i.partner_id IS ? AND ii.product_id = ? AND i.status = 'da_tru_kho'
         `)
         .get(partnerId, productId);
 
@@ -53,7 +57,7 @@ function getReturnReference(partnerId, productId, projectId) {
           SELECT COALESCE(SUM(ri.quantity), 0) AS qty
           FROM stock_receipt_items ri
           JOIN stock_receipts r ON r.id = ri.receipt_id
-          WHERE r.partner_id = ? AND r.is_return = 1 AND r.status = 'da_tru_kho' AND ri.product_id = ? AND r.project_id = ?
+          WHERE r.partner_id IS ? AND r.is_return = 1 AND r.status = 'da_tru_kho' AND ri.product_id = ? AND r.project_id = ?
         `)
         .get(partnerId, productId, projectId)
     : db
@@ -61,7 +65,7 @@ function getReturnReference(partnerId, productId, projectId) {
           SELECT COALESCE(SUM(ri.quantity), 0) AS qty
           FROM stock_receipt_items ri
           JOIN stock_receipts r ON r.id = ri.receipt_id
-          WHERE r.partner_id = ? AND r.is_return = 1 AND r.status = 'da_tru_kho' AND ri.product_id = ?
+          WHERE r.partner_id IS ? AND r.is_return = 1 AND r.status = 'da_tru_kho' AND ri.product_id = ?
         `)
         .get(partnerId, productId);
 
@@ -70,7 +74,17 @@ function getReturnReference(partnerId, productId, projectId) {
   return { issuedQuantity, returnedQuantity, remainingReturnable: issuedQuantity - returnedQuantity };
 }
 
+// partnerId co the NULL ("khach le" - khong xac dinh danh tinh, giong phieu xuat goc cung
+// khong bat buoc chon khach hang tru khi cong_no, xem stockIssue.service.js#validatePartnerAndProject()).
+// Du an luon phai thuoc 1 khach hang cu the nen KHONG cho chon du an khi khong chon khach hang.
 function validatePartnerAndProject(partnerId, projectId) {
+  if (!partnerId) {
+    if (projectId) {
+      throw new ServiceError('Phai chon khach hang truoc khi chon du an');
+    }
+    return;
+  }
+
   const partner = db.prepare('SELECT id, type FROM partners WHERE id = ?').get(partnerId);
   if (!partner) {
     throw new ServiceError('Khong tim thay khach hang');
@@ -155,8 +169,9 @@ function applyProcessing(receiptId, partnerId, projectId, createdBy, timestamp) 
   });
 
   // Giam cong no khach hang tuong ung gia tri hang tra (Gia ban x So luong tra) - bo qua neu
-  // =0 (debt_ledger.amount co CHECK > 0, khong the insert dong 0).
-  if (totalCredit > 0) {
+  // =0 (debt_ledger.amount co CHECK > 0, khong the insert dong 0) hoac khong co doi tac ("khach
+  // le" khong theo doi cong no nen khong co gi de giam - xem docs/DECISIONS.md 2026-09-28).
+  if (totalCredit > 0 && partnerId) {
     recordReturnCredit({ partnerId, amount: totalCredit, referenceType: 'receipt', referenceId: receiptId, createdBy, projectId });
   }
 
@@ -167,9 +182,6 @@ function applyProcessing(receiptId, partnerId, projectId, createdBy, timestamp) 
 // hanh vi cu truoc migration 033, 1 buoc duy nhat). process=false (mac dinh): chi "Luu" - phieu
 // vao trang thai 'cho_tru_kho', chua dong gi vao stock_movements/stock_lots/debt_ledger.
 function createStockReturn({ partnerId, projectId, createdBy, note, items, returnDate, process }) {
-  if (!partnerId) {
-    throw new ServiceError('Phieu tra hang phai chon khach hang');
-  }
   if (!Array.isArray(items) || items.length === 0) {
     throw new ServiceError('Phieu tra hang phai co it nhat 1 dong san pham');
   }
@@ -216,9 +228,6 @@ function createStockReturn({ partnerId, projectId, createdBy, note, items, retur
 // Sua phieu dang 'cho_tru_kho' - thay toan bo thong tin + danh sach dong (xoa het items cu, insert
 // lai items moi, don gian hon doi chieu tung dong). Chi ap dung duoc khi phieu CHUA tru kho.
 function updateStockReturn(id, { partnerId, projectId, note, items, returnDate }) {
-  if (!partnerId) {
-    throw new ServiceError('Phieu tra hang phai chon khach hang');
-  }
   if (!Array.isArray(items) || items.length === 0) {
     throw new ServiceError('Phieu tra hang phai co it nhat 1 dong san pham');
   }

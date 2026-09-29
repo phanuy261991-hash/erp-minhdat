@@ -18,12 +18,14 @@ const {
 
 const router = express.Router();
 
+// LEFT JOIN partners (khong phai JOIN) tu 2026-09-28 - "khach le" (partner_id NULL) van phai
+// hien trong danh sach, INNER JOIN se lam bien mat han cac phieu nay (xem docs/DECISIONS.md).
 const SELECT_RETURN = `
   SELECT r.id, r.code, r.partner_id, pa.name AS partner_name, pa.phone AS partner_phone,
          r.created_by, u.full_name AS created_by_name, r.note, r.created_at, r.status,
          r.project_id, pr.name AS project_name
   FROM stock_receipts r
-  JOIN partners pa ON pa.id = r.partner_id
+  LEFT JOIN partners pa ON pa.id = r.partner_id
   JOIN users u ON u.id = r.created_by
   LEFT JOIN projects pr ON pr.id = r.project_id
   WHERE r.is_return = 1
@@ -44,13 +46,15 @@ router.get('/', (req, res) => {
   res.json({ returns: withTotal });
 });
 
+// partner_id tuy chon tu 2026-09-28 (xem docs/DECISIONS.md) - "khach le" van xem duoc so luong
+// con lai co the tra (tinh tren nhom phieu xuat cung khong chon khach hang).
 router.get('/reference', (req, res) => {
-  const partnerId = Number(req.query.partner_id);
+  const partnerId = req.query.partner_id ? Number(req.query.partner_id) : null;
   const productId = Number(req.query.product_id);
   const projectId = req.query.project_id ? Number(req.query.project_id) : null;
 
-  if (!partnerId || !productId) {
-    return res.status(400).json({ error: 'Thiếu khách hàng hoặc sản phẩm' });
+  if (!productId) {
+    return res.status(400).json({ error: 'Thiếu sản phẩm' });
   }
 
   const { issuedQuantity, returnedQuantity, remainingReturnable } = getReturnReference(partnerId, productId, projectId);

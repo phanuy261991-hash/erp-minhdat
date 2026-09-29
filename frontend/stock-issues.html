@@ -76,105 +76,22 @@
     </div>
   </div>
 
-  <div id="issue-modal" class="modal-overlay" hidden>
-    <div class="modal-card modal-card-lg">
-      <h3 id="issue-modal-title">Lập phiếu xuất kho</h3>
-      <form id="issue-form">
-        <div id="issue-form-error" class="alert alert-error" hidden>
+  <div id="assign-issue-partner-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3>Gán khách hàng</h3>
+      <p class="modal-subtitle">Phiếu này đang chưa gắn khách hàng ("khách lẻ") — gán bổ sung để có thể lập "Trả hàng xuất" liên kết đúng lịch sử cho khách hàng này sau này.</p>
+      <form id="assign-issue-partner-form">
+        <div id="assign-issue-partner-error" class="alert alert-error" hidden>
           <span class="alert-icon-slot"></span>
-          <span id="issue-form-error-text"></span>
+          <span id="assign-issue-partner-error-text"></span>
         </div>
-
-        <div class="form-row">
-          <div class="form-field">
-            <label for="issue-partner">Khách hàng</label>
-            <select id="issue-partner"></select>
-          </div>
-          <div class="form-field">
-            <label for="issue-date">Thời gian xuất</label>
-            <input type="datetime-local" id="issue-date" />
-          </div>
-        </div>
-
-        <div id="new-partner-fields" class="form-field" hidden>
-          <label>Khách hàng mới</label>
-          <div class="new-partner-inputs">
-            <input type="text" id="new-partner-name" placeholder="Tên khách hàng" />
-            <input type="text" id="new-partner-phone" placeholder="Số điện thoại (không bắt buộc)" />
-            <input type="text" id="new-partner-address" placeholder="Địa chỉ (không bắt buộc)" />
-          </div>
-        </div>
-
-        <div id="existing-customer-info-row" class="form-row">
-          <div class="form-field">
-            <label for="issue-customer-phone">Số điện thoại khách hàng</label>
-            <input type="text" id="issue-customer-phone" disabled placeholder="-" />
-          </div>
-          <div class="form-field">
-            <label for="issue-customer-address">Địa chỉ khách hàng</label>
-            <input type="text" id="issue-customer-address" disabled placeholder="-" />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-field">
-            <label for="issue-project">Dự án (không bắt buộc)</label>
-            <select id="issue-project">
-              <option value="">-- Không gắn dự án --</option>
-            </select>
-          </div>
-          <div class="form-field">
-            <label for="issue-note">Ghi chú</label>
-            <input type="text" id="issue-note" placeholder="vd: Xuất bán lẻ" autocomplete="off" />
-          </div>
-        </div>
-
-        <div class="setting-row">
-          <div class="setting-row-info">
-            <p class="setting-row-title">Chưa thu tiền ngay</p>
-            <p class="setting-row-desc">Bật nếu khách hàng chưa thanh toán ngay — phiếu sẽ được đánh dấu công nợ.</p>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="issue-payment-toggle" />
-            <span class="switch-track"></span>
-            <span class="switch-thumb"></span>
-          </label>
-        </div>
-
         <div class="form-field">
-          <label for="adjusts-search">Điều chỉnh cho phiếu (không bắt buộc)</label>
-          <div class="combobox">
-            <input type="text" id="adjusts-search" placeholder="Tìm theo mã phiếu nhập/xuất cần điều chỉnh (vd: PN000003, PX000001)..." autocomplete="off" />
-            <input type="hidden" id="adjusts-type" />
-            <input type="hidden" id="adjusts-id" />
-            <div class="combobox-suggestions" id="adjusts-suggestions"></div>
-          </div>
+          <label for="assign-issue-partner-select">Khách hàng</label>
+          <select id="assign-issue-partner-select" required></select>
         </div>
-
-        <div class="form-field">
-          <label>Danh sách sản phẩm</label>
-          <div class="item-rows-header">
-            <span>Sản phẩm</span>
-            <span>ĐVT</span>
-            <span>Số lượng</span>
-            <span>Đơn giá</span>
-            <span>Chiết khấu (%)</span>
-            <span>Đơn giá sau CK</span>
-            <span>Thành tiền</span>
-            <span></span>
-          </div>
-          <div class="item-rows" id="item-rows"></div>
-          <button type="button" id="btn-add-item-row" class="btn-secondary btn-add-row">+ Thêm dòng</button>
-          <div class="receipt-total-row">
-            <span>Tổng thành tiền</span>
-            <span id="issue-total-amount">0</span>
-          </div>
-        </div>
-
         <div class="modal-actions">
-          <button type="button" id="btn-cancel-issue" class="btn-secondary">Hủy</button>
-          <button type="button" id="btn-save-draft-issue" class="btn-secondary">Lưu tạm</button>
-          <button type="submit" id="btn-submit-issue" class="btn-primary">Xuất kho</button>
+          <button type="button" id="btn-cancel-assign-issue-partner" class="btn-secondary">Hủy</button>
+          <button type="submit" id="btn-submit-assign-issue-partner" class="btn-primary">Gán</button>
         </div>
       </form>
     </div>
@@ -184,7 +101,6 @@
   <script src="assets/icons.js"></script>
   <script src="assets/layout.js"></script>
   <script src="assets/money-input.js"></script>
-  <script src="assets/adjustment.js"></script>
   <script src="assets/issue-detail.js"></script>
   <script src="assets/print-preview.js"></script>
   <script src="assets/stock-issues.js"></script>

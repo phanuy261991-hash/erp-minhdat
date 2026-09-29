@@ -33,7 +33,7 @@
         <span id="returns-error-text"></span>
       </div>
 
-      <div class="data-table-wrap">
+      <div class="data-table-wrap data-table-wrap--fill">
         <table class="data-table">
           <thead>
             <tr>
@@ -88,142 +88,9 @@
     </div>
   </div>
 
-  <div id="return-modal" class="modal-overlay" hidden>
-    <div class="modal-card modal-card-lg">
-      <h3 id="return-modal-title">Lập phiếu trả hàng</h3>
-      <form id="return-form">
-        <div id="return-form-error" class="alert alert-error" hidden>
-          <span class="alert-icon-slot"></span>
-          <span id="return-form-error-text"></span>
-        </div>
-
-        <div class="form-row">
-          <div class="form-field">
-            <label for="return-partner">Khách hàng</label>
-            <select id="return-partner"></select>
-          </div>
-          <div class="form-field">
-            <label for="return-date">Thời gian trả</label>
-            <input type="datetime-local" id="return-date" />
-          </div>
-        </div>
-
-        <div id="new-partner-fields" class="form-field" hidden>
-          <label>Khách hàng mới</label>
-          <div class="new-partner-inputs">
-            <input type="text" id="new-partner-name" placeholder="Tên khách hàng" />
-            <input type="text" id="new-partner-phone" placeholder="Số điện thoại (không bắt buộc)" />
-            <input type="text" id="new-partner-address" placeholder="Địa chỉ (không bắt buộc)" />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-field">
-            <label for="return-project">Công trình (không bắt buộc)</label>
-            <select id="return-project">
-              <option value="">-- Không gắn công trình --</option>
-            </select>
-          </div>
-          <div class="form-field">
-            <label for="return-note">Ghi chú</label>
-            <input type="text" id="return-note" placeholder="vd: Khách trả hàng lỗi" autocomplete="off" />
-          </div>
-        </div>
-
-        <div class="form-field">
-          <label>Danh sách hàng trả</label>
-          <div class="item-rows-header">
-            <span>Sản phẩm</span>
-            <span>ĐVT</span>
-            <span>Đã xuất</span>
-            <span>SL trả lại</span>
-            <span>Giá bán</span>
-            <span>Thành tiền</span>
-            <span></span>
-          </div>
-          <div class="item-rows" id="item-rows"></div>
-          <button type="button" id="btn-add-item-row" class="btn-secondary btn-add-row">+ Thêm dòng</button>
-          <div class="receipt-total-row">
-            <span>Tổng tiền giảm công nợ</span>
-            <span id="return-total-amount">0</span>
-          </div>
-        </div>
-
-        <div class="modal-actions">
-          <button type="button" id="btn-cancel-return" class="btn-secondary">Hủy</button>
-          <button type="button" id="btn-save-draft" class="btn-secondary">Lưu</button>
-          <button type="button" id="btn-process-return" class="btn-primary">Trừ kho</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <div id="supplier-return-modal" class="modal-overlay" hidden>
-    <div class="modal-card modal-card-lg">
-      <h3 id="supplier-return-modal-title">Lập phiếu trả hàng nhà cung cấp</h3>
-      <form id="supplier-return-form">
-        <div id="supplier-return-form-error" class="alert alert-error" hidden>
-          <span class="alert-icon-slot"></span>
-          <span id="supplier-return-form-error-text"></span>
-        </div>
-
-        <div class="form-row">
-          <div class="form-field">
-            <label for="supplier-return-partner">Nhà cung cấp</label>
-            <select id="supplier-return-partner"></select>
-          </div>
-          <div class="form-field">
-            <label for="supplier-return-date">Thời gian trả</label>
-            <input type="datetime-local" id="supplier-return-date" />
-          </div>
-        </div>
-
-        <div id="supplier-new-partner-fields" class="form-field" hidden>
-          <label>Nhà cung cấp mới</label>
-          <div class="new-partner-inputs">
-            <input type="text" id="supplier-new-partner-name" placeholder="Tên nhà cung cấp" />
-            <input type="text" id="supplier-new-partner-phone" placeholder="Số điện thoại (không bắt buộc)" />
-            <input type="text" id="supplier-new-partner-address" placeholder="Địa chỉ (không bắt buộc)" />
-          </div>
-        </div>
-
-        <div class="form-field">
-          <label for="supplier-return-note">Ghi chú</label>
-          <input type="text" id="supplier-return-note" placeholder="vd: Trả hàng lỗi cho NCC" autocomplete="off" />
-        </div>
-
-        <div class="form-field">
-          <label>Danh sách hàng trả</label>
-          <div class="item-rows-header">
-            <span>Sản phẩm</span>
-            <span>ĐVT</span>
-            <span>Đã nhập</span>
-            <span>SL trả lại</span>
-            <span>Giá nhập</span>
-            <span>Thành tiền</span>
-            <span></span>
-          </div>
-          <div class="item-rows" id="supplier-item-rows"></div>
-          <button type="button" id="btn-add-supplier-item-row" class="btn-secondary btn-add-row">+ Thêm dòng</button>
-          <div class="receipt-total-row">
-            <span>Tổng tiền giảm công nợ</span>
-            <span id="supplier-return-total-amount">0</span>
-          </div>
-        </div>
-
-        <div class="modal-actions">
-          <button type="button" id="btn-cancel-supplier-return" class="btn-secondary">Hủy</button>
-          <button type="button" id="btn-save-supplier-draft" class="btn-secondary">Lưu</button>
-          <button type="button" id="btn-process-supplier-return" class="btn-primary">Trừ kho</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
   <script src="assets/api.js"></script>
   <script src="assets/icons.js"></script>
   <script src="assets/layout.js"></script>
-  <script src="assets/money-input.js"></script>
   <script src="assets/stock-returns.js"></script>
 </body>
 </html>

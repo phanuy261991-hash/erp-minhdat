@@ -278,4 +278,55 @@ function processStockIssue(id, { createdBy }) {
   return db.prepare('SELECT * FROM stock_issues WHERE id = ?').get(issueId);
 }
 
-module.exports = { createStockIssue, updateStockIssue, processStockIssue, deleteStockIssue, ServiceError };
+// Gan bo sung khach hang cho 1 phieu xuat dang partner_id NULL ("khach le", 2026-09-28 - xem
+// docs/DECISIONS.md) - dung khi staff biet ro khach hang that nhung luc lap phieu quen chon,
+// muon "Tra hang xuat" ve sau tinh dung lich su. CHI cho gan khi dang trong (khong ghi de doi
+// tac da co) - an toan tuyet doi voi cong no: phieu cong_no bat buoc co doi tac tu luc tao
+// (validatePartnerAndProject), nen 1 phieu dang NULL chac chan CHUA TUNG phat sinh debt_ledger.
+// Dong bo luon ten hien thi tren phieu Thu tu dong (neu co, xem applyIssueProcessing()) cho
+// khop - khong doi so tien, chi anh huong hien thi/truy vet.
+function assignStockIssuePartner(id, partnerId) {
+  if (!partnerId) {
+    throw new ServiceError('Thieu khach hang can gan');
+  }
+
+  const run = db.transaction(() => {
+    const issue = db.prepare('SELECT id, partner_id, is_return FROM stock_issues WHERE id = ?').get(id);
+    if (!issue) {
+      throw new ServiceError('Khong tim thay phieu xuat kho');
+    }
+    if (issue.is_return) {
+      throw new ServiceError('Khong the gan doi tac cho phieu tra hang o day');
+    }
+    if (issue.partner_id) {
+      throw new ServiceError('Phieu da co doi tac, khong the gan lai');
+    }
+
+    const partner = db.prepare('SELECT id, name, type FROM partners WHERE id = ?').get(partnerId);
+    if (!partner) {
+      throw new ServiceError('Khong tim thay khach hang');
+    }
+    if (partner.type !== 'khach_hang') {
+      throw new ServiceError('Doi tac phai la khach hang');
+    }
+
+    db.prepare('UPDATE stock_issues SET partner_id = ? WHERE id = ?').run(partnerId, id);
+    db.prepare(
+      "UPDATE cash_vouchers SET partner_id = ?, counterpart_name = ? WHERE reference_type = 'stock_issue' AND reference_id = ?"
+    ).run(partnerId, partner.name, id);
+
+    return id;
+  });
+
+  const issueId = run();
+  return db.prepare('SELECT * FROM stock_issues WHERE id = ?').get(issueId);
+}
+
+module.exports = {
+  createStockIssue,
+  updateStockIssue,
+  processStockIssue,
+  deleteStockIssue,
+  assignStockIssuePartner,
+  ServiceError,
+};

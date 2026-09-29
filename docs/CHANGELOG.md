@@ -2,6 +2,35 @@
 
 > Ghi theo thứ tự thời gian, mới nhất ở trên. Cập nhật sau khi hoàn thành mỗi module.
 
+## 2026-09-28/29 (Thiết kế lại 4 trang lập phiếu Kho: popup → trang riêng 2 cột)
+
+> Theo yêu cầu người dùng, chốt phạm vi qua `AskUserQuestion` (áp dụng cả 4 loại phiếu; 2 file riêng cho Trả hàng xuất/NCC; cho phép đề xuất cải tiến UX nhỏ). Chi tiết đầy đủ: `docs/DESIGN-SYSTEM.md` mục 11, `docs/DECISIONS.md` mục 2026-09-28 "Thiết kế lại trang lập phiếu".
+
+- **4 trang mới**: `frontend/stock-receipt-form.html`/`assets/stock-receipt-form.js`, `stock-issue-form.html`/`assets/stock-issue-form.js`, `stock-return-form.html`/`assets/stock-return-form.js`, `supplier-return-form.html`/`assets/supplier-return-form.js` — thay thế 4 popup `.modal-card-lg` cũ, bố cục 2 cột (`.form-page-grid`/`.form-page-main`/`.form-page-side`), cột phải sticky tách vùng cuộn (`.form-page-side-scroll`) + footer cố định luôn hiện (`.form-page-side-footer` — Tổng tiền + nút Lưu/Hủy, theo phản hồi người dùng)
+- Chọn sản phẩm đổi từ combobox lặp lại từng dòng sang **1 ô tìm kiếm duy nhất đầu cột trái** (`.form-page-search`), chọn xong tự thêm dòng đã điền sẵn tên sản phẩm (`.item-row-product`, read-only), dòng chỉ còn sửa số lượng/đơn giá/chiết khấu
+- Chế độ Sửa (phiếu xuất/trả hàng đang nháp) dùng chung 1 trang, đọc `?id=` trên URL
+- `frontend/assets/style.css`: thêm `.form-page-*` (grid/main/side/side-scroll/side-footer/side-actions/side-actions-stacked/search/disclosure/back-link), mở rộng `#issue-modal .item-row` selector cũ sang `#stock-issue-form-page` cho cột "Đơn giá sau CK"
+- Sửa 2 lỗi phát hiện qua ảnh chụp CDP thật giữa phiên: (1) chuông thông báo (`position:fixed` mọi trang) che nút "Lưu phiếu" trên màn hình thấp — chừa 90px + thu gọn trường "Điều chỉnh cho phiếu" sau nút disclosure; (2) nút hành động chính bị wrap 2 dòng khi có 3 nút cùng hàng (`flex:1` tính theo chiều cao ở container column) — tách `.form-page-side-actions-stacked`
+- 3 trang danh sách cũ (`stock-receipts.js`/`stock-issues.js`/`stock-returns.js`) rút gọn: bỏ toàn bộ logic lập/sửa phiếu (chuyển sang trang mới), giữ nguyên danh sách/xem chi tiết/xử lý nhanh/xóa nháp; nút "+ Lập phiếu" và "Sửa phiếu" đổi từ mở modal sang điều hướng trang
+- Theo phản hồi người dùng phát sinh giữa phiên: `stock-receipts.js` thêm `.note-cell-truncate` cho cột Ghi chú (đồng bộ `stock-issues.js` đã có từ 2026-08-20); `stock-returns.html` thêm `.data-table-wrap--fill` (opt-in, chiếm hết chiều cao còn lại + đầu cột dính khi cuộn qua `position:sticky` trên từng `<th>`, không tách `<table>` thành `display:block` để tránh lệch cột)
+- Test qua Chrome headless CDP thô (không npm package ngoài, dùng `WebSocket`/`fetch` sẵn có của Node): đăng nhập lấy cookie thật, `Network.setCookie` tiêm vào trình duyệt, click/gõ thật qua `Runtime.evaluate` dispatch `input`/`click` (không gọi thẳng hàm JS), chụp ảnh xác nhận bố cục. Cả 4 trang: tạo phiếu mới thành công + chuyển hướng đúng; `stock-issue-form.html`: Lưu tạm → sửa qua `?id=` → Xuất kho, chặn đúng khi tồn kho không đủ; `stock-return-form.html`: trả hàng khách lẻ tính đúng "Đã xuất"; `supplier-return-form.html`: giá nhập tự điền đúng từ lịch sử mua, Lưu → sửa qua `?id=` → Trừ kho. Dữ liệu test đã xóa sạch qua script dọn trực tiếp. Đã restart server (đổi cả backend lẫn frontend phiên trước, cần restart cho phần API đã sửa).
+
+## 2026-09-28 (Sửa 3 lỗi vận hành: Kho/Công nợ)
+
+> Người dùng báo lỗi qua vận hành thật. Chi tiết đầy đủ: `docs/DECISIONS.md` mục 2026-09-28.
+
+- `backend/services/stockReceipt.service.js`: thêm `updateStockReceiptPricing()` (sửa đơn giá/chiết khấu, chỉ khi lô hàng chưa bị xuất dùng 1 phần nào) + `assignStockReceiptPartner()` (gán bổ sung NCC cho phiếu đang trống đối tác)
+- `backend/services/stockIssue.service.js`: thêm `assignStockIssuePartner()` (gán bổ sung khách hàng cho phiếu xuất đang trống đối tác)
+- `backend/services/stockReturn.service.js`: bỏ bắt buộc chọn khách hàng khi lập "Trả hàng xuất" — `getReturnReference()` đổi so khớp `partner_id = ?` → `partner_id IS ?` để nhóm đúng "khách lẻ"; `recordReturnCredit()` bỏ qua khi không có đối tác
+- `backend/routes/stockReceipts.routes.js`: thêm `PATCH /:id/pricing`, `PATCH /:id/partner`
+- `backend/routes/stockIssues.routes.js`: thêm `PATCH /:id/partner`
+- `backend/routes/stockReturns.routes.js`: `GET /reference` không còn bắt buộc `partner_id`; `SELECT_RETURN` đổi `JOIN partners` → `LEFT JOIN partners` (tránh làm biến mất phiếu khách lẻ khỏi danh sách)
+- `frontend/assets/stock-receipts.js`/`.html`: modal "Sửa đơn giá/chiết khấu" + modal "Gán nhà cung cấp" (nút trong menu "...", chỉ hiện khi `partner_id` trống)
+- `frontend/assets/stock-issues.js`/`.html`: nút icon + modal "Gán khách hàng" (chỉ hiện ở dòng đã xuất kho đang trống đối tác)
+- `frontend/assets/stock-returns.js`: bỏ chặn client-side bắt buộc chọn khách hàng, cho phép xem "số còn lại có thể trả" khi chọn "Không chọn"
+- Đồng bộ `docs/PRD.md` mục 4.3 (thêm 2 bullet: sửa đơn giá/chiết khấu, gán bổ sung đối tác) + mục 4.15 (khách hàng không còn bắt buộc)
+- Test qua API thật (Node `fetch`, script dữ liệu test đặt mã theo timestamp): đủ cả 3 lỗi + các trường hợp chặn đúng (trả vượt số còn lại, gán lại đối tác khi đã có, sửa giá khi lô đã bị xuất dùng 1 phần, cả 2 chiều tăng/giảm công nợ qua nhiều lần sửa giá liên tiếp, phiếu Chi tự động cập nhật đúng `amount`). Dữ liệu test đã xóa sạch qua script dọn trực tiếp (phiếu `da_tru_kho` không xóa được qua API). Đã restart server (bắt buộc, không có hot-reload).
+
 ## 2026-09-02 (Chuẩn hóa toàn app: gộp nút hành động ≥2 vào menu "...")
 
 > Đảo ngược ngưỡng "≥4" chốt sớm hơn cùng ngày (mục ngay dưới) sau khi người dùng nhận thấy các trang khác không đồng bộ. Chi tiết đầy đủ: `docs/DECISIONS.md` mục 2026-09-02 "Chuẩn hóa toàn app".

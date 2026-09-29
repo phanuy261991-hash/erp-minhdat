@@ -4,7 +4,14 @@
 
 const express = require('express');
 const db = require('../db/database');
-const { createStockIssue, updateStockIssue, processStockIssue, deleteStockIssue, ServiceError } = require('../services/stockIssue.service');
+const {
+  createStockIssue,
+  updateStockIssue,
+  processStockIssue,
+  deleteStockIssue,
+  assignStockIssuePartner,
+  ServiceError,
+} = require('../services/stockIssue.service');
 
 const router = express.Router();
 
@@ -254,6 +261,26 @@ router.delete('/:id', (req, res) => {
   try {
     deleteStockIssue(id);
     res.status(204).end();
+  } catch (err) {
+    if (err instanceof ServiceError) {
+      return res.status(400).json({ error: err.message });
+    }
+    throw err;
+  }
+});
+
+// Gan bo sung khach hang cho phieu dang trong (partner_id NULL, "khach le") - xem chu thich
+// assignStockIssuePartner().
+router.patch('/:id/partner', (req, res) => {
+  const id = Number(req.params.id);
+  const partnerId = Number((req.body || {}).partner_id);
+  if (!partnerId) {
+    return res.status(400).json({ error: 'Thieu khach hang can gan' });
+  }
+
+  try {
+    const issue = assignStockIssuePartner(id, partnerId);
+    res.json({ issue });
   } catch (err) {
     if (err instanceof ServiceError) {
       return res.status(400).json({ error: err.message });

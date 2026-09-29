@@ -1,55 +1,15 @@
-// Logic trang phieu nhap kho: danh sach phieu da lap + modal lap phieu moi.
-// Chon san pham tung dong bang o tim kiem goi y (combobox tu viet, khong dung <select> thuong
-// vi danh muc san pham co the nhieu - xem yeu cau nguoi dung khi thiet ke form trang nay).
-// Nha cung cap: dropdown lay tu GET /api/partners?type=nha_cung_cap, kem "them nhanh" ngay
-// trong form (POST /api/partners) - quan ly doi tac day du van o Phase 3.
+// Logic trang danh sach Phieu nhap kho. Lap phieu moi/sua da chuyen sang trang rieng
+// stock-receipt-form.html (2026-09-28, thay the popup cu) - trang nay chi con: danh sach, xem
+// chi tiet, sua ngay nhap, sua don gia/chiet khau, gan bo sung NCC.
 
 let currentUser = null;
-let productsCache = [];
 let partnersCache = [];
-let rowCounter = 0;
 
 const receiptsTbody = document.getElementById('receipts-tbody');
 const receiptsErrorBox = document.getElementById('receipts-error');
 const receiptsErrorText = document.getElementById('receipts-error-text');
 
 const btnAddReceipt = document.getElementById('btn-add-receipt');
-const receiptModal = document.getElementById('receipt-modal');
-const receiptForm = document.getElementById('receipt-form');
-const receiptFormErrorBox = document.getElementById('receipt-form-error');
-const receiptFormErrorText = document.getElementById('receipt-form-error-text');
-const btnCancelReceipt = document.getElementById('btn-cancel-receipt');
-const btnSubmitReceipt = document.getElementById('btn-submit-receipt');
-
-const partnerSelect = document.getElementById('receipt-partner');
-const newPartnerFields = document.getElementById('new-partner-fields');
-const newPartnerNameInput = document.getElementById('new-partner-name');
-const newPartnerPhoneInput = document.getElementById('new-partner-phone');
-const newPartnerAddressInput = document.getElementById('new-partner-address');
-const noteInput = document.getElementById('receipt-note');
-const receiptDateInput = document.getElementById('receipt-date');
-const orderCodeInput = document.getElementById('receipt-order-code');
-const paymentToggle = document.getElementById('receipt-payment-toggle');
-const paymentRow = document.getElementById('receipt-payment-row');
-const openingBalanceToggle = document.getElementById('receipt-opening-balance-toggle');
-const itemRowsContainer = document.getElementById('item-rows');
-const btnAddItemRow = document.getElementById('btn-add-item-row');
-const totalAmountEl = document.getElementById('receipt-total-amount');
-
-// 'YYYY-MM-DDTHH:MM' theo gio dia phuong trinh duyet, dung de dien san gio hien tai vao o
-// chon thoi gian nhap khi mo modal.
-function nowForDatetimeLocal() {
-  const d = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-// Quy doi gia tri <input type="datetime-local"> (gio dia phuong) sang 'YYYY-MM-DD HH:MM:SS'
-// UTC - dung dinh dang voi datetime('now') cua SQLite ma toan bo du lieu dang luu.
-function toSqliteDatetime(localValue) {
-  const d = new Date(localValue);
-  return d.toISOString().slice(0, 19).replace('T', ' ');
-}
 
 function formatMoney(value) {
   return Number(value).toLocaleString('vi-VN');
@@ -62,13 +22,18 @@ function formatDate(sqliteDateTime) {
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-// Chieu nguoc lai toSqliteDatetime() - dung de dien san gia tri hien tai (UTC, luu trong DB)
+// Chieu nguoc lai toSqliteDatetime() cu - dung de dien san gia tri hien tai (UTC, luu trong DB)
 // vao o <input type="datetime-local"> (gio dia phuong) khi mo modal sua ngay.
 function toDatetimeLocalValue(sqliteDateTime) {
   const iso = sqliteDateTime.replace(' ', 'T') + 'Z';
   const d = new Date(iso);
   const pad = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function toSqliteDatetime(localValue) {
+  const d = new Date(localValue);
+  return d.toISOString().slice(0, 19).replace('T', ' ');
 }
 
 function renderReceiptsError(message) {
@@ -87,13 +52,20 @@ function renderReceiptRow(receipt) {
       ? '<span class="badge badge-inactive">Công nợ</span>'
       : '<span class="badge badge-active">Đã thanh toán</span>';
 
+  // Nut "Gan nha cung cap" - chi hien khi phieu dang trong (thuong la Nhap ton dau ky lap luc
+  // khong chon NCC), de sau nay lap duoc "Tra hang NCC" cho san pham trong phieu (xem
+  // stockReceipt.service.js#assignStockReceiptPartner(), docs/DECISIONS.md 2026-09-28).
+  const assignPartnerItem = receipt.partner_id
+    ? ''
+    : `<button type="button" class="action-dropdown-item" data-action="assign-partner" data-id="${receipt.id}">${icon('truck', 16)} Gán nhà cung cấp</button>`;
+
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td>${receipt.code}</td>
     <td>${receipt.partner_name || '-'}</td>
     <td>${receipt.created_by_name}</td>
     <td>${paymentBadge}</td>
-    <td>${noteHtml}</td>
+    <td class="note-cell-truncate">${noteHtml}</td>
     <td>${formatDate(receipt.created_at)}</td>
     <td>
       <div class="action-dropdown row-actions">
@@ -101,10 +73,18 @@ function renderReceiptRow(receipt) {
         <div class="action-dropdown-menu row-actions-menu" hidden>
           <button type="button" class="action-dropdown-item" data-action="view" data-id="${receipt.id}">${icon('eye', 16)} Xem chi tiết</button>
           <button type="button" class="action-dropdown-item" data-action="edit-date" data-id="${receipt.id}" data-created-at="${receipt.created_at}">${icon('pencil', 16)} Sửa ngày nhập</button>
+          <button type="button" class="action-dropdown-item" data-action="edit-pricing" data-id="${receipt.id}">${icon('sliders', 16)} Sửa đơn giá/chiết khấu</button>
+          ${assignPartnerItem}
         </div>
       </div>
     </td>
   `;
+  // title gan qua DOM property (khong noi chuoi vao HTML) de tranh loi escape neu ghi chu co
+  // dau nhay/ky tu dac biet - hien du noi dung khi re chuot vao o da bi cat bot bang CSS (dung
+  // pattern da ap dung o stock-issues.js 2026-08-20).
+  if (receipt.note) {
+    tr.querySelector('.note-cell-truncate').title = receipt.note;
+  }
   return tr;
 }
 
@@ -140,6 +120,18 @@ receiptsTbody.addEventListener('click', (event) => {
   const editDateButton = event.target.closest('button[data-action="edit-date"]');
   if (editDateButton) {
     openEditReceiptDateModal(editDateButton.dataset.id, editDateButton.dataset.createdAt);
+    return;
+  }
+
+  const assignPartnerButton = event.target.closest('button[data-action="assign-partner"]');
+  if (assignPartnerButton) {
+    openAssignReceiptPartnerModal(assignPartnerButton.dataset.id);
+    return;
+  }
+
+  const editPricingButton = event.target.closest('button[data-action="edit-pricing"]');
+  if (editPricingButton) {
+    openEditReceiptPricingModal(editPricingButton.dataset.id);
   }
 });
 
@@ -200,292 +192,159 @@ editReceiptDateForm.addEventListener('submit', async (event) => {
   }
 });
 
-async function loadProducts() {
-  const { products } = await apiFetch('/products');
-  productsCache = products.filter((p) => p.is_active);
+// ----- Sua don gia/chiet khau tung dong (chi khi lo hang chua bi xuat dung - xem
+// docs/DECISIONS.md 2026-09-28, stockReceipt.service.js#updateStockReceiptPricing()) -----
+
+const editReceiptPricingModal = document.getElementById('edit-receipt-pricing-modal');
+const editReceiptPricingForm = document.getElementById('edit-receipt-pricing-form');
+const editReceiptPricingErrorBox = document.getElementById('edit-receipt-pricing-error');
+const editReceiptPricingErrorText = document.getElementById('edit-receipt-pricing-error-text');
+const editReceiptPricingItemsContainer = document.getElementById('edit-receipt-pricing-items');
+const btnCancelEditReceiptPricing = document.getElementById('btn-cancel-edit-receipt-pricing');
+const btnSubmitEditReceiptPricing = document.getElementById('btn-submit-edit-receipt-pricing');
+let editingPricingReceiptId = null;
+
+function pricingItemRowHtml(item) {
+  return `
+    <div class="pricing-item-block" data-item-id="${item.id}" style="margin-bottom: 16px;">
+      <div class="form-field">
+        <label>${item.product_code} - ${item.product_name} (SL: ${formatMoney(item.quantity)} ${item.unit})</label>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Đơn giá</label>
+          <input type="text" class="pricing-item-unit-price money-input" value="${item.unit_price}" />
+        </div>
+        <div class="form-field">
+          <label>Chiết khấu (%)</label>
+          <input type="number" class="pricing-item-discount" min="0" max="100" step="1" value="${item.discount_percent}" />
+        </div>
+      </div>
+    </div>
+  `;
 }
+
+async function openEditReceiptPricingModal(id) {
+  editingPricingReceiptId = id;
+  editReceiptPricingErrorBox.hidden = true;
+  editReceiptPricingItemsContainer.innerHTML = 'Đang tải...';
+  editReceiptPricingModal.hidden = false;
+
+  try {
+    const { receipt } = await apiFetch(`/stock-receipts/${id}`);
+    editReceiptPricingItemsContainer.innerHTML = receipt.items.map((item) => pricingItemRowHtml(item)).join('');
+    bindMoneyInputs(editReceiptPricingItemsContainer);
+  } catch (err) {
+    editReceiptPricingErrorText.textContent = err.message;
+    editReceiptPricingErrorBox.hidden = false;
+  }
+}
+
+function closeEditReceiptPricingModal() {
+  editReceiptPricingModal.hidden = true;
+  editingPricingReceiptId = null;
+}
+
+btnCancelEditReceiptPricing.addEventListener('click', closeEditReceiptPricingModal);
+editReceiptPricingModal.addEventListener('click', (event) => {
+  if (event.target === editReceiptPricingModal) closeEditReceiptPricingModal();
+});
+
+editReceiptPricingForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  editReceiptPricingErrorBox.hidden = true;
+
+  const rows = Array.from(editReceiptPricingItemsContainer.querySelectorAll('[data-item-id]'));
+  const items = rows.map((row) => ({
+    item_id: Number(row.dataset.itemId),
+    unit_price: getMoneyValue(row.querySelector('.pricing-item-unit-price')),
+    discount_percent: Number(row.querySelector('.pricing-item-discount').value) || 0,
+  }));
+
+  btnSubmitEditReceiptPricing.disabled = true;
+  btnSubmitEditReceiptPricing.textContent = 'Đang lưu...';
+
+  try {
+    await apiFetch(`/stock-receipts/${editingPricingReceiptId}/pricing`, {
+      method: 'PATCH',
+      body: JSON.stringify({ items }),
+    });
+    closeEditReceiptPricingModal();
+    await loadReceipts();
+  } catch (err) {
+    editReceiptPricingErrorText.textContent = err.message;
+    editReceiptPricingErrorBox.hidden = false;
+  } finally {
+    btnSubmitEditReceiptPricing.disabled = false;
+    btnSubmitEditReceiptPricing.textContent = 'Lưu';
+  }
+});
+
+// ----- Gan bo sung NCC cho phieu dang trong partner_id (xem docs/DECISIONS.md 2026-09-28) -----
+
+const assignReceiptPartnerModal = document.getElementById('assign-receipt-partner-modal');
+const assignReceiptPartnerForm = document.getElementById('assign-receipt-partner-form');
+const assignReceiptPartnerErrorBox = document.getElementById('assign-receipt-partner-error');
+const assignReceiptPartnerErrorText = document.getElementById('assign-receipt-partner-error-text');
+const assignReceiptPartnerSelect = document.getElementById('assign-receipt-partner-select');
+const btnCancelAssignReceiptPartner = document.getElementById('btn-cancel-assign-receipt-partner');
+const btnSubmitAssignReceiptPartner = document.getElementById('btn-submit-assign-receipt-partner');
+let assigningReceiptId = null;
+
+function openAssignReceiptPartnerModal(id) {
+  assigningReceiptId = id;
+  const options = partnersCache.map((p) => `<option value="${p.id}">${p.name}</option>`).join('');
+  assignReceiptPartnerSelect.innerHTML = options || '<option value="">-- Chưa có nhà cung cấp nào --</option>';
+  assignReceiptPartnerErrorBox.hidden = true;
+  assignReceiptPartnerModal.hidden = false;
+}
+
+function closeAssignReceiptPartnerModal() {
+  assignReceiptPartnerModal.hidden = true;
+  assigningReceiptId = null;
+}
+
+btnCancelAssignReceiptPartner.addEventListener('click', closeAssignReceiptPartnerModal);
+assignReceiptPartnerModal.addEventListener('click', (event) => {
+  if (event.target === assignReceiptPartnerModal) closeAssignReceiptPartnerModal();
+});
+
+assignReceiptPartnerForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  assignReceiptPartnerErrorBox.hidden = true;
+
+  if (!assignReceiptPartnerSelect.value) {
+    assignReceiptPartnerErrorText.textContent = 'Vui lòng chọn nhà cung cấp';
+    assignReceiptPartnerErrorBox.hidden = false;
+    return;
+  }
+
+  btnSubmitAssignReceiptPartner.disabled = true;
+  btnSubmitAssignReceiptPartner.textContent = 'Đang lưu...';
+
+  try {
+    await apiFetch(`/stock-receipts/${assigningReceiptId}/partner`, {
+      method: 'PATCH',
+      body: JSON.stringify({ partner_id: Number(assignReceiptPartnerSelect.value) }),
+    });
+    closeAssignReceiptPartnerModal();
+    await loadReceipts();
+  } catch (err) {
+    assignReceiptPartnerErrorText.textContent = err.message;
+    assignReceiptPartnerErrorBox.hidden = false;
+  } finally {
+    btnSubmitAssignReceiptPartner.disabled = false;
+    btnSubmitAssignReceiptPartner.textContent = 'Gán';
+  }
+});
 
 async function loadPartners() {
   const { partners } = await apiFetch('/partners?type=nha_cung_cap');
   partnersCache = partners;
 }
 
-function renderPartnerOptions() {
-  const options = partnersCache.map((p) => `<option value="${p.id}">${p.name}</option>`).join('');
-  partnerSelect.innerHTML = `<option value="">-- Không chọn --</option>${options}<option value="__new__">+ Thêm nhà cung cấp mới</option>`;
-}
-
-partnerSelect.addEventListener('change', () => {
-  newPartnerFields.hidden = partnerSelect.value !== '__new__';
-});
-
-// Phieu ton dau ky khong lien quan cong no - an nut "Chua thanh toan ngay" va tra ve trang thai
-// mac dinh (khong cong no) de tranh nguoi dung bat nham truoc khi an.
-openingBalanceToggle.addEventListener('change', () => {
-  paymentRow.hidden = openingBalanceToggle.checked;
-  if (openingBalanceToggle.checked) {
-    paymentToggle.checked = false;
-  }
-});
-
-// ----- Dong san pham dong (combobox tim theo ma/ten) -----
-
-function createItemRow() {
-  rowCounter += 1;
-  const row = document.createElement('div');
-  row.className = 'item-row';
-  row.dataset.rowId = String(rowCounter);
-  row.innerHTML = `
-    <div class="combobox">
-      <input type="text" class="item-product-search" placeholder="Tìm theo mã hoặc tên..." autocomplete="off" />
-      <input type="hidden" class="item-product-id" />
-      <div class="combobox-suggestions"></div>
-    </div>
-    <div class="item-unit-display"></div>
-    <input type="number" class="item-quantity" min="0" step="1" placeholder="SL" />
-    <input type="text" class="item-unit-price money-input" placeholder="Đơn giá" />
-    <input type="number" class="item-discount" min="0" max="100" step="1" placeholder="0" />
-    <div class="item-line-total">0</div>
-    <button type="button" class="icon-btn icon-btn-danger item-row-remove" title="Xóa dòng">${icon('trash', 14)}</button>
-  `;
-  bindMoneyInputs(row);
-  return row;
-}
-
-function addItemRow() {
-  itemRowsContainer.appendChild(createItemRow());
-}
-
-function removeItemRow(row) {
-  if (itemRowsContainer.children.length > 1) {
-    row.remove();
-    updateTotalAmount();
-  }
-}
-
-function rowLineTotal(row) {
-  const quantity = Number(row.querySelector('.item-quantity').value) || 0;
-  const unitPrice = getMoneyValue(row.querySelector('.item-unit-price'));
-  const discountPercent = Number(row.querySelector('.item-discount').value) || 0;
-  return quantity * unitPrice * (1 - discountPercent / 100);
-}
-
-// Cap nhat "Thanh tien" tung dong (gia sau chiet khau) va "Tong thanh tien" toan phieu - goi
-// lai moi khi nguoi dung go so luong/don gia/chiet khau, hoac them/xoa dong.
-function updateTotalAmount() {
-  const rows = Array.from(itemRowsContainer.querySelectorAll('.item-row'));
-  let total = 0;
-
-  rows.forEach((row) => {
-    const lineTotal = rowLineTotal(row);
-    row.querySelector('.item-line-total').textContent = formatMoney(Math.round(lineTotal));
-    total += lineTotal;
-  });
-
-  totalAmountEl.textContent = formatMoney(Math.round(total));
-}
-
-function renderSuggestions(row, keyword) {
-  const box = row.querySelector('.combobox-suggestions');
-  const kw = keyword.trim().toLowerCase();
-
-  if (!kw) {
-    box.innerHTML = '';
-    return;
-  }
-
-  const matches = productsCache
-    .filter((p) => p.code.toLowerCase().includes(kw) || p.name.toLowerCase().includes(kw))
-    .slice(0, 8);
-
-  if (matches.length === 0) {
-    box.innerHTML = '<div class="combobox-empty">Không tìm thấy sản phẩm</div>';
-    return;
-  }
-
-  box.innerHTML = matches
-    .map(
-      (p) => `
-        <div class="combobox-option" data-product-id="${p.id}" data-product-label="${p.code} - ${p.name}">
-          ${p.code} - ${p.name} <span class="combobox-option-unit">(${p.unit})</span>
-        </div>
-      `
-    )
-    .join('');
-}
-
-function selectProduct(row, productId, label) {
-  row.querySelector('.item-product-id').value = productId;
-  row.querySelector('.item-product-search').value = label;
-  row.querySelector('.combobox-suggestions').innerHTML = '';
-
-  const product = productsCache.find((p) => String(p.id) === String(productId));
-  row.querySelector('.item-unit-display').textContent = product ? product.unit : '';
-}
-
-itemRowsContainer.addEventListener('input', (event) => {
-  if (event.target.classList.contains('item-product-search')) {
-    const row = event.target.closest('.item-row');
-    row.querySelector('.item-product-id').value = '';
-    renderSuggestions(row, event.target.value);
-    return;
-  }
-
-  if (
-    event.target.classList.contains('item-quantity') ||
-    event.target.classList.contains('item-unit-price') ||
-    event.target.classList.contains('item-discount')
-  ) {
-    updateTotalAmount();
-  }
-});
-
-itemRowsContainer.addEventListener('click', (event) => {
-  const option = event.target.closest('.combobox-option');
-  if (option) {
-    const row = option.closest('.item-row');
-    selectProduct(row, option.dataset.productId, option.dataset.productLabel);
-    return;
-  }
-
-  const removeBtn = event.target.closest('.item-row-remove');
-  if (removeBtn) {
-    removeItemRow(removeBtn.closest('.item-row'));
-  }
-});
-
-document.addEventListener('click', (event) => {
-  if (!event.target.closest('.combobox')) {
-    document.querySelectorAll('.combobox-suggestions').forEach((box) => {
-      box.innerHTML = '';
-    });
-  }
-});
-
-btnAddItemRow.addEventListener('click', addItemRow);
-
-// ----- Mo/dong modal -----
-
-function resetReceiptForm() {
-  receiptForm.reset();
-  newPartnerFields.hidden = true;
-  paymentRow.hidden = false;
-  receiptDateInput.value = nowForDatetimeLocal();
-  itemRowsContainer.innerHTML = '';
-  addItemRow();
-  updateTotalAmount();
-  resetAdjustmentField();
-}
-
-function openCreateModal() {
-  resetReceiptForm();
-  receiptFormErrorBox.hidden = true;
-  receiptModal.hidden = false;
-}
-
-function closeReceiptModal() {
-  receiptModal.hidden = true;
-}
-
-btnAddReceipt.addEventListener('click', openCreateModal);
-btnCancelReceipt.addEventListener('click', closeReceiptModal);
-
-receiptModal.addEventListener('click', (event) => {
-  if (event.target === receiptModal) closeReceiptModal();
-});
-
-// ----- Nop phieu -----
-
-function collectItems() {
-  const rows = Array.from(itemRowsContainer.querySelectorAll('.item-row'));
-  const items = [];
-
-  for (const row of rows) {
-    const productId = row.querySelector('.item-product-id').value;
-    const quantity = row.querySelector('.item-quantity').value;
-    const unitPriceInput = row.querySelector('.item-unit-price');
-    const unitPriceRaw = unitPriceInput.value;
-    const discountPercent = row.querySelector('.item-discount').value;
-
-    if (!productId && !quantity && unitPriceRaw === '' && discountPercent === '') continue;
-
-    if (!productId || !quantity || unitPriceRaw === '') {
-      return { error: 'Mỗi dòng sản phẩm phải chọn sản phẩm, nhập số lượng và đơn giá' };
-    }
-
-    items.push({
-      product_id: Number(productId),
-      quantity: Number(quantity),
-      unit_price: getMoneyValue(unitPriceInput),
-      discount_percent: discountPercent === '' ? 0 : Number(discountPercent),
-    });
-  }
-
-  if (items.length === 0) {
-    return { error: 'Phiếu nhập phải có ít nhất 1 dòng sản phẩm' };
-  }
-
-  return { items };
-}
-
-receiptForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  receiptFormErrorBox.hidden = true;
-
-  const { items, error } = collectItems();
-  if (error) {
-    receiptFormErrorText.textContent = error;
-    receiptFormErrorBox.hidden = false;
-    return;
-  }
-
-  btnSubmitReceipt.disabled = true;
-  btnSubmitReceipt.textContent = 'Đang lưu...';
-
-  try {
-    let partnerId = partnerSelect.value || null;
-
-    if (partnerId === '__new__') {
-      const name = newPartnerNameInput.value.trim();
-      if (!name) {
-        throw new Error('Thiếu tên nhà cung cấp mới');
-      }
-      const { partner } = await apiFetch('/partners', {
-        method: 'POST',
-        body: JSON.stringify({
-          type: 'nha_cung_cap',
-          name,
-          phone: newPartnerPhoneInput.value.trim(),
-          address: newPartnerAddressInput.value.trim(),
-        }),
-      });
-      partnerId = partner.id;
-    }
-
-    await apiFetch('/stock-receipts', {
-      method: 'POST',
-      body: JSON.stringify({
-        partner_id: partnerId || null,
-        note: noteInput.value.trim(),
-        order_code: orderCodeInput.value.trim(),
-        receipt_date: receiptDateInput.value ? toSqliteDatetime(receiptDateInput.value) : null,
-        payment_status: paymentToggle.checked ? 'cong_no' : 'da_thanh_toan',
-        is_opening_balance: openingBalanceToggle.checked,
-        items,
-        ...getAdjustmentPayload(),
-      }),
-    });
-
-    closeReceiptModal();
-    await Promise.all([loadReceipts(), loadPartners()]);
-    renderPartnerOptions();
-  } catch (err) {
-    receiptFormErrorText.textContent = err.message;
-    receiptFormErrorBox.hidden = false;
-  } finally {
-    btnSubmitReceipt.disabled = false;
-    btnSubmitReceipt.textContent = 'Lưu phiếu';
-  }
+btnAddReceipt.addEventListener('click', () => {
+  window.location.href = 'stock-receipt-form.html';
 });
 
 (async function init() {
@@ -497,9 +356,6 @@ receiptForm.addEventListener('submit', async (event) => {
     slot.innerHTML = icon('alertCircle', 16);
   });
   initReceiptDetailModal();
-  initAdjustmentField();
 
-  await Promise.all([loadProducts(), loadPartners(), loadReceipts(), loadAdjustableDocs()]);
-  renderPartnerOptions();
-  resetReceiptForm();
+  await Promise.all([loadPartners(), loadReceipts()]);
 })();

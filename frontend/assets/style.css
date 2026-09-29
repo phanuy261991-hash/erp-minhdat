@@ -714,6 +714,30 @@ input:focus-visible {
   overflow-x: auto;
 }
 
+/* Bien the "chiem het chieu cao con lai + tu cuon rieng + dong tieu de cot dinh" (2026-09-28,
+   theo yeu cau nguoi dung tren trang Tra hang) - OPT-IN qua class rieng, KHONG doi mac dinh
+   .data-table-wrap de tranh anh huong cac trang khac (dashboard/trang cai dat/trang chi tiet
+   dang tab...) von khong phai 1 bang duy nhat va se bi cat noi dung neu ap dung nham. 170px tru
+   di uoc luong du cho .page-eyebrow + .page-header + padding tren/duoi .app-content - co the
+   can chinh lai (+ them alert-error neu co) o tung trang khi ap dung. Cac trang danh sach khac
+   muon dung kieu nay chi can them class .data-table-wrap--fill tuong tu. */
+/* Giu <table> nguyen dang native (KHONG tach thead/tbody thanh display:block/table rieng - de
+   dung tung thu truoc, cach do de vo can lech cot vi thead/tbody thanh 2 "bang" doc lap, tu tinh
+   do rong cot rieng khong con dong bo voi nhau). Chi can .data-table-wrap la vung cuon (overflow-y
+   auto + chieu cao gioi han) + sticky truc tiep tren tung the <th> la du, tuong thich rong va
+   giu dung auto column-width cua table goc. */
+.data-table-wrap--fill {
+  max-height: calc(100vh - 170px);
+  overflow-y: auto;
+}
+
+.data-table-wrap--fill thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--color-surface);
+}
+
 /* ---- Phan trang (pagination) cho bang du lieu dai - dat ngay duoi .data-table-wrap. Dung
    chung .icon-btn co san cho nut Truoc/Sau (icon arrowLeft/arrowRight), khong tao nut moi. ---- */
 .pagination {
@@ -1858,7 +1882,9 @@ input:focus-visible {
    stock-receipts.html qua stock-receipts.js), tranh lam lech cot cua form phieu nhap
    (xem yeu cau nguoi dung 2026-08-01). */
 #issue-modal .item-rows-header,
-#issue-modal .item-row {
+#issue-modal .item-row,
+#stock-issue-form-page .item-rows-header,
+#stock-issue-form-page .item-row {
   grid-template-columns: 1fr 64px 80px 120px 100px 110px 120px 36px;
 }
 
@@ -1895,6 +1921,206 @@ input:focus-visible {
   font-size: 20px;
   font-weight: 700;
   color: var(--color-primary);
+}
+
+/* ---- Trang lap phieu dang TRANG RIENG (khong phai modal) - stock-receipt-form.html/
+   stock-issue-form.html/stock-return-form.html/supplier-return-form.html (2026-09-28, thay the
+   popup .modal-card-lg cu). Bo cuc 2 cot: cot trai (tim/them san pham) rong hon, cot phai (doi
+   tac/thanh toan/tong tien) co do rong co dinh va STICKY - trang cuon binh thuong (khong scroll
+   long nhau, dung nguyen tac .sidebar da ap dung: sticky bam theo cuon window, khong phai
+   internal scroll region) de luon thay tong tien/nut Luu du dang cuon qua nhieu dong san pham. ---- */
+
+.form-page-grid {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
+  align-items: start;
+}
+
+.form-page-main {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+}
+
+/* top: 20px khop dung padding-top cua .app-content - khong co header rieng sticky ben tren nen
+   khong can cong them chieu cao header nao khac. Theo yeu cau nguoi dung (2026-09-28): nut
+   "Luu"/"Huy" (+ Tong thanh tien) phai CO DINH o day panel, KHONG cuon theo cac truong nhap lieu
+   ben tren - tach panel thanh 2 vung: .form-page-side-scroll (cuon rieng) + .form-page-side-footer
+   (khong bao gio cuon, luon hien). */
+.form-page-side {
+  position: sticky;
+  top: 20px;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  /* Tru them 90px o duoi (ngoai 40px top+bottom margin mac dinh) - chua "vung cam" cua
+     .notification-bell-wrap (fixed, bottom:24px, cao 42px, z-index:60, hien tren MOI trang) de
+     footer khong bao gio bi chuong tron/de len (phat hien qua anh chup CDP that khi test trang
+     nay - xem docs/DECISIONS.md 2026-09-28). */
+  max-height: calc(100vh - 40px - 90px);
+}
+
+.form-page-side-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+
+.form-page-side-footer {
+  flex-shrink: 0;
+  padding: 14px 24px 18px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+/* Footer da tu co border-top rieng phan cach voi vung cuon ben tren - bo border-top/margin-top
+   mac dinh cua .receipt-total-row (danh cho ngu canh khac, vd modal xem chi tiet) de khong bi
+   2 duong ke chong nhau. */
+.form-page-side-footer .receipt-total-row {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+  margin-bottom: 14px;
+}
+
+.form-page-search {
+  margin-bottom: 16px;
+}
+
+/* Bo dong tieu de "Danh sach san pham" (thua vi da co o tim kiem ngay tren) - header cot tu
+   dung lam ranh gioi bang, them vien duoi + tang khoang cach cho gon gang, khong con dung
+   .item-rows-header mac dinh (chi 6px margin-bottom, danh cho khi con label phia tren). */
+.form-page-main .item-rows-header {
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.form-page-search > input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-foreground);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-page-search > input:focus {
+  border-color: var(--color-ring);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* San pham da chon (hien thi tinh, khong con la combobox tim kiem trong tung dong nua - viec
+   tim/chon gio chi lam 1 lan o .form-page-search dau cot) - 2 dong ma+ten, dung .table-link-btn
+   mau de phan biet ro voi cac o nhap lieu ben canh trong cung 1 dong (read-only-distinction). */
+.item-row-product {
+  padding: 6px 0;
+  line-height: 1.35;
+}
+
+.item-row-product-code {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+}
+
+.item-row-product-name {
+  display: block;
+  font-size: 13px;
+  color: var(--color-foreground);
+}
+
+.form-page-side-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Bien the cho trang co 3 nut (vd "Luu tam"/"Xuat kho"/"Tru kho" - phieu xuat/tra hang quy trinh
+   2 buoc) - xep "Huy"+"Luu tam" 1 hang (phu), nut hanh dong chinh rieng 1 hang day du ben duoi,
+   tranh chu bi wrap 2 dong nhu khi ca 3 nut deu flex:1 tren cung 1 hang. */
+.form-page-side-actions-stacked {
+  flex-direction: column;
+}
+
+.form-page-side-actions-stacked > .form-page-side-actions {
+  width: 100%;
+}
+
+/* Ghi de rieng .flex:1 ke thua tu selector .form-page-side-actions .btn-primary (mac dinh danh
+   cho container flex-direction:row) - o day container ngoai la column, flex:1 se tinh theo
+   chieu CAO thay vi chieu rong, lam nut bi keo gian sai huong. Chi can width:100% la du. */
+.form-page-side-actions-stacked > .btn-primary {
+  flex: none;
+  width: 100%;
+}
+
+.form-page-side-actions .btn-primary,
+.form-page-side-actions .btn-secondary {
+  flex: 1;
+  margin-top: 0;
+  text-align: center;
+}
+
+/* Nut "Quay lai danh sach" dau trang - dung chung .page-title-group da co (icon + text) nhung
+   la <a> dieu huong that, khong phai nut JS - can them rieng vi .page-title-group truoc gio chi
+   dung cho tieu de tinh (khong co lien ket). */
+.form-page-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+  text-decoration: none;
+  margin-bottom: 6px;
+  transition: color var(--transition-fast);
+}
+
+.form-page-back-link:hover {
+  color: var(--color-primary);
+}
+
+/* Panel ben phai chua nhieu truong (doi tac/ngay/2 toggle/ma don/ghi chu/dieu chinh/tong tien) -
+   thu gon .setting-row-desc rieng trong ngu canh nay (man hinh thap de bi thieu cho, nut "Luu
+   phieu" o cuoi phai luon vua trong tam nhin khong can cuon them). Khong doi .setting-row-desc
+   mac dinh (van dung nguyen o Cau hinh kho/So quy). */
+.form-page-side .setting-row {
+  padding: 10px 12px;
+}
+
+.form-page-side .setting-row-desc {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* Truong "Dieu chinh cho phieu" - it dung, thu gon mac dinh (an sau 1 nut disclosure) de tiet
+   kiem chieu cao panel, bam ra moi hien o tim kiem (xem stock-receipt-form.js). */
+.form-page-disclosure {
+  display: block;
+  margin-bottom: 14px;
+  font-size: 13px;
+}
+
+@media (max-width: 1100px) {
+  .form-page-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-page-side {
+    position: static;
+    max-height: none;
+  }
 }
 
 .new-partner-inputs {

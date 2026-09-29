@@ -745,6 +745,36 @@
 - [x] Đồng bộ `docs/DESIGN-SYSTEM.md` mục "Bảng dữ liệu", `docs/DECISIONS.md`
 - [x] Test qua `node --check` toàn bộ 16 file (cú pháp) + trình duyệt thật (Chrome headless CDP thô: smoke test 15 trang + test sâu `roles.html`/`users.html`/`project-detail.html`, không lỗi console, không hồi quy hành vi mở rộng dòng giai đoạn). Không cần restart server (chỉ frontend tĩnh).
 
+### Sửa 3 lỗi vận hành: Kho/Công nợ (ngoài phase, theo phản hồi người dùng 2026-09-28)
+
+> Chi tiết `docs/DECISIONS.md` mục 2026-09-28.
+
+- [x] `backend/services/stockReceipt.service.js`: `updateStockReceiptPricing()` (sửa đơn giá/chiết khấu, chỉ khi lô hàng chưa bị xuất dùng 1 phần), `assignStockReceiptPartner()` (gán bổ sung NCC)
+- [x] `backend/services/stockIssue.service.js`: `assignStockIssuePartner()` (gán bổ sung khách hàng)
+- [x] `backend/services/stockReturn.service.js`: bỏ bắt buộc chọn khách hàng, `getReturnReference()` so khớp `IS ?` thay `= ?`, `recordReturnCredit()` bỏ qua khi không có đối tác
+- [x] `backend/routes/stockReceipts.routes.js`: `PATCH /:id/pricing`, `PATCH /:id/partner`
+- [x] `backend/routes/stockIssues.routes.js`: `PATCH /:id/partner`
+- [x] `backend/routes/stockReturns.routes.js`: `GET /reference` không bắt buộc `partner_id`, `SELECT_RETURN` đổi `LEFT JOIN partners`
+- [x] `frontend/assets/stock-receipts.js`/`.html`: modal "Sửa đơn giá/chiết khấu" + "Gán nhà cung cấp"
+- [x] `frontend/assets/stock-issues.js`/`.html`: nút + modal "Gán khách hàng"
+- [x] `frontend/assets/stock-returns.js`: bỏ chặn client-side bắt buộc chọn khách hàng
+- [x] Đồng bộ `docs/PRD.md` mục 4.3/4.15, `docs/DECISIONS.md`
+- [x] Test qua API thật (Node `fetch`): đủ cả 3 lỗi + chặn đúng (trả vượt số còn lại, gán lại đối tác đã có, sửa giá khi lô đã bị xuất dùng), công nợ tăng/giảm đúng qua nhiều lần sửa giá, phiếu Chi tự động cập nhật đúng `amount`. Dữ liệu test đã xóa sạch qua script dọn trực tiếp. Đã restart server.
+### Thiết kế lại 4 trang lập phiếu Kho: popup → trang riêng 2 cột (ngoài phase, theo yêu cầu người dùng 2026-09-28/29)
+
+> Chi tiết `docs/DECISIONS.md` mục 2026-09-28/29, `docs/DESIGN-SYSTEM.md` mục 11.
+
+- [x] `frontend/stock-receipt-form.html`/`assets/stock-receipt-form.js` (mới)
+- [x] `frontend/stock-issue-form.html`/`assets/stock-issue-form.js` (mới, gồm chế độ Sửa qua `?id=`, quy trình Lưu tạm/Xuất kho)
+- [x] `frontend/stock-return-form.html`/`assets/stock-return-form.js` (mới, khách hàng không bắt buộc)
+- [x] `frontend/supplier-return-form.html`/`assets/supplier-return-form.js` (mới, giá nhập tự điền từ lịch sử mua)
+- [x] `frontend/assets/style.css`: `.form-page-*` (grid/main/side/side-scroll/side-footer/side-actions/side-actions-stacked/search/disclosure/back-link)
+- [x] Rút gọn `stock-receipts.js`/`stock-issues.js`/`stock-returns.js`: bỏ logic lập/sửa phiếu, "+ Lập phiếu"/"Sửa phiếu" đổi sang điều hướng trang
+- [x] Sửa 2 lỗi phát hiện qua CDP: chuông thông báo che nút Lưu; nút chính wrap 2 dòng khi 3 nút cùng hàng
+- [x] Theo phản hồi phát sinh: `.note-cell-truncate` cho cột Ghi chú trang Nhập kho; `.data-table-wrap--fill` (opt-in) cho trang Trả hàng
+- [x] Đồng bộ `docs/DESIGN-SYSTEM.md` mục 11, `docs/DECISIONS.md`
+- [x] Test qua Chrome headless CDP thô: đủ cả 4 trang tạo mới/sửa/xử lý, không lỗi console. Dữ liệu test đã xóa sạch. Đã restart server.
+
 ## Open questions cần chốt trước khi code phần liên quan
 
 Xem `docs/DECISIONS.md` mục "Open questions".

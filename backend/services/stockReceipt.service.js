@@ -3,7 +3,7 @@
 // "Quy tac transaction khi tao phieu").
 
 const db = require('../db/database');
-const { recordDebtFromDocument } = require('./debt.service');
+const { recordDebtFromDocument, recordDebtAdjustment } = require('./debt.service');
 const { recordAutoVoucher } = require('./cashVoucher.service');
 
 class ServiceError extends Error {}
@@ -163,4 +163,162 @@ function updateStockReceiptDate({ id, receiptDate }) {
   return db.prepare('SELECT * FROM stock_receipts WHERE id = ?').get(id);
 }
 
-module.exports = { createStockReceipt, updateStockReceiptDate, ServiceError };
+// Gan bo sung NCC cho 1 phieu nhap dang partner_id NULL (thuong la "Nhap ton dau ky" khong chon
+// NCC luc tao, 2026-09-28 - xem docs/DECISIONS.md) - dung khi staff biet ro NCC that va muon
+// "Tra hang NCC" ve sau tinh dung lich su (getSupplierReturnReference() so khop theo partner_id).
+// CHI cho gan khi dang trong (khong ghi de doi tac da co) - an toan tuyet doi voi cong no: phieu
+// cong_no bat buoc co doi tac tu luc tao, nen 1 phieu dang NULL chac chan CHUA TUNG phat sinh
+// debt_ledger. Dong bo luon ten hien thi tren phieu Chi tu dong (neu co, xem createStockReceipt())
+// cho khop - khong doi so tien, chi anh huong hien thi/truy vet. Ap dung ca phieu thuong lan
+// phieu ton dau ky (is_opening_balance khong lien quan gi den validate nay), KHONG ap dung "Tra
+// hang xuat" (is_return=1, dung stockReturn.service.js rieng, da bat buoc chon khach hang tu dau).
+function assignStockReceiptPartner(id, partnerId) {
+  if (!partnerId) {
+    throw new ServiceError('Thieu nha cung cap can gan');
+  }
+
+  const run = db.transaction(() => {
+    const receipt = db.prepare('SELECT id, partner_id, is_return FROM stock_receipts WHERE id = ?').get(id);
+    if (!receipt) {
+      throw new ServiceError('Khong tim thay phieu nhap');
+    }
+    if (receipt.is_return) {
+      throw new ServiceError('Khong the gan doi tac cho phieu tra hang o day');
+    }
+    if (receipt.partner_id) {
+      throw new ServiceError('Phieu da co doi tac, khong the gan lai');
+    }
+
+    const partner = db.prepare('SELECT id, name, type FROM partners WHERE id = ?').get(partnerId);
+    if (!partner) {
+      throw new ServiceError('Khong tim thay nha cung cap');
+    }
+    if (partner.type !== 'nha_cung_cap') {
+      throw new ServiceError('Doi tac phai la nha cung cap');
+    }
+
+    db.prepare('UPDATE stock_receipts SET partner_id = ? WHERE id = ?').run(partnerId, id);
+    db.prepare(
+      "UPDATE cash_vouchers SET partner_id = ?, counterpart_name = ? WHERE reference_type = 'stock_receipt' AND reference_id = ?"
+    ).run(partnerId, partner.name, id);
+
+    return id;
+  });
+
+  const receiptId = run();
+  return db.prepare('SELECT * FROM stock_receipts WHERE id = ?').get(receiptId);
+}
+
+// Sua don gia/chiet khau tung dong cua 1 phieu nhap THUONG (is_return=0) - ngoai le co chu dich
+// khac (2026-09-28, xem docs/DECISIONS.md), sua loi "go nham chiet khau/gia nhap khong co cach
+// xu ly". CHI cho sua khi TOAN BO lo hang cua phieu (moi dong) CHUA bi xuat dung mot phan nao
+// (stock_lots.quantity_remaining === quantity_received cho moi dong) - neu da bi tieu thu qua
+// FIFO, cac stock_movements 'out' lien quan da chot gia von SAI vinh vien theo gia cu, sua lai
+// gia nhap luc nay se lam lech vinh vien COGS da ghi so - bat buoc phai dung phieu dieu chinh bu
+// tru (adjusts_type/adjusts_id) thay vi sua truc tiep trong truong hop do. Khong doi so luong/
+// san pham - chi don gia/chiet khau tung dong, khop dung theo item_id (khong cho them/bot/doi
+// dong o day). Tu dong sua luon cong no/phieu Chi tu dong lien quan (neu co) cho khop tong tien
+// moi - xem 2 nhanh duoi.
+function updateStockReceiptPricing(id, items, createdBy) {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new ServiceError('Phieu nhap phai co it nhat 1 dong san pham');
+  }
+
+  const run = db.transaction(() => {
+    const receipt = db
+      .prepare('SELECT id, code, partner_id, payment_status, is_return, is_opening_balance FROM stock_receipts WHERE id = ?')
+      .get(id);
+    if (!receipt) {
+      throw new ServiceError('Khong tim thay phieu nhap');
+    }
+    if (receipt.is_return) {
+      throw new ServiceError('Khong the sua don gia cho phieu tra hang o day');
+    }
+
+    const existingItems = db
+      .prepare('SELECT id, product_id, quantity, unit_price, discount_percent FROM stock_receipt_items WHERE receipt_id = ?')
+      .all(id);
+    const existingIds = existingItems.map((i) => i.id).sort((a, b) => a - b);
+    const submittedIds = items.map((i) => i.itemId).sort((a, b) => a - b);
+    if (existingIds.length !== submittedIds.length || existingIds.some((v, idx) => v !== submittedIds[idx])) {
+      throw new ServiceError('Danh sach dong san pham khong khop voi phieu goc - khong the them/bot/doi dong o day');
+    }
+
+    // Chan neu bat ky lo hang nao cua phieu da bi tieu thu 1 phan/toan bo - dung nguyen tac an
+    // toan neu tren (tranh lam lech gia von cac dong stock_movements 'out' da chot truoc do).
+    const lots = db.prepare('SELECT quantity_received, quantity_remaining FROM stock_lots WHERE receipt_id = ?').all(id);
+    const touched = lots.some((lot) => lot.quantity_remaining !== lot.quantity_received);
+    if (touched) {
+      throw new ServiceError(
+        'Phiếu đã có lô hàng bị xuất dùng một phần, không thể sửa đơn giá trực tiếp - dùng phiếu điều chỉnh bù trừ'
+      );
+    }
+
+    const itemById = new Map(existingItems.map((i) => [i.id, i]));
+    let oldTotal = 0;
+    let newTotal = 0;
+    const updateItem = db.prepare('UPDATE stock_receipt_items SET unit_price = ?, discount_percent = ? WHERE id = ?');
+    const updateLot = db.prepare('UPDATE stock_lots SET unit_cost = ? WHERE receipt_id = ? AND product_id = ?');
+    const updateMovement = db.prepare(
+      "UPDATE stock_movements SET unit_cost = ? WHERE reference_type = 'receipt' AND reference_id = ? AND product_id = ?"
+    );
+
+    items.forEach((submitted) => {
+      const existing = itemById.get(submitted.itemId);
+      const oldNetCost = existing.unit_price * (1 - existing.discount_percent / 100);
+      oldTotal += existing.quantity * oldNetCost;
+
+      const newNetCost = submitted.unitPrice * (1 - submitted.discountPercent / 100);
+      newTotal += existing.quantity * newNetCost;
+
+      updateItem.run(submitted.unitPrice, submitted.discountPercent, submitted.itemId);
+      updateLot.run(newNetCost, id, existing.product_id);
+      updateMovement.run(newNetCost, id, existing.product_id);
+    });
+
+    const diff = newTotal - oldTotal;
+    // Ton dau ky khong dung debt_ledger/cash_vouchers (xem createStockReceipt()) - bo qua ca 2
+    // nhanh duoi, chi doi lot/movement/item nhu tren la du.
+    if (diff !== 0 && !receipt.is_opening_balance) {
+      if (receipt.payment_status === 'cong_no') {
+        // Ghi 1 dong dieu chinh MOI (khong sua dong 'no' goc) - dung nguyen tac append-only cua
+        // debt_ledger, xem recordDebtAdjustment().
+        recordDebtAdjustment({
+          partnerId: receipt.partner_id,
+          type: diff > 0 ? 'no' : 'tra',
+          amount: Math.abs(diff),
+          referenceType: 'receipt',
+          referenceId: id,
+          note: `Điều chỉnh do sửa đơn giá/chiết khấu phiếu ${receipt.code}`,
+          createdBy,
+        });
+      } else {
+        // da_thanh_toan (khong phai ton dau ky): phieu Chi tu dong (chi_mua_hang) da tao luc lap
+        // phieu can sua lai amount cho khop - khong co co che "dieu chinh" rieng nhu debt_ledger
+        // (cash_vouchers khong co is_adjustment), nen sua truc tiep dung 1 dong duy nhat truy vet
+        // qua reference_type/reference_id - tien le giong updateStockReceiptDate() da tung sua
+        // truc tiep cash_vouchers.created_at.
+        if (newTotal <= 0) {
+          throw new ServiceError('Tổng tiền phiếu sau khi sửa phải lớn hơn 0');
+        }
+        db.prepare("UPDATE cash_vouchers SET amount = ? WHERE reference_type = 'stock_receipt' AND reference_id = ?").run(
+          newTotal,
+          id
+        );
+      }
+    }
+
+    return id;
+  });
+
+  const receiptId = run();
+  return db.prepare('SELECT * FROM stock_receipts WHERE id = ?').get(receiptId);
+}
+
+module.exports = {
+  createStockReceipt,
+  updateStockReceiptDate,
+  assignStockReceiptPartner,
+  updateStockReceiptPricing,
+  ServiceError,
+};
